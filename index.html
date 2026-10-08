@@ -1,1 +1,200 @@
-<!doctype html><html lang="es"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#ffffff"><title>Reparado</title></head><body><div id="app"></div><script type="module" src="/src/main.js"></script></body></html>
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#ffffff">
+<title>Reparado · Beta 1</title>
+<style>
+:root{--ink:#17202a;--muted:#697586;--line:#e8edf2;--bg:#f7f9fb;--card:#fff;--blue:#1683ff;--cyan:#13c8c1;--green:#19a974;--orange:#ff9f43;--red:#ed5b5b;--shadow:0 12px 35px #18212b12}
+*{box-sizing:border-box} body{margin:0;font-family:Inter,ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Arial;color:var(--ink);background:linear-gradient(180deg,#fff,#f6f9fc);min-height:100vh}
+button,input,select,textarea{font:inherit} button{cursor:pointer}
+.app{display:flex;min-height:100vh}.side{width:250px;background:#fff;border-right:1px solid var(--line);padding:22px 15px;position:fixed;left:0;top:0;bottom:0;z-index:5}.brand{display:flex;align-items:center;gap:11px;padding:4px 10px 25px}.logo{width:46px;height:46px;border-radius:14px;background:linear-gradient(135deg,#16c8c0,#1683ff);display:grid;place-items:center;color:#fff;font-size:25px;box-shadow:0 10px 22px #1683ff2b}.brand b{font-size:23px;letter-spacing:-.8px}.brand small{display:block;color:var(--muted);font-size:10px;margin-top:1px}.nav{display:grid;gap:7px}.nav button{border:0;background:transparent;padding:13px 14px;border-radius:13px;text-align:left;color:#586474;display:flex;gap:12px;align-items:center}.nav button:hover,.nav button.active{background:#eef7ff;color:#0877ef}.nav i{font-style:normal;font-size:21px;width:25px;text-align:center}.sidefoot{position:absolute;bottom:18px;left:25px;right:20px;color:#9aa4af;font-size:11px;line-height:1.5}
+.main{margin-left:250px;width:calc(100% - 250px);padding:24px 30px 50px}.top{display:flex;align-items:center;justify-content:space-between;gap:15px;margin-bottom:24px}.top h1{margin:0;font-size:30px;letter-spacing:-1px}.top p{margin:4px 0 0;color:var(--muted)}.top-actions{display:flex;gap:9px}.pill{border:1px solid var(--line);background:#fff;padding:10px 13px;border-radius:12px}.notif{position:relative}.dot{position:absolute;right:7px;top:6px;width:7px;height:7px;background:#ed5b5b;border-radius:50%}
+.view{display:none}.view.active{display:block}.grid{display:grid;gap:18px}.g4{grid-template-columns:repeat(4,minmax(0,1fr))}.g3{grid-template-columns:repeat(3,minmax(0,1fr))}.g2{grid-template-columns:repeat(2,minmax(0,1fr))}.card{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:20px;box-shadow:var(--shadow)}.stat{display:flex;align-items:center;gap:14px}.stat .ico{width:48px;height:48px;border-radius:15px;display:grid;place-items:center;font-size:24px;background:#eef7ff}.stat b{font-size:27px}.stat span{display:block;color:var(--muted);font-size:13px}.hero{padding:28px;background:linear-gradient(135deg,#effcff,#eef6ff 60%,#fff);position:relative;overflow:hidden}.hero:after{content:"";position:absolute;width:240px;height:240px;border-radius:50%;right:-80px;top:-90px;background:#13c8c118}.hero h2{margin:0 0 8px;font-size:28px}.hero p{max-width:650px;color:#5e6976;margin:0}.btn{border:0;border-radius:12px;padding:11px 15px;background:#1683ff;color:#fff;font-weight:700}.btn.secondary{background:#edf5ff;color:#0877ef}.btn.ghost{background:#fff;color:#465261;border:1px solid var(--line)}.btn.green{background:#19a974}.btn.red{background:#ed5b5b}.btn.small{padding:8px 11px;font-size:13px}
+.section-title{display:flex;align-items:center;justify-content:space-between;margin:28px 0 14px}.section-title h2{margin:0;font-size:20px}.section-title span{color:var(--muted);font-size:13px}
+.cat{transition:.2s;cursor:pointer}.cat:hover{transform:translateY(-3px)}.cat .bigico{font-size:40px}.cat h3{margin:12px 0 5px}.cat p{color:var(--muted);font-size:13px;margin:0}.cat.pl{background:linear-gradient(145deg,#e9fbff,#fff)}.cat.al{background:linear-gradient(145deg,#fff4e9,#fff)}.cat.pa{background:linear-gradient(145deg,#f5efff,#fff)}.cat.re{background:linear-gradient(145deg,#effff4,#fff)}
+.service{display:flex;gap:14px;align-items:center}.thumb{width:74px;height:62px;border-radius:13px;flex:none;display:grid;place-items:center;font-size:30px;background:linear-gradient(135deg,#dff7ff,#e9efff);overflow:hidden}.service h3{font-size:15px;margin:0 0 4px}.service p{margin:0;color:var(--muted);font-size:12px}.price{margin-left:auto;text-align:right;white-space:nowrap}.price b{display:block;font-size:17px}.price small{color:#19a974;font-weight:700}.service-actions{display:flex;gap:8px;margin-top:9px}.service-list{display:grid;gap:10px}.service-row{padding:13px;border:1px solid var(--line);border-radius:15px;background:#fff}
+.table{width:100%;border-collapse:collapse}.table th,.table td{text-align:left;padding:13px 10px;border-bottom:1px solid var(--line);font-size:13px}.table th{color:#7b8693;font-size:11px;text-transform:uppercase}.status{padding:5px 8px;border-radius:99px;font-size:11px;font-weight:700;background:#eef7ff;color:#0877ef}.status.green{background:#eafaf3;color:#13885e}.status.orange{background:#fff5e7;color:#c77510}
+.form{display:grid;gap:13px}.formgrid{display:grid;grid-template-columns:repeat(2,1fr);gap:13px}.field label{display:block;font-size:12px;font-weight:700;margin:0 0 6px}.field input,.field select,.field textarea{width:100%;padding:11px 12px;border:1px solid #dfe5eb;border-radius:11px;background:#fff;outline:none}.field textarea{min-height:100px;resize:vertical}.field input:focus,.field select:focus,.field textarea:focus{border-color:#1683ff;box-shadow:0 0 0 3px #1683ff12}
+.modal{position:fixed;inset:0;background:#17202a66;display:none;align-items:center;justify-content:center;padding:18px;z-index:20}.modal.open{display:flex}.modalbox{background:#fff;width:min(700px,100%);max-height:90vh;overflow:auto;border-radius:22px;padding:23px;box-shadow:0 25px 70px #0003}.modalhead{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px}.modalhead h2{margin:0}.close{border:0;background:#f2f5f8;border-radius:10px;width:36px;height:36px}
+.timeline{display:grid;gap:12px}.event{display:grid;grid-template-columns:82px 1fr;gap:13px}.event time{font-size:12px;color:#6e7986;padding-top:10px}.eventbox{border:1px solid var(--line);border-radius:14px;padding:13px}.eventbox b{display:block}.eventbox span{color:var(--muted);font-size:12px}.operator{display:flex;align-items:center;gap:12px}.avatar{width:38px;height:38px;border-radius:50%;display:grid;place-items:center;background:#eaf5ff;font-weight:800;color:#1683ff}.chat{height:400px;display:flex;flex-direction:column}.messages{flex:1;overflow:auto;display:grid;align-content:start;gap:10px;padding:10px}.bubble{max-width:75%;padding:10px 13px;border-radius:15px;background:#f0f3f6;font-size:13px}.bubble.me{margin-left:auto;background:#1683ff;color:#fff;border-bottom-right-radius:4px}.bubble.them{border-bottom-left-radius:4px}.chatbar{display:flex;gap:8px;border-top:1px solid var(--line);padding-top:12px}.chatbar input{flex:1;border:1px solid var(--line);border-radius:11px;padding:11px}
+.toast{position:fixed;right:20px;bottom:20px;background:#17202a;color:#fff;padding:13px 16px;border-radius:13px;box-shadow:0 15px 40px #0003;z-index:50;display:none}.toast.show{display:block}
+.invoice{border:1px solid var(--line);padding:25px;border-radius:16px;background:#fff}.invoice .invtop{display:flex;justify-content:space-between;border-bottom:1px solid var(--line);padding-bottom:16px;margin-bottom:18px}.invoice h2{margin:0}.total{font-size:25px;font-weight:800;text-align:right;margin-top:15px}
+.mobilebar{display:none}
+@media(max-width:1050px){.g4{grid-template-columns:repeat(2,1fr)}.g3{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:760px){.side{display:none}.main{margin:0;width:100%;padding:18px 14px 82px}.top h1{font-size:25px}.top{align-items:flex-start}.g4,.g3,.g2,.formgrid{grid-template-columns:1fr}.card{padding:16px}.mobilebar{display:flex;position:fixed;left:10px;right:10px;bottom:10px;background:#fff;border:1px solid var(--line);box-shadow:0 12px 35px #0002;border-radius:18px;padding:7px;z-index:10;justify-content:space-around}.mobilebar button{border:0;background:none;padding:7px;color:#6d7784}.mobilebar button.active{color:#1683ff}.table{min-width:650px}.tablewrap{overflow:auto}.service{align-items:flex-start}.price{font-size:12px}.hero h2{font-size:23px}}
+</style>
+</head>
+<body>
+<div class="app">
+<aside class="side">
+  <div class="brand"><div class="logo">🛠️</div><div><b>Reparado</b><small>BETA 1 · SERVICIOS</small></div></div>
+  <nav class="nav">
+    <button data-view="inicio" class="active"><i>⌂</i>Inicio</button>
+    <button data-view="servicios"><i>🔧</i>Servicios</button>
+    <button data-view="solicitudes"><i>📥</i>Solicitudes</button>
+    <button data-view="agenda"><i>📅</i>Agenda</button>
+    <button data-view="operarios"><i>👷</i>Operarios</button>
+    <button data-view="chat"><i>💬</i>Chat</button>
+    <button data-view="notificaciones"><i>🔔</i>Notificaciones</button>
+    <button data-view="facturas"><i>🧾</i>Facturas</button>
+  </nav>
+  <div class="sidefoot">© AMS · Reparado<br>Empresa propietaria del software</div>
+</aside>
+
+<main class="main">
+<header class="top">
+  <div><h1 id="pageTitle">Inicio</h1><p id="pageSub">Gestión de reparaciones y servicios</p></div>
+  <div class="top-actions"><button class="pill notif" data-view="notificaciones">🔔<span class="dot"></span></button><button class="pill" onclick="openRequest()">＋ Nueva solicitud</button></div>
+</header>
+
+<section id="inicio" class="view active">
+ <div class="card hero">
+   <h2>Reparado, todo lo que necesitas para reparar.</h2>
+   <p>Catálogo con precios orientativos IVA incluido, solicitudes, operarios, agenda, comunicación y facturación en un mismo lugar.</p>
+   <div style="margin-top:17px;display:flex;gap:9px;flex-wrap:wrap"><button class="btn" onclick="go('servicios')">Ver servicios</button><button class="btn secondary" onclick="openRequest()">Solicitar servicio</button></div>
+ </div>
+ <div class="grid g4" style="margin-top:18px">
+   <div class="card stat"><div class="ico">📥</div><div><b id="statReq">1</b><span>Solicitudes</span></div></div>
+   <div class="card stat"><div class="ico">📅</div><div><b id="statAgenda">1</b><span>En agenda</span></div></div>
+   <div class="card stat"><div class="ico">👷</div><div><b id="statOps">3</b><span>Operarios</span></div></div>
+   <div class="card stat"><div class="ico">🧾</div><div><b id="statInv">1</b><span>Facturas</span></div></div>
+ </div>
+ <div class="section-title"><h2>Servicios</h2><span>Precios con IVA incluido</span></div>
+ <div class="grid g4">
+   <div class="card cat pl" onclick="filterCat('Fontanería')"><div class="bigico">🚰</div><h3>Fontanería</h3><p>Fugas, grifos, desagües, cisternas y más.</p></div>
+   <div class="card cat al" onclick="filterCat('Albañilería')"><div class="bigico">🧱</div><h3>Albañilería</h3><p>Azulejos, reparaciones, Pladur y obra.</p></div>
+   <div class="card cat pa" onclick="filterCat('Parquet')"><div class="bigico">🪵</div><h3>Parquet</h3><p>Instalación, reparación, lijado y barnizado.</p></div>
+   <div class="card cat re" onclick="filterCat('Reformas integrales')"><div class="bigico">🏠</div><h3>Reformas integrales</h3><p>Baños, cocinas y reformas por presupuesto.</p></div>
+ </div>
+ <div class="section-title"><h2>Actividad reciente</h2><span>Demo local</span></div>
+ <div class="card"><div class="timeline" id="homeTimeline"></div></div>
+</section>
+
+<section id="servicios" class="view">
+ <div class="card">
+  <div class="formgrid"><div class="field"><label>Buscar servicio</label><input id="search" placeholder="Ej. grifo, Pladur, parquet..." oninput="renderServices()"></div><div class="field"><label>Categoría</label><select id="catFilter" onchange="renderServices()"><option>Todas</option><option>Fontanería</option><option>Albañilería</option><option>Parquet</option><option>Reformas integrales</option></select></div></div>
+ </div>
+ <div class="section-title"><h2>Catálogo</h2><span>IVA 21% incluido en los precios mostrados</span></div>
+ <div class="service-list" id="serviceList"></div>
+</section>
+
+<section id="solicitudes" class="view">
+ <div class="card tablewrap"><table class="table"><thead><tr><th>Cliente</th><th>Servicio</th><th>Fecha</th><th>Operario</th><th>Estado</th><th></th></tr></thead><tbody id="requestTable"></tbody></table></div>
+</section>
+
+<section id="agenda" class="view">
+ <div class="grid g2">
+  <div class="card"><div class="section-title" style="margin-top:0"><h2>Agenda</h2><button class="btn small" onclick="openRequest()">＋ Servicio</button></div><div class="timeline" id="agendaList"></div></div>
+  <div class="card"><h2 style="margin-top:0">Acceso rápido</h2><p style="color:var(--muted);font-size:13px">Cada dirección tiene acceso directo a Google Maps. La asignación de operario es interna.</p><div id="agendaSummary"></div></div>
+ </div>
+</section>
+
+<section id="operarios" class="view">
+ <div class="section-title"><h2>Operarios</h2><button class="btn" onclick="addOperator()">＋ Añadir operario</button></div>
+ <div class="grid g3" id="operatorGrid"></div>
+</section>
+
+<section id="chat" class="view">
+ <div class="card"><div class="section-title" style="margin-top:0"><h2>Chat · Solicitud #RP-001</h2><span>Cliente y empresa</span></div><div class="chat"><div class="messages" id="messages"></div><div class="chatbar"><input id="chatInput" placeholder="Escribe un mensaje..." onkeydown="if(event.key==='Enter')sendMsg()"><button class="btn" onclick="sendMsg()">Enviar</button></div></div></div>
+</section>
+
+<section id="notificaciones" class="view">
+ <div class="card"><div class="section-title" style="margin-top:0"><h2>Notificaciones</h2><button class="btn small secondary" onclick="markNotifications()">Marcar leídas</button></div><div class="service-list" id="notifList"></div></div>
+</section>
+
+<section id="facturas" class="view">
+ <div class="card"><div class="section-title" style="margin-top:0"><h2>Facturación</h2><button class="btn" onclick="newInvoice()">＋ Nueva factura</button></div><div class="service-list" id="invoiceList"></div></div>
+</section>
+</main>
+</div>
+
+<div class="mobilebar">
+ <button data-view="inicio">⌂</button><button data-view="servicios">🔧</button><button data-view="agenda">📅</button><button data-view="chat">💬</button><button data-view="notificaciones">🔔</button>
+</div>
+
+<div class="modal" id="requestModal"><div class="modalbox"><div class="modalhead"><h2>Nueva solicitud</h2><button class="close" onclick="closeModal()">✕</button></div>
+<form class="form" onsubmit="submitRequest(event)">
+ <div class="formgrid"><div class="field"><label>Cliente</label><input id="fName" required placeholder="Nombre y apellidos"></div><div class="field"><label>Teléfono</label><input id="fPhone" required placeholder="600 000 000"></div></div>
+ <div class="formgrid"><div class="field"><label>Servicio</label><select id="fService"></select></div><div class="field"><label>Fecha preferente</label><input id="fDate" type="date"></div></div>
+ <div class="formgrid"><div class="field"><label>Calle</label><input id="fStreet" required></div><div class="field"><label>Número / piso / puerta</label><input id="fNum" required></div></div>
+ <div class="formgrid"><div class="field"><label>Código postal</label><input id="fZip" required></div><div class="field"><label>Municipio</label><input id="fCity" required value="Barcelona"></div></div>
+ <div class="field"><label>Descripción del trabajo</label><textarea id="fDesc" required placeholder="Explica qué necesitas..."></textarea></div>
+ <div class="field"><label>Fotos</label><input id="fPhotos" type="file" accept="image/*" multiple><small style="color:#7b8693">Las fotos se guardan solo en esta demo del navegador.</small></div>
+ <div style="display:flex;justify-content:flex-end;gap:8px"><button type="button" class="btn ghost" onclick="closeModal()">Cancelar</button><button class="btn">Enviar solicitud</button></div>
+</form></div></div>
+
+<div class="modal" id="detailModal"><div class="modalbox"><div class="modalhead"><h2 id="detailTitle">Detalle</h2><button class="close" onclick="closeDetail()">✕</button></div><div id="detailContent"></div></div></div>
+<div class="toast" id="toast"></div>
+
+<script>
+const services=[
+["Fontanería","Desatasco de lavabo o fregadero","Servicio básico de desatasco y comprobación.",89],
+["Fontanería","Cambio de sifón","Sustitución de sifón estándar.",79],
+["Fontanería","Reparación de fuga","Localización y reparación de fuga accesible.",115],
+["Fontanería","Sustitución de grifo","Desmontaje y montaje de grifo estándar.",105],
+["Fontanería","Instalación de grifo","Instalación y comprobación de grifo.",95],
+["Fontanería","Mecanismo de cisterna","Sustitución de mecanismo de descarga.",119],
+["Fontanería","Cambio de llave de paso","Sustitución de llave accesible.",99],
+["Fontanería","Válvula y desagüe","Sustitución de válvula/desagüe estándar.",109],
+["Fontanería","Tramo pequeño de tubería","Reparación o sustitución de tramo accesible.",145],
+["Albañilería","Reposición de azulejos","Retirada y colocación de pequeñas piezas.",95],
+["Albañilería","Alicatado","Colocación de azulejo. Precio orientativo por m².",42],
+["Albañilería","Solado de gres","Colocación de pavimento. Precio orientativo por m².",45],
+["Albañilería","Rejuntado","Rejuntado de juntas existentes.",32],
+["Albañilería","Reparación de grietas y rozas","Reparación y preparación de paramento.",95],
+["Albañilería","Tabique de Pladur","Suministro e instalación. Precio orientativo por m².",58],
+["Albañilería","Trasdosado de Pladur","Trasdosado interior. Precio orientativo por m².",52],
+["Albañilería","Techo de Pladur","Falso techo. Precio orientativo por m².",55],
+["Albañilería","Pequeña demolición","Demolición y retirada de elemento pequeño.",135],
+["Parquet","Instalación de parquet/laminado","Colocación. Precio orientativo por m².",34],
+["Parquet","Reparación de tablas","Sustitución de tablas dañadas.",110],
+["Parquet","Acuchillado/lijado","Preparación del pavimento. Precio orientativo por m².",38],
+["Parquet","Barnizado","Barnizado del pavimento. Precio orientativo por m².",31],
+["Parquet","Nivelación de suelo","Preparación del soporte antes de instalar.",185],
+["Parquet","Retirada de pavimento","Levantado y retirada de pavimento.",17],
+["Reformas integrales","Reforma integral de baño","Estudio, medición y presupuesto personalizado.",0],
+["Reformas integrales","Reforma integral de cocina","Estudio, medición y presupuesto personalizado.",0],
+["Reformas integrales","Reforma integral de vivienda","Estudio, medición y presupuesto personalizado.",0]
+];
+let ops=JSON.parse(localStorage.getItem("rep_ops")||'["Carlos","David","Sergio"]');
+let reqs=JSON.parse(localStorage.getItem("rep_reqs")||'[]');
+let notes=JSON.parse(localStorage.getItem("rep_notes")||'[]');
+let msgs=JSON.parse(localStorage.getItem("rep_msgs")||'["Hola, hemos recibido tu solicitud. En breve te confirmamos la visita.","Perfecto, gracias."]');
+let invoices=JSON.parse(localStorage.getItem("rep_inv")||'[]');
+if(!reqs.length) reqs=[{id:"RP-001",name:"Laura García",phone:"600 123 456",service:"Reparación de fuga",cat:"Fontanería",date:new Date().toISOString().slice(0,10),street:"Carrer de Mallorca",num:"125, 2º 1ª",zip:"08036",city:"Barcelona",desc:"Pequeña fuga bajo el fregadero.",op:"Carlos",status:"Confirmado"}];
+if(!invoices.length) invoices=[{id:"F-2026-001",name:"Laura García",service:"Reparación de fuga",total:115,date:new Date().toISOString().slice(0,10),status:"Pendiente de envío"}];
+if(!notes.length) notes=[{title:"Nueva solicitud recibida",text:"Laura García · Reparación de fuga",time:"Ahora",unread:true},{title:"Servicio en agenda",text:"Hoy · Carlos · 10:30",time:"Hoy",unread:true}];
+save();
+
+function save(){localStorage.setItem("rep_ops",JSON.stringify(ops));localStorage.setItem("rep_reqs",JSON.stringify(reqs));localStorage.setItem("rep_notes",JSON.stringify(notes));localStorage.setItem("rep_msgs",JSON.stringify(msgs));localStorage.setItem("rep_inv",JSON.stringify(invoices));}
+function go(v){document.querySelectorAll(".view").forEach(x=>x.classList.remove("active"));document.getElementById(v).classList.add("active");document.querySelectorAll("[data-view]").forEach(x=>x.classList.toggle("active",x.dataset.view===v));let titles={inicio:["Inicio","Gestión de reparaciones y servicios"],servicios:["Servicios","Catálogo y precios IVA incluido"],solicitudes:["Solicitudes","Entradas de clientes y seguimiento"],agenda:["Agenda","Servicios programados y operarios"],operarios:["Operarios","Gestión interna del equipo"],chat:["Chat","Comunicación directa con el cliente"],notificaciones:["Notificaciones","Avisos de Reparado"],facturas:["Facturas","Facturación integrada"]};document.getElementById("pageTitle").textContent=titles[v][0];document.getElementById("pageSub").textContent=titles[v][1];renderAll();window.scrollTo(0,0)}
+document.querySelectorAll("[data-view]").forEach(b=>b.addEventListener("click",()=>go(b.dataset.view)));
+function filterCat(c){go("servicios");document.getElementById("catFilter").value=c;renderServices()}
+function renderServices(){let q=(document.getElementById("search")?.value||"").toLowerCase(),c=document.getElementById("catFilter")?.value||"Todas";let a=services.filter(s=>(c==="Todas"||s[0]===c)&&(!q||s.join(" ").toLowerCase().includes(q)));document.getElementById("serviceList").innerHTML=a.map((s,i)=>`<div class="service-row"><div class="service"><div class="thumb">${s[0]==="Fontanería"?"🚰":s[0]==="Albañilería"?"🧱":s[0]==="Parquet"?"🪵":"🏠"}</div><div><h3>${s[1]}</h3><p>${s[2]}</p><div class="service-actions"><button class="btn small" onclick='openRequest("${s[1]}")'>Solicitar</button>${s[3]===0?'<span class="status orange">Por presupuesto</span>':''}</div></div><div class="price">${s[3]?`<b>${s[3]} €</b><small>IVA incluido</small>`:"<b>A consultar</b><small>Presupuesto</small>"}</div></div></div>`).join("")}
+function openRequest(service){document.getElementById("requestModal").classList.add("open");document.getElementById("fService").innerHTML=services.map(s=>`<option ${s[1]===service?"selected":""}>${s[1]}</option>`).join("")}
+function closeModal(){document.getElementById("requestModal").classList.remove("open")}
+function submitRequest(e){e.preventDefault();let sv=document.getElementById("fService").value,s=services.find(x=>x[1]===sv);let r={id:"RP-"+String(reqs.length+1).padStart(3,"0"),name:fName.value,phone:fPhone.value,service:sv,cat:s[0],date:fDate.value||new Date().toISOString().slice(0,10),street:fStreet.value,num:fNum.value,zip:fZip.value,city:fCity.value,desc:fDesc.value,op:"Sin asignar",status:"Nueva"};reqs.unshift(r);notes.unshift({title:"Nueva solicitud recibida",text:r.name+" · "+r.service,time:"Ahora",unread:true});save();closeModal();showToast("Solicitud recibida y notificación creada");go("solicitudes")}
+function renderRequests(){requestTable.innerHTML=reqs.map(r=>`<tr><td><b>${r.name}</b><br><small>${r.phone}</small></td><td>${r.service}</td><td>${r.date}</td><td><select onchange="assignOp('${r.id}',this.value)">${["Sin asignar",...ops].map(o=>`<option ${o===r.op?"selected":""}>${o}</option>`).join("")}</select></td><td><span class="status ${r.status==="Confirmado"?"green":"orange"}">${r.status}</span></td><td><button class="btn small secondary" onclick="detail('${r.id}')">Ver</button></td></tr>`).join("")}
+function assignOp(id,op){let r=reqs.find(x=>x.id===id);r.op=op;if(op!=="Sin asignar"){r.status="Confirmado";notes.unshift({title:"Operario asignado",text:`${op} · ${r.service}`,time:"Ahora",unread:true})}save();showToast(op==="Sin asignar"?"Operario retirado":"Asignado a "+op);renderAll()}
+function renderAgenda(){let a=reqs.filter(r=>r.status!=="Nueva");agendaList.innerHTML=a.map(r=>`<div class="event"><time>${r.date}<br>10:30</time><div class="eventbox"><b>${r.service}</b><span>${r.name} · ${r.op}</span><div style="margin-top:9px"><button class="btn small secondary" onclick="maps('${r.street}, ${r.num}, ${r.zip} ${r.city}')">📍 Abrir Google Maps</button></div></div></div>`).join("")||"<p style='color:#7b8693'>No hay servicios confirmados.</p>";agendaSummary.innerHTML=a.map(r=>`<div style="padding:11px 0;border-bottom:1px solid var(--line)"><b>${r.op}</b><br><small>${r.service} · ${r.date}</small></div>`).join("")}
+function maps(addr){window.open("https://www.google.com/maps/search/?api=1&query="+encodeURIComponent(addr),"_blank")}
+function renderOps(){operatorGrid.innerHTML=ops.map((o,i)=>`<div class="card operator"><div class="avatar">${o[0]}</div><div style="flex:1"><b>${o}</b><div style="color:#7b8693;font-size:12px">Operario · Disponible</div></div><button class="btn small ghost" onclick="removeOp(${i})">Eliminar</button></div>`).join("")}
+function addOperator(){let n=prompt("Nombre del operario");if(n&&n.trim()){ops.push(n.trim());save();renderAll();showToast("Operario añadido")}}
+function removeOp(i){if(confirm("¿Eliminar este operario?")){ops.splice(i,1);save();renderAll()}}
+function renderChat(){messages.innerHTML=msgs.map((m,i)=>`<div class="bubble ${i%2?"me":"them"}">${m}</div>`).join("");messages.scrollTop=messages.scrollHeight}
+function sendMsg(){let v=chatInput.value.trim();if(!v)return;msgs.push(v);notes.unshift({title:"Mensaje enviado",text:v,time:"Ahora",unread:true});chatInput.value="";save();renderAll();showToast("Mensaje enviado")}
+function renderNotes(){notifList.innerHTML=notes.map(n=>`<div class="service-row"><div style="display:flex;gap:12px;align-items:center"><div class="thumb">🔔</div><div><b>${n.title}</b><p style="margin:4px 0 0;color:#697586;font-size:12px">${n.text} · ${n.time}</p></div>${n.unread?'<span class="status" style="margin-left:auto">Nueva</span>':""}</div></div>`).join("")}
+function markNotifications(){notes.forEach(n=>n.unread=false);save();renderAll();showToast("Notificaciones marcadas como leídas")}
+function renderInvoices(){invoiceList.innerHTML=invoices.map(x=>`<div class="service-row"><div class="service"><div class="thumb">🧾</div><div><h3>${x.id} · ${x.name}</h3><p>${x.service} · ${x.date}</p></div><div class="price"><b>${x.total} €</b><small>${x.status}</small></div><button class="btn small" onclick="showInvoice('${x.id}')">Ver / PDF</button></div></div>`).join("")}
+function newInvoice(){let r=reqs[0],s=services.find(x=>x[1]===r.service);invoices.unshift({id:"F-2026-"+String(invoices.length+1).padStart(3,"0"),name:r.name,service:r.service,total:s?.[3]||0,date:new Date().toISOString().slice(0,10),status:"Pendiente de envío"});save();renderAll();showToast("Factura creada")}
+function showInvoice(id){let x=invoices.find(i=>i.id===id);document.getElementById("detailTitle").textContent=x.id;document.getElementById("detailContent").innerHTML=`<div class="invoice"><div class="invtop"><div><h2>Reparado</h2><small>AMS · Empresa propietaria del software</small></div><b>FACTURA</b></div><p><b>Cliente:</b> ${x.name}</p><p><b>Servicio:</b> ${x.service}</p><p><b>Fecha:</b> ${x.date}</p><div class="total">${x.total.toFixed(2)} €<div style="font-size:12px;color:#19a974">IVA incluido</div></div><div style="margin-top:20px"><button class="btn" onclick="window.print()">🖨 Imprimir / Guardar PDF</button></div></div>`;detailModal.classList.add("open")}
+function detail(id){let r=reqs.find(x=>x.id===id);document.getElementById("detailTitle").textContent=r.id+" · "+r.service;document.getElementById("detailContent").innerHTML=`<div class="grid g2"><div><p><b>Cliente</b><br>${r.name}<br>${r.phone}</p><p><b>Dirección</b><br>${r.street}, ${r.num}<br>${r.zip} ${r.city}</p><button class="btn secondary" onclick="maps('${r.street}, ${r.num}, ${r.zip} ${r.city}')">📍 Google Maps</button></div><div><p><b>Operario</b><br>${r.op}</p><p><b>Estado</b><br>${r.status}</p><p><b>Descripción</b><br>${r.desc}</p><button class="btn" onclick="go('chat');closeDetail()">💬 Abrir chat</button></div></div>`;detailModal.classList.add("open")}
+function closeDetail(){detailModal.classList.remove("open")}
+function renderHome(){statReq.textContent=reqs.length;statAgenda.textContent=reqs.filter(r=>r.status==="Confirmado").length;statOps.textContent=ops.length;statInv.textContent=invoices.length;homeTimeline.innerHTML=notes.slice(0,4).map(n=>`<div class="event"><time>${n.time}</time><div class="eventbox"><b>${n.title}</b><span>${n.text}</span></div></div>`).join("")}
+function showToast(t){toast.textContent=t;toast.classList.add("show");setTimeout(()=>toast.classList.remove("show"),2600)}
+function renderAll(){renderServices();renderRequests();renderAgenda();renderOps();renderChat();renderNotes();renderInvoices();renderHome()}
+renderAll();
+</script>
+</body></html>
