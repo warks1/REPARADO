@@ -1,55 +1,33 @@
-# Reparado — versión real / arquitectura v1
+# Reparado — versión reparada para GitHub Pages
 
-Esta versión sustituye la demo local por una arquitectura preparada para producción:
+## Correcciones realizadas
+- Rutas relativas de Vite para evitar que los recursos fallen al publicar en un repositorio de GitHub Pages.
+- Inicio seguro cuando todavía no se han configurado las credenciales de Supabase; ya no debe quedarse en blanco por `supabaseUrl is required`.
+- Vista de demostración navegable que permite explorar los servicios y guardar solicitudes localmente en el navegador.
+- Flujo de GitHub Actions para construir y publicar automáticamente la carpeta `dist` en GitHub Pages.
 
-- Vite + JavaScript
-- Supabase Auth
-- PostgreSQL + Row Level Security
-- Solicitudes persistentes
-- Perfiles y roles: cliente / admin / operario
-- Chat persistente
-- Notificaciones persistentes
-- Registro de tokens push
-- Facturas
-- Capacitor para iOS y Android
-- Responsive web/PWA-ready
+## Publicar en GitHub
+1. Sube estos archivos al repositorio (rama `main`).
+2. En GitHub, abre **Settings → Pages** y selecciona **GitHub Actions** como fuente de publicación.
+3. En **Actions**, espera a que termine el flujo **Deploy Reparado to GitHub Pages** y abre la URL publicada.
 
-## Arranque web
+## Modo de demostración y modo real
+Sin credenciales de Supabase, la aplicación abre en modo demostración. Las solicitudes se guardan únicamente en el navegador del dispositivo y no llegan a un operario.
 
-1. Instalar Node.js LTS.
-2. `npm install`
-3. Copiar `.env.example` a `.env`
-4. Poner `VITE_SUPABASE_URL` y `VITE_SUPABASE_ANON_KEY`.
-5. Crear un proyecto en Supabase.
-6. Ejecutar `supabase/schema.sql` en el SQL Editor.
-7. `npm run dev`
+Para activar el modo real, crea un proyecto de Supabase y ejecuta `supabase/schema.sql` en su SQL Editor. Después añade estos secretos en **Settings → Secrets and variables → Actions**:
+- `VITE_SUPABASE_URL`
+- `VITE_SUPABASE_ANON_KEY` (clave pública/anon, nunca la `service_role`)
 
-## iPhone / Android
+Haz un nuevo push para que GitHub Pages reconstruya la aplicación con el backend configurado.
 
-Después de configurar Supabase:
-`npm run build`
-`npx cap add ios`
-`npx cap add android`
-`npx cap sync`
+## Desarrollo local
+Requiere Node.js 22 o superior:
+```sh
+npm install
+npm run dev
+```
 
-iOS se termina en Xcode y Android en Android Studio, con certificados y cuentas de desarrollador.
+## Aplicación móvil
+Capacitor está preparado en el proyecto. Para compilar para iOS/Android hay que configurar el backend y completar la configuración nativa correspondiente.
 
-## Lo que NO se debe poner en el frontend
-
-Nunca colocar la `service_role key` de Supabase en `.env` del frontend. Solo la anon/public key.
-
-## Push
-
-La aplicación registra el token nativo en `device_tokens`. Para enviar push reales hay que conectar una Edge Function de Supabase con APNs (iOS) y FCM (Android), guardando las credenciales en secrets del backend, nunca en la app.
-
-## Fotos
-
-El esquema reserva el sistema para Storage privado `request-photos`. La siguiente integración debe subir cada fotografía y asociarla a la solicitud.
-
-## Facturación
-
-La tabla `invoices` deja preparada la facturación. Para PDF definitivo y envío por email/WhatsApp conviene generar el documento en backend y guardar el PDF en Storage.
-
-## Datos de empresa
-
-Antes de publicar hay que configurar los datos fiscales reales de AMS, numeración de facturas, condiciones y textos legales.
+© AMS · Empresa propietaria del software
