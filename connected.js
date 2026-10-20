@@ -182,9 +182,9 @@ export function mountConnected({app, services, supabase}) {
   }
   async function loadAgenda(){
     currentView='agenda';main.innerHTML=`<section class="card">${backButton}<h2>Mi agenda</h2><p>Cargando…</p></section>`;
-    const {data,error}=await supabase.from('service_requests').select('service_name,scheduled_at,status').eq('customer_id',session.user.id).in('status',['scheduled','in_progress']).order('scheduled_at');
+    const {data,error}=await supabase.from('service_requests').select('service_name,scheduled_at,status,operator_name').eq('customer_id',session.user.id).in('status',['scheduled','in_progress']).order('scheduled_at');
     if(currentView!=='agenda')return;
-    main.innerHTML=`<section class="card">${backButton}<h2>Mi agenda</h2>${error?`<p>${esc(error.message)}</p>`:data?.length?data.map(r=>`<article class="request"><b>${esc(r.service_name)}</b><p>${esc(safeTime(r.scheduled_at))}</p><small>${esc(statusLabels[r.status])}</small></article>`).join(''):'<p>No hay visitas programadas.</p>'}</section>`;
+    main.innerHTML=`<section class="card">${backButton}<h2>Mi agenda</h2>${error?`<p>${esc(error.message)}</p>`:data?.length?data.map(r=>`<article class="request"><b>${esc(r.service_name)}</b><p>${esc(safeTime(r.scheduled_at))}</p><small>${esc(statusLabels[r.status])} · Operario: ${esc(r.operator_name||'Por asignar')}</small></article>`).join(''):'<p>No hay visitas programadas.</p>'}</section>`;
   }
   async function loadChat(){
     currentView='chat';main.innerHTML=`<section class="card">${backButton}<h2>Chat con Reparado</h2><p>Cargando…</p></section>`;
@@ -299,12 +299,12 @@ export function mountConnected({app, services, supabase}) {
     if(currentView!=='admin')return;
     if(jobs.error){main.innerHTML=`<section class="card">${backButton}<h2>Panel interno</h2><p>${esc(jobs.error.message)}</p></section>`;return}
     const all=jobs.data||[], operators=team.data||[];
-    const chosen=filter==='agenda'?all.filter(j=>['scheduled','in_progress'].includes(j.status)):all;
+    const chosen=filter==='agenda'?all.filter(j=>['scheduled','in_progress'].includes(j.status)).sort((a,b)=>(Date.parse(a.scheduled_at||'')||Number.MAX_SAFE_INTEGER)-(Date.parse(b.scheduled_at||'')||Number.MAX_SAFE_INTEGER)):all;
     const statuses=validStatus.map(x=>({id:x,label:statusLabels[x]}));
     main.innerHTML=`<section class="card">${backButton}<h2>Panel interno · Reparado</h2><p class="notice">${admin?'Panel de administración':'Solicitudes asignadas a tu cuenta'}. Máximo 150 recientes.</p>
     <div class="flex-actions"><button type="button" data-admin-filter="all">Todas (${all.length})</button><button type="button" data-admin-filter="agenda">Agenda (${all.filter(j=>['scheduled','in_progress'].includes(j.status)).length})</button></div>
     <p data-feedback class="feedback" role="status"></p></section>
-    ${chosen.map(job=>`<article class="card job-card"><h3>${esc(job.service_name)}</h3><p>${esc(job.street)} ${esc(job.address_number)}, ${esc(job.city)}</p><p>Tel.: ${esc(job.phone)} · ${money(job.price)}</p><p class="notice">${esc(job.description)}</p>
+    ${chosen.map(job=>`<article class="card job-card"><h3>${esc(job.service_name)}</h3><p>${esc(job.street)} ${esc(job.address_number)}, ${esc(job.city)}</p><p>Tel.: ${esc(job.phone)} · ${money(job.price)}</p><p class="notice">Operario: ${esc(job.operator_name||'Sin asignar')} · Visita: ${esc(safeTime(job.scheduled_at))}</p><p class="notice">${esc(job.description)}</p>
       <a target="_blank" rel="noopener noreferrer" href="https://www.google.com/maps/search/?api=1&amp;query=${encodeURIComponent(`${job.street} ${job.address_number}, ${job.city}`)}">📍 Abrir Google Maps</a>
       <form data-job-id="${esc(job.id)}">
         <label>Estado<select name="status">${statuses.map(s=>`<option value="${s.id}" ${job.status===s.id?'selected':''}>${esc(s.label)}</option>`).join('')}</select></label>
