@@ -13,7 +13,7 @@ export function mountConnected({app, services, supabase}) {
   const iconFor = name => ({'Fontanería':'🚰','Albañilería':'🧱','Parquet':'🪵','Reformas integrales':'🏠'})[name] || '🛠️';
   const statusLabels = {new:'Nueva', quoted:'Presupuesto',accepted:'Aceptada',scheduled:'Programada',in_progress:'En curso',completed:'Terminada',cancelled:'Cancelada'};
   const validStatus = Object.keys(statusLabels);
-  let session=null, profile=null, pushReady=false, currentView='home', adminFilter='all', lastCategory=null, pendingService=null;
+  let session=null, profile=null, pushReady=false, currentView='home', adminFilter='all', lastCategory=null, pendingService=null, pendingView=null;
   app.innerHTML = `<div class="shell">${appHeader()}<main id="main"></main><footer>© Reparado · Servicios para tu hogar <button type="button" id="logout" class="hidden" hidden>Cerrar sesión</button></footer></div>${bottomNavigation()}`;
   const main=app.querySelector('#main');
   const message = (text, error=false) => {
@@ -42,8 +42,8 @@ export function mountConnected({app, services, supabase}) {
     const menu=event.target.closest('[data-view]');
     if(menu){
       const view=menu.dataset.view;
-      if(view==='home'){pendingService=null;renderHome();return}
-      if(!session){pendingService=null;showLogin();return}
+      if(view==='home'){pendingService=null;pendingView=null;renderHome();return}
+      if(!session){pendingService=null;pendingView=view;showLogin();return}
       if(view==='requests')loadRequests();
       else if(view==='agenda')loadAgenda();
       else if(view==='chat')loadChat();
@@ -56,12 +56,13 @@ export function mountConnected({app, services, supabase}) {
   app.querySelector('#logout').addEventListener('click', async () => {
     const {error}=await supabase.auth.signOut();
     if(error){message(error.message,true);return}
-    session=null;profile=null;pendingService=null;renderHome();
+    session=null;profile=null;pendingService=null;pendingView=null;renderHome();
   });
   function showLogin(){
     currentView='login';setActiveNav(app,'profile');session=null;profile=null;
     app.querySelector('#logout').classList.add('hidden');
-    main.innerHTML=`<section class="auth card"><div class="heroicon"><img src="./icon.svg" width="44" height="44" alt=""></div><h1>Reparado</h1><p>Accede a tus servicios de reparación.</p><form id="login"><input name="email" type="email" autocomplete="email" placeholder="Correo electrónico" required><input name="password" type="password" autocomplete="current-password" placeholder="Contraseña" required><button>Entrar</button></form><button id="register" class="link" type="button">Crear una cuenta</button><form id="register-form" class="hidden"><label>Nombre y apellidos<input name="full_name" autocomplete="name" maxlength="100" required></label><label>Correo electrónico<input name="email" type="email" autocomplete="email" required></label><label>Contraseña<input name="password" type="password" autocomplete="new-password" minlength="8" required></label><label>Repetir contraseña<input name="password_confirm" type="password" autocomplete="new-password" minlength="8" required></label><button type="submit">Crear cuenta de cliente</button></form><p data-feedback class="feedback" role="status"></p></section>`;
+    const pendingNotice=pendingService?`<p class="auth-pending">Continuar con: <strong>${esc(pendingService[1])}</strong></p>`:'';
+    main.innerHTML=`<section class="auth card"><div class="heroicon"><img src="./icon.svg" width="44" height="44" alt=""></div><h1>Reparado</h1><p>Accede a tus servicios de reparación.</p>${pendingNotice}<form id="login"><input name="email" type="email" autocomplete="email" placeholder="Correo electrónico" required><input name="password" type="password" autocomplete="current-password" placeholder="Contraseña" required><button>Entrar</button></form><button id="register" class="link" type="button">Crear una cuenta</button><form id="register-form" class="hidden"><label>Nombre y apellidos<input name="full_name" autocomplete="name" maxlength="100" required></label><label>Correo electrónico<input name="email" type="email" autocomplete="email" required></label><label>Contraseña<input name="password" type="password" autocomplete="new-password" minlength="8" required></label><label>Repetir contraseña<input name="password_confirm" type="password" autocomplete="new-password" minlength="8" required></label><button type="submit">Crear cuenta de cliente</button></form><p data-feedback class="feedback" role="status"></p></section>`;
     main.querySelector('#login').addEventListener('submit',async event=>{
       event.preventDefault();
       const data=new FormData(event.currentTarget);
@@ -105,8 +106,13 @@ export function mountConnected({app, services, supabase}) {
     const avatar=app.querySelector('.round-profile');
     if(avatar && profile?.full_name)avatar.textContent=profile.full_name.trim().slice(0,1).toUpperCase();
     const selected=pendingService;
-    pendingService=null;
+    const destination=pendingView;
+    pendingService=null;pendingView=null;
     if(selected)requestForm(selected);
+    else if(destination==='requests')loadRequests();
+    else if(destination==='agenda')loadAgenda();
+    else if(destination==='chat')loadChat();
+    else if(destination==='profile')loadProfile();
     else renderHome();
     registerNativePush();
   }
@@ -147,7 +153,7 @@ export function mountConnected({app, services, supabase}) {
   }
   function requestForm(service){
     if(!service)return renderHome();
-    if(!session){pendingService=service;showLogin();return}
+    if(!session){pendingService=service;pendingView=null;showLogin();return}
     currentView='new-request';setActiveNav(app,'requests');
     main.innerHTML='<div class="request-screen"><button type="button" class="screen-back" data-back>← Volver</button>'+
       '<section class="card"><h2>Nueva solicitud</h2>'+serviceFormHeader(service)+
@@ -444,7 +450,7 @@ export function mountConnected({app, services, supabase}) {
     }));
   }
   supabase.auth.onAuthStateChange((event)=>{
-    if(event==='SIGNED_OUT'){session=null;profile=null;pendingService=null;renderHome()}
+    if(event==='SIGNED_OUT'){session=null;profile=null;pendingService=null;pendingView=null;renderHome()}
     else if(event==='SIGNED_IN')queueMicrotask(()=>boot());
   });
   boot().catch(error=>{console.error(error);main.innerHTML=`<section class="card"><h2>Error al conectar</h2><p>Comprueba la configuración de Supabase y vuelve a cargar.</p></section>`});

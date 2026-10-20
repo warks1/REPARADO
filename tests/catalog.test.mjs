@@ -68,3 +68,16 @@ test('el icono de filtro del buscador permite abrir categorías',()=>{
  assert.ok(home.includes('id="category-quick-filters" hidden'));
  for(const c of categories)assert.ok(home.includes('data-category-open="'+c.id+'"'));
 });
+
+test('la autenticación conserva el servicio y la sección elegida',async()=>{
+ const {readFileSync}=await import('node:fs');
+ const {fileURLToPath}=await import('node:url');
+ const {dirname,join}=await import('node:path');
+ const root=join(dirname(fileURLToPath(import.meta.url)),'..');
+ const code=readFileSync(join(root,'connected.js'),'utf8');
+ assert.ok(code.includes('pendingService=service'));
+ assert.ok(code.includes('pendingView=view'));
+ assert.ok(code.includes('if(selected)requestForm(selected)'));
+ assert.ok(code.includes("destination==='agenda'"));
+ assert.ok(code.includes("destination==='chat'"));
+});

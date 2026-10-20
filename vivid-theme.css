@@ -153,3 +153,15 @@ body,.shell,.customer-header,.customer-nav {background:#fff}
 .category-filter-chip:focus-visible{outline:3px solid #168afb;outline-offset:2px}
 @media(max-width:370px){.category-quick-filters{gap:6px}.category-filter-chip{padding:8px 10px;font-size:11px}}
 @media(prefers-reduced-motion:reduce){.search-filter-button{transition:none}}
+
+/* La autenticación conserva la elección previa del cliente. */
+.auth-pending{
+  padding:13px 15px;
+  margin:13px 0 18px;
+  background:linear-gradient(108deg,#e6f5ff,#fff4e8);
+  color:#244970;
+  border:1px solid #cce8fc;
+  border-radius:14px;
+  line-height:1.4;
+}
+.auth-pending strong{color:#092656}
