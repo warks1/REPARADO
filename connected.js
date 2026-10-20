@@ -1,5 +1,6 @@
 import {appHeader,bottomNavigation,setActiveNav,renderLanding,renderCategory,serviceFormHeader,formPeriodPicker,serviceRow,matchServices} from './customer-ui.js'
 import { operatorMaySetStatus } from './rules.js'
+import {jobFilters,filterJobs,jobCounters,vatIncluded,sameOperatorSlot,validateAdminJobUpdate} from './staff-workflows.js'
 import { renderInvoices } from './invoices.js'
 import { renderNotifications } from './notifications.js'
 import { Capacitor } from '@capacitor/core'
@@ -378,17 +379,30 @@ export function mountConnected({app, services, supabase}) {
     ]);
     if(currentView!=='admin')return;
     if(jobs.error){main.innerHTML=`<section class="card">${backButton}<h2>Panel interno</h2><p>${esc(jobs.error.message)}</p></section>`;return}
+    if(admin && team.error){
+      main.innerHTML=`<section class="card">${backButton}<h2>Panel interno</h2><p>No se pudo consultar el personal. No se permiten asignaciones hasta recuperar la lista de operarios.</p><p>${esc(team.error.message)}</p><button type="button" data-reload-staff>Reintentar</button></section>`;
+      main.querySelector('[data-reload-staff]')?.addEventListener('click',()=>renderAdmin(filter));
+      return;
+    }
     const all=jobs.data||[], operators=team.data||[];
-    const chosen=filter==='agenda'?all.filter(j=>['scheduled','in_progress'].includes(j.status)).sort((a,b)=>(Date.parse(a.scheduled_at||'')||Number.MAX_SAFE_INTEGER)-(Date.parse(b.scheduled_at||'')||Number.MAX_SAFE_INTEGER)):all;
+    const counts=jobCounters(all);
+    const chosen=filterJobs(all,filter);
     const statuses=validStatus.map(x=>({id:x,label:statusLabels[x]}));
     main.innerHTML=`<section class="card">${backButton}<h2>Panel interno · Reparado</h2><p class="notice">${admin?'Panel de administración':'Solicitudes asignadas a tu cuenta'}. Máximo 150 recientes.</p>
-    <div class="flex-actions"><button type="button" data-admin-filter="all">Todas (${all.length})</button><button type="button" data-admin-filter="agenda">Agenda (${all.filter(j=>['scheduled','in_progress'].includes(j.status)).length})</button></div>
+    <div class="staff-summary">
+      <div><strong>${counts.all}</strong><small>Trabajos recientes</small></div>
+      <div><strong>${counts.pending}</strong><small>Pendientes</small></div>
+      <div><strong>${counts.agenda}</strong><small>Programados / en curso</small></div>
+      <div><strong>${counts.unassigned}</strong><small>Sin operario</small></div>
+    </div>
+    <div class="staff-filters" role="group" aria-label="Filtrar trabajos">${jobFilters.filter(f=>admin||f.id!=='unassigned').map(f=>`<button type="button" data-admin-filter="${f.id}" aria-pressed="${filter===f.id}">${esc(f.label)} (${counts[f.id]})</button>`).join('')}</div>
+    <p class="notice">Los precios indicados incluyen el 21 % de IVA. Este panel no emite facturas fiscales.</p>
     <p data-feedback class="feedback" role="status"></p></section>
-    ${chosen.map(job=>`<article class="card job-card"><h3>${esc(job.service_name)}</h3><p>${esc(job.street)} ${esc(job.address_number)}, ${esc(job.city)}</p><p>Tel.: ${esc(job.phone)} · ${money(job.price)}</p><p class="notice">Operario: ${esc(job.operator_name||'Sin asignar')} · Visita: ${esc(safeTime(job.scheduled_at))}</p><p class="notice">${esc(job.description)}</p>
+    ${chosen.map(job=>`<article class="card job-card"><div class="staff-job-title"><h3>${esc(job.service_name)}</h3><span class="staff-status">${esc(statusLabels[job.status]||job.status)}</span></div><p>${esc(job.street)} ${esc(job.address_number)}, ${esc(job.city)}</p><p>Tel.: ${esc(job.phone)} · ${money(job.price)}</p><p class="notice">Operario: ${esc(job.operator_name||'Sin asignar')} · Visita: ${esc(safeTime(job.scheduled_at))}</p><p class="notice">${esc(job.description)}</p>
       <a target="_blank" rel="noopener noreferrer" href="https://www.google.com/maps/search/?api=1&amp;query=${encodeURIComponent(`${job.street} ${job.address_number}, ${job.city}`)}">📍 Abrir Google Maps</a>
       <form data-job-id="${esc(job.id)}">
         <label>Estado<select name="status">${statuses.map(s=>`<option value="${s.id}" ${job.status===s.id?'selected':''}>${esc(s.label)}</option>`).join('')}</select></label>
-        <label>Precio confirmado (€ IVA incluido)<input type="number" name="price" min="0" max="999999" step="0.01" value="${job.price==null?'':esc(job.price)}" placeholder="Pendiente de presupuesto"></label><label>Operario<select name="operator_id"><option value="">Sin asignar</option>${operators.map(op=>`<option value="${esc(op.id)}" ${job.operator_id===op.id?'selected':''}>${esc(op.full_name||'Operario')}</option>`).join('')}</select></label>
+        <label>Precio confirmado (€ IVA incluido)<input type="number" name="price" min="0" max="999999" step="0.01" value="${job.price==null?'':esc(job.price)}" placeholder="Pendiente de presupuesto"></label><p class="staff-vat" data-vat-preview>${job.price==null?'Indica un importe para ver base e IVA.':(()=>{const breakdown=vatIncluded(job.price);return breakdown?'Base '+money(breakdown.base)+' · IVA 21 % '+money(breakdown.vat):'Precio no válido';})()}</p><label>Operario<select name="operator_id"><option value="">Sin asignar</option>${operators.map(op=>`<option value="${esc(op.id)}" ${job.operator_id===op.id?'selected':''}>${esc(op.full_name||'Operario')}</option>`).join('')}</select></label>
         <label>Fecha y hora<input type="datetime-local" name="scheduled_at" value="${job.scheduled_at?new Date(job.scheduled_at).toLocaleString('sv-SE').replace(' ','T').slice(0,16):''}"></label>
         <div class="flex-actions"><button type="submit">Guardar cambios</button><button type="button" data-photos="${esc(job.id)}" data-owner="${esc(job.customer_id)}">Ver fotos</button><button type="button" data-staff-chat="${esc(job.customer_id)}" data-chat-service="${esc(job.service_name)}">💬 Chat</button></div>
       </form><div class="photo-links" data-photo-output="${esc(job.id)}"></div>
@@ -403,6 +417,15 @@ export function mountConnected({app, services, supabase}) {
         }
         form.querySelectorAll('select[name="status"] option').forEach(opt=>{
           if(!operatorMaySetStatus(job.status,opt.value))opt.remove();
+        });
+      });
+    }
+    if(admin){
+      main.querySelectorAll('form[data-job-id]').forEach(form=>{
+        const price=form.querySelector('[name="price"]'), preview=form.querySelector('[data-vat-preview]');
+        price?.addEventListener('input',()=>{
+          const parts=vatIncluded(price.value);
+          preview.textContent=parts?'Base '+money(parts.base)+' · IVA 21 % '+money(parts.vat)+' · Total '+money(parts.total):'Sin importe confirmado';
         });
       });
     }
@@ -424,13 +447,15 @@ export function mountConnected({app, services, supabase}) {
       const date=String(fields.get('scheduled_at'));
       const rawPrice=String(fields.get('price')??'').trim();
       const quotedPrice=rawPrice===''?null:Number(rawPrice);
-      if(quotedPrice!==null && (!Number.isFinite(quotedPrice) || quotedPrice<0 || quotedPrice>999999))return message('Importe no válido.',true);
-      if(!validStatus.includes(status))return message('Estado inválido.',true);
-      if(status==='quoted' && quotedPrice===null)return message('Indica el precio del presupuesto antes de enviarlo.',true);
-      if(status==='scheduled' && (!operator_id || !date))return message('Para programar, selecciona operario y fecha.',true);
-      const operator=operators.find(op=>op.id===operator_id);
       const stamp=date?new Date(date):null;
-      if(stamp && Number.isNaN(stamp.getTime()))return message('Fecha no válida.',true);
+      const validation=validateAdminJobUpdate({status,operatorId:operator_id,scheduledAt:stamp?.toISOString?.()||null,price:quotedPrice});
+      if(validation)return message(validation,true);
+      if(operator_id&&!operators.some(op=>op.id===operator_id))return message('Operario no encontrado en el personal autorizado.',true);
+      if(['scheduled','in_progress'].includes(status)&&stamp){
+        const existing=sameOperatorSlot(all,{requestId:form.dataset.jobId,operatorId:operator_id,scheduledAt:stamp.toISOString()});
+        if(existing.length)return message('El operario ya tiene otra visita a esa misma hora. Selecciona otra fecha u otro operario.',true);
+      }
+      const operator=operators.find(op=>op.id===operator_id);
       const {error}=await supabase.from('service_requests').update({
         status,price:quotedPrice,operator_id,operator_name:operator?.full_name||null,scheduled_at:stamp?stamp.toISOString():null
       }).eq('id',form.dataset.jobId);
