@@ -156,3 +156,6 @@ La versión de cliente incluye un guardián de arranque independiente del bundle
 
 ### Identidad nativa del icono
 Los flujos de compilación Android e iOS generan ahora los iconos adaptativos y recursos de inicio desde `assets/icon.svg`, que coincide con la casa naranja de Reparado. Se utiliza el generador oficial `@capacitor/assets` tras crear y sincronizar el proyecto con Capacitor. Los iconos se actualizan en cada nueva compilación nativa, en lugar de mantener los de Capacitor por defecto.
+
+### Pruebas de compatibilidad con iPhone / Safari
+Se ha añadido WebKit al conjunto de pruebas en GitHub Actions. Las mismas comprobaciones de inicio, errores de carga, catálogo, formularios y navegación se ejecutan sobre un navegador Safari/WebKit automatizado, además de Chromium. Esto aproxima el entorno del navegador iPhone, aunque no sustituye un dispositivo Apple real.

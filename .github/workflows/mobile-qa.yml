@@ -25,7 +25,7 @@ jobs:
       - name: Instalar dependencias
         run: npm install --no-audit --no-fund
       - name: Instalar navegador de pruebas
-        run: npx playwright install --with-deps chromium
+        run: npx playwright install --with-deps chromium webkit
       - name: Pruebas y capturas móviles
         run: npm run test:visual
       - name: Guardar capturas y errores
