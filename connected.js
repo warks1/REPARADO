@@ -1,3 +1,4 @@
+import { renderInvoices } from './invoices.js'
 import { renderNotifications } from './notifications.js'
 import { Capacitor } from '@capacitor/core'
 import { PushNotifications } from '@capacitor/push-notifications'
@@ -191,11 +192,16 @@ export function mountConnected({app, services, supabase}) {
     currentView='notifications';
     await renderNotifications({main,supabase,session,backButton,onRefresh:()=>currentView==='notifications'});
   }
+  async function loadInvoices(){
+    currentView='invoices';
+    await renderInvoices({main,supabase,session,onRefresh:()=>currentView==='invoices'});
+  }
   function loadProfile(){
     currentView='profile';
     main.innerHTML=`<section class="card">${backButton}<h2>Mi perfil</h2><p>${esc(session.user.email)}</p><p>Tipo de cuenta: ${esc(profile?.role||'customer')}</p>
-      <form id="profile-form"><label>Nombre completo<input name="full_name" autocomplete="name" maxlength="100" value="${esc(profile?.full_name||'')}"></label><label>Teléfono<input name="phone" type="tel" autocomplete="tel" maxlength="25" value="${esc(profile?.phone||'')}"></label><button type="submit">Guardar perfil</button></form>
+      <form id="profile-form"><label>Nombre completo<input name="full_name" autocomplete="name" maxlength="100" value="${esc(profile?.full_name||'')}"></label><label>Teléfono<input name="phone" type="tel" autocomplete="tel" maxlength="25" value="${esc(profile?.phone||'')}"></label><button type="submit">Guardar perfil</button></form><div class="flex-actions"><button type="button" id="view-invoices">🧾 Mis facturas</button></div>
       <p data-feedback class="feedback" role="status"></p></section>`;
+    main.querySelector('#view-invoices').addEventListener('click',loadInvoices);
     main.querySelector('#profile-form').addEventListener('submit',async event=>{
       event.preventDefault();
       const fields=new FormData(event.currentTarget);

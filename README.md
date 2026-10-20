@@ -73,3 +73,8 @@ El paquete **Integración v3** puede sustituir esta base cuando estén disponibl
 - Los mensajes del cliente generan un aviso al administrador y a los operarios con un trabajo activo asignado de ese cliente.
 - Si el cliente acepta un presupuesto, el administrador recibe aviso.
 - **Supabase existente:** aplicar `supabase/migration-v4.sql` y después `supabase/migration-v5.sql`. **Supabase nuevo:** ejecutar `schema.sql` que ya contiene las dos migraciones, y `supabase/storage-photos.sql` para fotos.
+
+## V6: consulta de facturas
+- En Perfil > Mis facturas se consultan las facturas registradas para el cliente que no están en borrador, mostrando base, IVA y total.
+- La aplicación no genera todavía documentos fiscales ni PDFs firmados; no debe utilizarse como sistema de facturación fiscal definitivo.
+- Para una instalación existente, tras V4 y V5, ejecuta también `supabase/migration-v6.sql`. Para una instalación nueva basta `schema.sql` y, opcionalmente, el SQL de fotos.
