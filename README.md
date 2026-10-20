@@ -46,3 +46,10 @@ El paquete **Integración v3** puede sustituir esta base cuando estén disponibl
 - Navegación e inputs adaptados a pantallas táctiles; ocultación del registro push en navegadores web.
 
 **Importante:** Estas funciones conectadas requieren un proyecto Supabase real, aplicar `schema.sql` y `supabase/storage-photos.sql`, y configurar credenciales. El modo demostración guarda solicitudes solo en este navegador, sin asignaciones ni fotos reales. Panel interno, push y facturación fiscal requieren pruebas de integración antes de producción. El SQL inicial no sustituye a un sistema de migraciones versionadas y no se ha ejecutado contra tu Supabase.
+
+
+### Revisión de seguridad y comunicación
+- Chat de respuesta del personal a clientes desde cada solicitud (requiere Supabase, nunca modo demo).
+- El cliente ya no puede establecer el precio real ni la asignación al crear una solicitud. El precio solo lo confirma el personal desde el panel y se muestra con IVA incluido.
+- Volver a ejecutar `schema.sql` en el proyecto Supabase de pruebas para aplicar los permisos por columna.
+- **Sin validación contra una base de datos real, no se considera listo para producción.**

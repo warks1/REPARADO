@@ -1,6 +1,5 @@
 import './style.css'
 import { supabase, isConfigured } from './supabase.js'
-import { PushNotifications } from '@capacitor/push-notifications'
 
 const services=[
 ['Fontanería','Desatasco de lavabo o fregadero',89],['Fontanería','Cambio de sifón',79],
@@ -14,8 +13,6 @@ const services=[
 ['Parquet','Barnizado',31],['Parquet','Retirada de pavimento',17],
 ['Reformas integrales','Reforma integral de baño',0],['Reformas integrales','Reforma integral de cocina',0]
 ]
-let session=null, profile=null
-
 const app=document.querySelector('#app')
 if (!isConfigured) {
   const demoServices = services

@@ -115,10 +115,10 @@ export function mountConnected({app, services, supabase}) {
       }
       const payload={
         customer_id:session.user.id,service_name:service[1],category:service[0],
-        price:service[2]||null,street:String(fields.get('street')).trim(),
+        street:String(fields.get('street')).trim(),
         address_number:String(fields.get('address_number')).trim(),postal_code:String(fields.get('postal_code')).trim(),
         city:String(fields.get('city')).trim(),phone:String(fields.get('phone')).trim(),
-        preferred_date:fields.get('preferred_date')||null,description:String(fields.get('description')).trim(),status:'new'
+        preferred_date:fields.get('preferred_date')||null,description:String(fields.get('description')).trim()
       };
       const {data,error}=await supabase.from('service_requests').insert(payload).select('id').single();
       if(error){message('No se pudo guardar la solicitud: '+error.message,true);button.disabled=false;return}
@@ -135,10 +135,10 @@ export function mountConnected({app, services, supabase}) {
   }
   async function loadRequests(){
     currentView='requests';main.innerHTML=`<section class="card">${backButton}<h2>Mis solicitudes</h2><p>Cargando…</p></section>`;
-    const {data,error}=await supabase.from('service_requests').select('id,service_name,status,street,address_number,city,preferred_date,scheduled_at,operator_name').eq('customer_id',session.user.id).order('created_at',{ascending:false});
+    const {data,error}=await supabase.from('service_requests').select('id,service_name,status,price,street,address_number,city,preferred_date,scheduled_at,operator_name').eq('customer_id',session.user.id).order('created_at',{ascending:false});
     if(currentView!=='requests')return;
     if(error){main.innerHTML=`<section class="card">${backButton}<h2>Mis solicitudes</h2><p>${esc(error.message)}</p></section>`;return}
-    main.innerHTML=`<section class="card">${backButton}<h2>Mis solicitudes</h2>${data?.length?data.map(r=>`<article class="request"><strong>${esc(r.service_name)}</strong><span>${esc(statusLabels[r.status]||r.status)}</span><p>${esc(r.street)}, ${esc(r.address_number)} · ${esc(r.city)}</p><small>${r.scheduled_at?'Visita: '+esc(safeTime(r.scheduled_at)):'Fecha preferida: '+esc(r.preferred_date||'No indicada')}</small></article>`).join(''):'<p>Todavía no tienes solicitudes.</p>'}</section>`;
+    main.innerHTML=`<section class="card">${backButton}<h2>Mis solicitudes</h2>${data?.length?data.map(r=>`<article class="request"><strong>${esc(r.service_name)}</strong><span>${esc(statusLabels[r.status]||r.status)}</span><p>${esc(r.street)}, ${esc(r.address_number)} · ${esc(r.city)}</p>${r.price!=null?`<p>Importe confirmado: <b>${money(r.price)}</b> (IVA incluido)</p>`:''}<small>${r.scheduled_at?'Visita: '+esc(safeTime(r.scheduled_at)):'Fecha preferida: '+esc(r.preferred_date||'No indicada')}</small></article>`).join(''):'<p>Todavía no tienes solicitudes.</p>'}</section>`;
   }
   async function loadAgenda(){
     currentView='agenda';main.innerHTML=`<section class="card">${backButton}<h2>Mi agenda</h2><p>Cargando…</p></section>`;
@@ -165,6 +165,64 @@ export function mountConnected({app, services, supabase}) {
     currentView='profile';
     main.innerHTML=`<section class="card">${backButton}<h2>Mi perfil</h2><p>${esc(session.user.email)}</p><p>Tipo de cuenta: ${esc(profile?.role||'customer')}</p></section>`;
   }
+
+  async function loadStaffChat(customerId, serviceName){
+    if(!userIsStaff() || !session)return renderHome();
+    currentView='staff-chat';
+    const box=document.createElement('section');
+    box.className='card';
+    const back=document.createElement('button');
+    back.className='back';back.type='button';back.textContent='← Panel interno';
+    back.addEventListener('click',()=>renderAdmin());
+    const heading=document.createElement('h2');
+    heading.textContent='Chat: '+serviceName;
+    const history=document.createElement('div');
+    history.id='messages';
+    history.textContent='Cargando mensajes…';
+    box.append(back,heading,history);
+    main.replaceChildren(box);
+    const result=await supabase.from('messages').select('sender_id,body,created_at')
+      .eq('customer_id',customerId).order('created_at',{ascending:true}).limit(300);
+    if(currentView!=='staff-chat')return;
+    history.replaceChildren();
+    if(result.error){
+      history.textContent='No se pudieron cargar los mensajes: '+result.error.message;
+      return;
+    }
+    for(const row of result.data||[]){
+      const p=document.createElement('p');
+      p.className=row.sender_id===session.user.id?'me':'';
+      p.textContent=row.body;
+      history.append(p);
+    }
+    if(!history.childNodes.length)history.textContent='No hay mensajes todavía.';
+    history.scrollTop=history.scrollHeight;
+    const form=document.createElement('form');
+    const label=document.createElement('label');
+    label.textContent='Responder al cliente';
+    const input=document.createElement('input');
+    input.name='body';input.required=true;input.maxLength=2000;
+    input.placeholder='Escribe tu mensaje…';
+    label.append(input);
+    const send=document.createElement('button');
+    send.type='submit';send.textContent='Enviar respuesta';
+    const feedback=document.createElement('p');
+    feedback.setAttribute('role','status');
+    form.append(label,send,feedback);
+    box.append(form);
+    form.addEventListener('submit',async event=>{
+      event.preventDefault();
+      const body=input.value.trim();
+      if(!body || !session)return;
+      send.disabled=true;
+      const {error}=await supabase.from('messages').insert({
+        customer_id:customerId,sender_id:session.user.id,body
+      });
+      if(error){feedback.textContent='No se pudo enviar: '+error.message;send.disabled=false;return}
+      await loadStaffChat(customerId,serviceName);
+    });
+  }
+
   async function renderAdmin(filter=adminFilter){
     if(!userIsStaff()){renderHome();return}
     currentView='admin';adminFilter=filter;
@@ -185,9 +243,9 @@ export function mountConnected({app, services, supabase}) {
       <a target="_blank" rel="noopener noreferrer" href="https://www.google.com/maps/search/?api=1&amp;query=${encodeURIComponent(`${job.street} ${job.address_number}, ${job.city}`)}">📍 Abrir Google Maps</a>
       <form data-job-id="${esc(job.id)}">
         <label>Estado<select name="status">${statuses.map(s=>`<option value="${s.id}" ${job.status===s.id?'selected':''}>${esc(s.label)}</option>`).join('')}</select></label>
-        <label>Operario<select name="operator_id"><option value="">Sin asignar</option>${operators.map(op=>`<option value="${esc(op.id)}" ${job.operator_id===op.id?'selected':''}>${esc(op.full_name||'Operario')}</option>`).join('')}</select></label>
+        <label>Precio confirmado (€ IVA incluido)<input type="number" name="price" min="0" max="999999" step="0.01" value="${job.price==null?'':esc(job.price)}" placeholder="Pendiente de presupuesto"></label><label>Operario<select name="operator_id"><option value="">Sin asignar</option>${operators.map(op=>`<option value="${esc(op.id)}" ${job.operator_id===op.id?'selected':''}>${esc(op.full_name||'Operario')}</option>`).join('')}</select></label>
         <label>Fecha y hora<input type="datetime-local" name="scheduled_at" value="${job.scheduled_at?new Date(job.scheduled_at).toLocaleString('sv-SE').replace(' ','T').slice(0,16):''}"></label>
-        <div class="flex-actions"><button type="submit">Guardar cambios</button><button type="button" data-photos="${esc(job.id)}" data-owner="${esc(job.customer_id)}">Ver fotos</button></div>
+        <div class="flex-actions"><button type="submit">Guardar cambios</button><button type="button" data-photos="${esc(job.id)}" data-owner="${esc(job.customer_id)}">Ver fotos</button><button type="button" data-staff-chat="${esc(job.customer_id)}" data-chat-service="${esc(job.service_name)}">💬 Chat</button></div>
       </form><div class="photo-links" data-photo-output="${esc(job.id)}"></div>
     </article>`).join('')||'<section class="card"><p>No hay solicitudes en esta vista.</p></section>'}`;
     main.querySelectorAll('[data-admin-filter]').forEach(btn=>btn.addEventListener('click',()=>renderAdmin(btn.dataset.adminFilter)));
@@ -197,17 +255,21 @@ export function mountConnected({app, services, supabase}) {
       const status=String(fields.get('status'));
       const operator_id=String(fields.get('operator_id'))||null;
       const date=String(fields.get('scheduled_at'));
+      const rawPrice=String(fields.get('price')??'').trim();
+      const quotedPrice=rawPrice===''?null:Number(rawPrice);
+      if(quotedPrice!==null && (!Number.isFinite(quotedPrice) || quotedPrice<0 || quotedPrice>999999))return message('Importe no válido.',true);
       if(!validStatus.includes(status))return message('Estado inválido.',true);
       if(status==='scheduled' && (!operator_id || !date))return message('Para programar, selecciona operario y fecha.',true);
       const operator=operators.find(op=>op.id===operator_id);
       const stamp=date?new Date(date):null;
       if(stamp && Number.isNaN(stamp.getTime()))return message('Fecha no válida.',true);
       const {error}=await supabase.from('service_requests').update({
-        status,operator_id,operator_name:operator?.full_name||null,scheduled_at:stamp?stamp.toISOString():null
+        status,price:quotedPrice,operator_id,operator_name:operator?.full_name||null,scheduled_at:stamp?stamp.toISOString():null
       }).eq('id',form.dataset.jobId);
       if(error)message('No se han guardado los cambios: '+error.message,true);
       else {await renderAdmin(filter);message('Solicitud actualizada.')}
     }));
+    main.querySelectorAll('[data-staff-chat]').forEach(button=>button.addEventListener('click',()=>loadStaffChat(button.dataset.staffChat,button.dataset.chatService)));
     main.querySelectorAll('[data-photos]').forEach(button=>button.addEventListener('click',async()=>{
       const out=main.querySelector(`[data-photo-output="${button.dataset.photos}"]`);
       if(!out)return;

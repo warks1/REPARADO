@@ -126,6 +126,15 @@ create policy "notifications own" on public.notifications for all using (user_id
 create policy "tokens own" on public.device_tokens for all using (user_id=auth.uid());
 create policy "invoice customer/staff" on public.invoices for select using (customer_id=auth.uid() or public.is_reparado_staff());
 
+-- El cliente únicamente puede crear solicitudes con datos de contacto y servicio.
+-- El precio y la planificación son campos reservados al personal autorizado.
+-- Mantener esta lista sincronizada con los campos enviados en connected.js.
+revoke insert, update on public.service_requests from anon, authenticated;
+grant insert (customer_id, service_name, category, street, address_number, postal_code, city, phone, preferred_date, description)
+  on public.service_requests to authenticated;
+grant update (status, price, operator_id, operator_name, scheduled_at)
+  on public.service_requests to authenticated;
+
 -- Para producción: activar Storage y crear bucket privado `request-photos`.
 -- Crear políticas de Storage para que el cliente solo pueda subir/leer sus propias fotos.
 -- Push real: usar una Edge Function para enviar tokens APNs/FCM cuando se inserta una notificación.
