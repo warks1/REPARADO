@@ -27,3 +27,13 @@ test('el detalle filtra servicios y presenta los precios sin inventarlos',()=>{
  assert.equal(priceFor(services[3]),'Por presupuesto');
  assert.equal(catFor('Parquet').slug,'parquet');
 });
+
+test('el boceto integrado mantiene los controles interactivos',()=>{
+ const home=renderLanding(services);
+ assert.ok(home.includes('class="reference-promo"'));
+ assert.ok(home.includes('mirror-atlas.webp'));
+ assert.ok(home.includes('data-category-open="Fontanería"'));
+ const detail=renderCategory(services,'Fontanería');
+ assert.ok(detail.includes('class="reference-sprite"'));
+ assert.ok(detail.includes('data-service="0"'));
+});

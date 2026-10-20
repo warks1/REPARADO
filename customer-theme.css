@@ -259,3 +259,22 @@ background-image:linear-gradient(90deg,#0d2d52 0%,rgba(13,45,82,.98) 20%,rgba(15
 @media(prefers-reduced-motion:reduce){
   .category-art .reference-sprite{animation:none}
 }
+
+/* El banner móvil replica la proporción original 320:111; no recorta el texto. */
+@media(max-width:600px){
+ .promo-banner{
+   aspect-ratio:320/111;
+   min-height:0!important;
+   padding:0!important;
+   display:block;
+   border-radius:19px;
+ }
+ .reference-promo .reference-sprite{width:100%;height:100%}
+ .promo-banner .promo-cta{
+   right:0;bottom:0;top:auto;
+   width:22%;height:50%;
+   border-radius:18px;
+   padding:0;
+   transform:none;
+ }
+}
