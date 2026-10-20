@@ -163,3 +163,12 @@ Se ha añadido WebKit al conjunto de pruebas en GitHub Actions. Las mismas compr
 
 ### Arranque real de GitHub Pages, incluido el navegador Safari/WebKit
 La acción `Verificar Reparado publicado en iPhone y Android` se ejecuta cuando termina la publicación de Pages y abre **la URL pública**, tanto normal como con un parámetro de actualización. Comprueba que aparezcan la portada y las cuatro categorías y guarda errores de carga de JavaScript o de red. El botón de recuperación ahora fuerza una URL sin caché y presenta un código de fallo para diagnosticar el navegador integrado de iPhone. La prueba usa Safari/WebKit emulado y no prueba el navegador de ChatGPT dentro de iOS.
+
+
+## Módulos locales de cliente — Solicitudes, Agenda, Chat y Perfil
+- **Solicitudes:** búsqueda entre las solicitudes guardadas, ficha detallada por reparación, modificación de fecha y franja preferidas y eliminación con confirmación. Una fecha preferida **no es una cita confirmada**.
+- **Agenda:** ordena las fechas preferidas y permite abrir cada solicitud y modificarlas, siempre en el dispositivo y sin asignar operarios ficticios.
+- **Perfil:** conserva teléfono y dirección habitual, usados automáticamente para completar el siguiente formulario.
+- **Chat:** permite conservar o descartar borradores de mensajes. Ningún mensaje local se muestra como enviado.
+- Los datos se conservan bajo los mismos identificadores locales anteriores y no se migran ni envían automáticamente. Los errores de almacenamiento se muestran al usuario.
+- Pruebas de funciones de persistencia, fechas, restricciones locales y recorridos táctiles con Playwright en Android/iPhone/tablet.
