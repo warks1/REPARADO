@@ -2,6 +2,7 @@ import {appHeader,bottomNavigation,setActiveNav,renderLanding,renderCategory,ser
 import { operatorMaySetStatus } from './rules.js'
 import {jobFilters,filterJobs,jobCounters,vatIncluded,sameOperatorSlot,validateAdminJobUpdate} from './staff-workflows.js'
 import {staffProgressMarkup,staffDocument} from './staff-documents.js'
+import {calculateQuoteLines} from './quote-calculator.js'
 import { renderInvoices } from './invoices.js'
 import { renderNotifications } from './notifications.js'
 import { Capacitor } from '@capacitor/core'
@@ -403,7 +404,9 @@ export function mountConnected({app, services, supabase}) {
       <a target="_blank" rel="noopener noreferrer" href="https://www.google.com/maps/search/?api=1&amp;query=${encodeURIComponent(`${job.street} ${job.address_number}, ${job.city}`)}">📍 Abrir Google Maps</a>
       <form data-job-id="${esc(job.id)}">
         <label>Estado<select name="status">${statuses.map(s=>`<option value="${s.id}" ${job.status===s.id?'selected':''}>${esc(s.label)}</option>`).join('')}</select></label>
-        <label>Precio confirmado (€ IVA incluido)<input type="number" name="price" min="0" max="999999" step="0.01" value="${job.price==null?'':esc(job.price)}" placeholder="Pendiente de presupuesto"></label><p class="staff-vat" data-vat-preview>${job.price==null?'Indica un importe para ver base e IVA.':(()=>{const breakdown=vatIncluded(job.price);return breakdown?'Base '+money(breakdown.base)+' · IVA 21 % '+money(breakdown.vat):'Precio no válido';})()}</p><label>Operario<select name="operator_id"><option value="">Sin asignar</option>${operators.map(op=>`<option value="${esc(op.id)}" ${job.operator_id===op.id?'selected':''}>${esc(op.full_name||'Operario')}</option>`).join('')}</select></label>
+        <label>Precio confirmado (€ IVA incluido)<input type="number" name="price" min="0" max="999999" step="0.01" value="${job.price==null?'':esc(job.price)}" placeholder="Pendiente de presupuesto"></label><p class="staff-vat" data-vat-preview>${job.price==null?'Indica un importe para ver base e IVA.':(()=>{const breakdown=vatIncluded(job.price);return breakdown?'Base '+money(breakdown.base)+' · IVA 21 % '+money(breakdown.vat):'Precio no válido';})()}</p>
+        ${admin?'<button type="button" class="quote-toggle" data-quote-toggle aria-expanded="false">Desglosar presupuesto</button><div class="quote-builder" hidden><p class="notice">Calculadora interna. Las partidas no se envían ni se guardan en Supabase. Utiliza «Aplicar total» y después «Guardar cambios» para guardar únicamente el precio total.</p><div data-quote-lines></div><div class="quote-actions"><button type="button" data-quote-add>Añadir partida</button><button type="button" data-quote-apply>Aplicar total al formulario</button></div><p data-quote-summary role="status">Añade una partida para calcular el presupuesto.</p></div>':''}
+        <label>Operario<select name="operator_id"><option value="">Sin asignar</option>${operators.map(op=>`<option value="${esc(op.id)}" ${job.operator_id===op.id?'selected':''}>${esc(op.full_name||'Operario')}</option>`).join('')}</select></label>
         <label>Fecha y hora<input type="datetime-local" name="scheduled_at" value="${job.scheduled_at?new Date(job.scheduled_at).toLocaleString('sv-SE').replace(' ','T').slice(0,16):''}"></label>
         <div class="flex-actions"><button type="submit">Guardar cambios</button><button type="button" data-photos="${esc(job.id)}" data-owner="${esc(job.customer_id)}">Ver fotos</button><button type="button" data-staff-chat="${esc(job.customer_id)}" data-chat-service="${esc(job.service_name)}">💬 Chat</button></div>
       </form><div class="staff-documents-toolbar">
@@ -429,9 +432,57 @@ export function mountConnected({app, services, supabase}) {
     if(admin){
       main.querySelectorAll('form[data-job-id]').forEach(form=>{
         const price=form.querySelector('[name="price"]'), preview=form.querySelector('[data-vat-preview]');
+        const builder=form.querySelector('.quote-builder'), toggle=form.querySelector('[data-quote-toggle]');
+        const lines=builder?.querySelector('[data-quote-lines]'), result=builder?.querySelector('[data-quote-summary]');
+        const readLines=()=>[...lines.querySelectorAll('.quote-line')].map(row=>({
+          name:row.querySelector('[data-quote-name]').value,
+          quantity:row.querySelector('[data-quote-qty]').value,
+          unitPrice:row.querySelector('[data-quote-unit]').value
+        }));
+        const calculate=()=>{
+          try {
+            const q=calculateQuoteLines(readLines());
+            result.textContent='Base '+money(q.base)+' · IVA incluido (21 %) '+money(q.vat)+' · TOTAL '+money(q.total)+
+              (Math.round(Number(price.value)*100)===Math.round(q.total*100)?' · Coincide con el formulario':' · Pendiente de aplicar al formulario');
+            return q;
+          } catch(err){result.textContent=err.message;return null;}
+        };
+        const addLine=(name='',quantity='1',unitPrice='')=>{
+          if(lines.children.length>=12){result.textContent='Máximo 12 partidas por presupuesto.';return}
+          const div=document.createElement('div');
+          div.className='quote-line';
+          div.innerHTML='<label>Concepto<input type="text" data-quote-name maxlength="120" value="'+esc(name)+'" placeholder="Mano de obra, materiales…"></label>'+
+            '<label>Cantidad<input type="number" data-quote-qty step="0.01" min="0.01" max="9999" value="'+esc(quantity)+'"></label>'+
+            '<label>Precio unitario IVA incluido<input type="number" data-quote-unit step="0.01" min="0" max="999999" value="'+esc(unitPrice)+'"></label>'+
+            '<button type="button" data-quote-remove aria-label="Eliminar partida">Quitar</button>';
+          lines.append(div);
+          calculate();
+        };
+        form.__quotePreview=()=>builder&&!builder.hidden?readLines():null;
+        toggle?.addEventListener('click',()=>{
+          builder.hidden=!builder.hidden;
+          toggle.setAttribute('aria-expanded',String(!builder.hidden));
+          if(!builder.hidden&&!lines.children.length)addLine('Mano de obra','1',price.value);
+        });
+        builder?.addEventListener('click',e=>{
+          if(e.target.closest('[data-quote-add]'))return addLine();
+          if(e.target.closest('[data-quote-remove]')){
+            e.target.closest('.quote-line')?.remove();
+            calculate();return;
+          }
+          if(e.target.closest('[data-quote-apply]')){
+            const q=calculate();
+            if(!q)return;
+            price.value=q.total.toFixed(2);
+            price.dispatchEvent(new Event('input',{bubbles:true}));
+            result.textContent='Total '+money(q.total)+' aplicado al formulario. Pulsa «Guardar cambios» para guardarlo en la solicitud.';
+          }
+        });
+        builder?.addEventListener('input',calculate);
         price?.addEventListener('input',()=>{
           const parts=vatIncluded(price.value);
           preview.textContent=parts?'Base '+money(parts.base)+' · IVA 21 % '+money(parts.vat)+' · Total '+money(parts.total):'Sin importe confirmado';
+          if(builder&&!builder.hidden)calculate();
         });
       });
     }
@@ -453,6 +504,14 @@ export function mountConnected({app, services, supabase}) {
       const date=String(fields.get('scheduled_at'));
       const rawPrice=String(fields.get('price')??'').trim();
       const quotedPrice=rawPrice===''?null:Number(rawPrice);
+      const itemLines=form.__quotePreview?.();
+      if(itemLines!==null&&itemLines!==undefined){
+        let quote;
+        try {quote=calculateQuoteLines(itemLines)}
+        catch(err){return message('Revisa el desglose: '+err.message,true)}
+        if(quotedPrice===null||Math.round(quotedPrice*100)!==Math.round(quote.total*100))
+          return message('El total no coincide con las partidas. Pulsa «Aplicar total al formulario» antes de guardar.',true);
+      }
       const stamp=date?new Date(date):null;
       if(stamp&&!Number.isFinite(stamp.getTime()))return message('Fecha y hora no válidas.',true);
       const validation=validateAdminJobUpdate({status,operatorId:operator_id,scheduledAt:stamp?stamp.toISOString():null,price:quotedPrice});
@@ -482,7 +541,8 @@ export function mountConnected({app, services, supabase}) {
         const form=host.closest('.job-card')?.querySelector('form[data-job-id]');
         const typedPrice=form?.querySelector('[name="price"]')?.value;
         const price=kind==='quote'?typedPrice:job.price;
-        const html=staffDocument(job,{kind,price});
+        const items=kind==='quote'?form?.__quotePreview?.():null;
+        const html=staffDocument(job,{kind,price,items});
         main.querySelectorAll('[data-document-host]').forEach(other=>{if(other!==host)other.replaceChildren()});
         host.innerHTML='<div class="staff-documents-toolbar"><button type="button" data-print-staff>Imprimir / guardar PDF</button><button type="button" data-close-staff-document>Cerrar</button></div>'+html;
         host.querySelector('[data-print-staff]').addEventListener('click',()=>{
