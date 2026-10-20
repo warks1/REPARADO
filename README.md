@@ -172,3 +172,8 @@ La acción `Verificar Reparado publicado en iPhone y Android` se ejecuta cuando 
 - **Chat:** permite conservar o descartar borradores de mensajes. Ningún mensaje local se muestra como enviado.
 - Los datos se conservan bajo los mismos identificadores locales anteriores y no se migran ni envían automáticamente. Los errores de almacenamiento se muestran al usuario.
 - Pruebas de funciones de persistencia, fechas, restricciones locales y recorridos táctiles con Playwright en Android/iPhone/tablet.
+
+
+## Módulos de gestión interna (actualización octubre 2026)
+El panel de usuarios con rol **admin** dispone de contadores de trabajos recientes, pendientes, sin operario y programados, filtros de estado, asignación por operario y fecha, y vista de precio confirmado con base e IVA del 21 % desglosados a partir del **total IVA incluido**. Se evita guardar una cita para el mismo operario exactamente al mismo minuto que otra de las últimas 150 solicitudes consultadas; es un aviso práctico, no un bloqueo de concurrencia ni un planificador de duración/desplazamientos. El rol **operator** solo ve sus trabajos asignados y únicamente las transiciones de estado permitidas.
+Estos módulos necesitan una conexión real de Supabase para operar con clientes y operarios; no se ha activado la base de datos. El desglose de IVA es **informativo**, no emite facturas fiscales. No se ha alterado ningún permiso ni política de seguridad del servidor.

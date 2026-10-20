@@ -415,6 +415,7 @@ export function mountConnected({app, services, supabase}) {
         for(const field of ['price','operator_id','scheduled_at']){
           form.querySelector('[name="'+field+'"]')?.closest('label')?.remove();
         }
+        form.querySelector('[data-vat-preview]')?.remove();
         form.querySelectorAll('select[name="status"] option').forEach(opt=>{
           if(!operatorMaySetStatus(job.status,opt.value))opt.remove();
         });
@@ -448,7 +449,8 @@ export function mountConnected({app, services, supabase}) {
       const rawPrice=String(fields.get('price')??'').trim();
       const quotedPrice=rawPrice===''?null:Number(rawPrice);
       const stamp=date?new Date(date):null;
-      const validation=validateAdminJobUpdate({status,operatorId:operator_id,scheduledAt:stamp?.toISOString?.()||null,price:quotedPrice});
+      if(stamp&&!Number.isFinite(stamp.getTime()))return message('Fecha y hora no válidas.',true);
+      const validation=validateAdminJobUpdate({status,operatorId:operator_id,scheduledAt:stamp?stamp.toISOString():null,price:quotedPrice});
       if(validation)return message(validation,true);
       if(operator_id&&!operators.some(op=>op.id===operator_id))return message('Operario no encontrado en el personal autorizado.',true);
       if(['scheduled','in_progress'].includes(status)&&stamp){
