@@ -43,3 +43,20 @@ test('el atlas de categorías conserva el nombre accesible sin duplicar recortes
  for(const slug of ['plumbing','masonry','parquet','renovation'])assert.ok(screen.includes('art-'+slug));
  assert.ok(screen.includes('Ilustración de Fontanería'));
 });
+
+test('los cuatro colores brillantes del boceto están disponibles en la app',async()=>{
+ const {readFileSync}=await import('node:fs');
+ const {fileURLToPath}=await import('node:url');
+ const {dirname,join}=await import('node:path');
+ const root=join(dirname(fileURLToPath(import.meta.url)),'..');
+ const theme=readFileSync(join(root,'vivid-theme.css'),'utf8');
+ const entry=readFileSync(join(root,'main.js'),'utf8');
+ for(const x of ['theme-plumbing','theme-masonry','theme-parquet','theme-renovation']){
+   assert.ok(theme.includes('.category-tile.'+x));
+ }
+ for(const c of ['#27c6ff','#ffb168','#4bebaa','#b18afc']){
+   assert.ok(theme.includes(c),'Se esperaba un color brillante: '+c);
+ }
+ assert.ok(entry.includes("import './vivid-theme.css'"));
+ assert.ok(theme.includes('prefers-reduced-motion'));
+});

@@ -103,3 +103,6 @@ Se han ajustado el texto de portada, la proporción 2×2 de categorías y el ord
 
 ### Recursos visuales de referencia
 Se ha incorporado `public/mirror-atlas.webp`, un atlas comprimido construido con recortes de la imagen de referencia que el propietario compartió. Sustituye en la portada las ilustraciones vectoriales aproximadas por los dibujos del propio boceto y añade fotografías de fontanería en sus fichas. El atlas es de resolución limitada por proceder de una captura; los textos, precios y botones permanecen independientes y funcionales. En móvil, el banner se reproduce visualmente desde el recorte; en escritorio conserva su composición adaptable.
+
+## Paleta viva del boceto (octubre de 2026)
+La nueva hoja `vivid-theme.css` se carga después de `customer-theme.css` y ajusta azules, naranjas, verdes y violetas para parecerse más a la imagen aprobada. Mantiene el contenido, servicios y botones existentes; incrementa saturación, brillo y contraste de los recortes gráficos en CSS, y conserva la preferencia del dispositivo de reducir animaciones. Esto es un ajuste visual, no una prueba de identidad píxel a píxel ni una validación en teléfonos físicos.

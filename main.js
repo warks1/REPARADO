@@ -1,5 +1,6 @@
 import './style.css'
 import './customer-theme.css'
+import './vivid-theme.css'
 import { supabase, isConfigured } from './supabase.js'
 import { mountLocal } from './local-preview.js'
 

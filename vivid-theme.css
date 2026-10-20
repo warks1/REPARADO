@@ -1,0 +1,127 @@
+/* REPARADO · Paleta viva aprobada por el cliente
+   Capa de diseño final sobre customer-theme.css.
+   Mantiene las mismas pantallas y controles de Android, iOS y web. */
+:root {
+  --ink:#0b1b42;
+  --muted:#586984;
+  --orange:#ff5720;
+  --vivid-blue:#00b7ff;
+  --vivid-green:#45eeb2;
+  --vivid-purple:#ab7afa;
+  --vivid-peach:#ffb56b;
+}
+body,.shell,.customer-header,.customer-nav {background:#fff}
+.customer-page h1,.section-heading h2,.category-tile strong,
+.catalog-service strong,.category-hero h1 {color:#091b42}
+.brand-word{color:#0b1b42;letter-spacing:-1.2px}
+.brand-house svg{filter:drop-shadow(0 2px 2px rgba(255,92,33,.16))}
+.location-chip .ui-icon,.customer-nav button.active {color:#ff571c}
+.round-profile{background:linear-gradient(135deg,#fff4ed,#ffe4d5);border:2px solid #ffe5d7}
+.search-pill{border:1px solid #dfe8f3;background:#fff;box-shadow:0 5px 20px rgba(0,78,150,.09)}
+.search-pill .ui-icon{color:#112b60}
+.search-pill:focus-within{border-color:#28a7ff;box-shadow:0 0 0 4px rgba(2,174,255,.16),0 8px 22px rgba(9,82,156,.1)}
+.text-action{color:#0875e3}
+.intro p,.service-details small{color:#566b89}
+/* Cuatro bloques con el brillo del diseño elegido, sin crear un nuevo diseño. */
+.category-tile.theme-plumbing{
+  background:linear-gradient(137deg,#74dbff 0%,#8ce7ff 48%,#27c6ff 100%);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.56),0 5px 13px rgba(0,158,241,.16);
+}
+.category-tile.theme-masonry{
+  background:linear-gradient(135deg,#ffdfb2 0%,#ffc087 59%,#ffb168 100%);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.52),0 5px 13px rgba(241,138,56,.14);
+}
+.category-tile.theme-parquet{
+  background:linear-gradient(135deg,#8afbd1 0%,#76f7bd 48%,#4bebaa 100%);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.48),0 5px 13px rgba(18,193,111,.15);
+}
+.category-tile.theme-renovation{
+  background:linear-gradient(135deg,#dbc6ff 0%,#caafff 48%,#b18afc 100%);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.48),0 5px 13px rgba(139,83,234,.16);
+}
+.category-tile{border:1px solid rgba(255,255,255,.36);transition:transform .2s ease,box-shadow .2s ease}
+.category-tile:focus-visible{outline:3px solid #1474fa;outline-offset:3px}
+.category-tile:hover{box-shadow:0 10px 23px rgba(28,63,109,.16)}
+/* La captura utilizada para las ilustraciones era más apagada. Recuperamos
+   color y presencia en CSS, conservando los recortes reales del boceto. */
+.category-art .reference-sprite{
+  filter:saturate(1.48) brightness(1.06) contrast(1.10) drop-shadow(0 4px 7px rgba(16,76,135,.14));
+  transform:translateZ(0);
+}
+.category-hero .category-art .reference-sprite{
+  filter:saturate(1.68) brightness(1.10) contrast(1.12) drop-shadow(0 5px 10px rgba(1,120,230,.15));
+}
+.service-thumb .reference-sprite{filter:saturate(1.22) brightness(1.07) contrast(1.08)}
+/* Los detalles tienen cabeceras luminosas; el fondo del listado permanece blanco. */
+.category-view.theme-plumbing,.category-view.theme-masonry,
+.category-view.theme-parquet,.category-view.theme-renovation{background:transparent}
+.category-view.theme-plumbing .category-hero{
+  background:radial-gradient(circle at 91% 31%,#4acfff 0%,#b5edff 29%,transparent 57%),
+    linear-gradient(110deg,#fff 2%,#f4fbff 50%,#c9ecff 100%);
+}
+.category-view.theme-masonry .category-hero{
+  background:radial-gradient(circle at 92% 24%,#ffb96e 0%,#ffe0ae 35%,transparent 58%),
+    linear-gradient(110deg,#fff 2%,#fff5ea 50%,#ffd6ae 100%);
+}
+.category-view.theme-parquet .category-hero{
+  background:radial-gradient(circle at 92% 24%,#46f2ad 0%,#bafcdb 35%,transparent 58%),
+    linear-gradient(110deg,#fff 2%,#f1fff8 50%,#b5f5d6 100%);
+}
+.category-view.theme-renovation .category-hero{
+  background:radial-gradient(circle at 92% 24%,#b68aff 0%,#dec8ff 35%,transparent 58%),
+    linear-gradient(110deg,#fff 2%,#faf6ff 50%,#dcc5ff 100%);
+}
+/* Banner del salón: azul cobalto intenso, mobiliario cálido en el extremo derecho. */
+.promo-banner{
+  background:#0754b8!important;
+  box-shadow:0 7px 20px rgba(1,54,118,.11);
+}
+.reference-promo .reference-sprite{filter:saturate(1.34) contrast(1.10) brightness(1.06)}
+.promo-cta{
+  background:linear-gradient(135deg,#ff841c 0%,#ff581d 85%);
+  color:#fff;
+  box-shadow:0 5px 16px rgba(255,94,20,.3);
+}
+.promo-copy h2,.promo-copy p{color:#fff}
+.category-services .catalog-service,.popular-list .catalog-service{
+  background:#fff;
+  border:1px solid #e7edf5;
+  box-shadow:0 4px 16px rgba(17,52,99,.06);
+}
+.catalog-service:hover{border-color:#b2d9ff;box-shadow:0 8px 20px rgba(16,95,177,.12)}
+.service-details em,.category-services .service-details em{color:#f4511e;font-weight:820}
+.thumb-plumbing{background:linear-gradient(135deg,#c4eeff,#75d8ff)}
+.thumb-masonry{background:linear-gradient(135deg,#fff0da,#ffcf9c)}
+.thumb-parquet{background:linear-gradient(135deg,#d0ffe3,#83f6bc)}
+.thumb-renovation{background:linear-gradient(135deg,#f2e6ff,#c9a5ff)}
+.trust-badges span{border-color:#e5effa;box-shadow:0 5px 17px rgba(39,96,164,.09)}
+.custom-request{
+  background:linear-gradient(117deg,#e0f2ff 0%,#cceaff 100%);
+  border:1px solid #def0ff;
+}
+.primary-cta{
+  background:linear-gradient(95deg,#ff7720 0%,#ff5520 93%);
+  color:#fff;
+  box-shadow:0 7px 18px rgba(255,91,20,.23);
+}
+.customer-nav{border-top:1px solid #e6ecf4;box-shadow:0 -3px 19px rgba(11,50,108,.075)}
+.customer-nav button{color:#4f6588;min-height:49px}
+.customer-nav button.active{color:#ff5922}
+.customer-nav button.active .ui-icon{filter:drop-shadow(0 1px 2px rgba(255,88,19,.15))}
+.customer-nav button:focus-visible{outline:2px solid #128efa;outline-offset:-1px}
+@media(hover:hover){
+  .category-tile:hover .tile-arrow{transform:translateX(2px);box-shadow:0 4px 13px rgba(35,76,116,.13)}
+  .catalog-service:hover .service-chevron{color:#ff6124}
+}
+@media(max-width:600px){
+  .promo-banner{background:#0853b6!important}
+  .promo-banner .promo-copy{z-index:2}
+  .reference-promo{z-index:1}
+  .promo-banner .promo-cta{background:linear-gradient(135deg,#ff8421,#ff531a);color:#fff;border-radius:100%;width:43px;height:43px;right:11px;bottom:11px;top:auto;box-shadow:0 5px 13px rgba(255,93,24,.35)}
+  .promo-banner .promo-cta .ui-icon{color:#fff}
+  .category-tile .category-art .reference-sprite{filter:saturate(1.53) brightness(1.07) contrast(1.10)}
+}
+@media(prefers-reduced-motion:reduce){
+  .category-tile,.catalog-service,.tile-arrow{transition:none!important}
+  .category-art .reference-sprite{animation:none!important}
+}
