@@ -3,7 +3,7 @@ import { Capacitor } from '@capacitor/core'
 import { PushNotifications } from '@capacitor/push-notifications'
 
 export function mountConnected({app, services, supabase}) {
-  const money = value => value ? `${Number(value).toFixed(2)} €` : 'Por presupuesto';
+  const money = value => value===null || value===undefined ? 'Por presupuesto' : `${Number(value).toFixed(2)} €`;
   const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({
     '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;'
   })[c]);
@@ -104,13 +104,13 @@ export function mountConnected({app, services, supabase}) {
     currentView='home';
     const name=profile?.full_name?` ${esc(profile.full_name)}`:'';
     main.innerHTML=`<section class="hero"><h1>Hola${name} 👋</h1><p>¿Qué necesitas reparar?</p><p class="notice">Precios orientativos con 21 % de IVA incluido. Materiales y trabajos especiales sujetos a presupuesto.</p></section>
-    <section class="grid">${services.map((item,i)=>`<article class="card service"><div class="ico">${iconFor(item[0])}</div><div><small>${esc(item[0])}</small><h3>${esc(item[1])}</h3><b>${money(item[2])}</b><span>${item[2]?'IVA incluido':'Se valorará con presupuesto'}</span></div><button type="button" data-service="${i}">Solicitar</button></article>`).join('')}</section>
+    <section class="grid">${services.map((item,i)=>`<article class="card service"><div class="ico">${iconFor(item[0])}</div><div><small>${esc(item[0])}</small><h3>${esc(item[1])}</h3><b>${item[2]?money(item[2]):'Por presupuesto'}</b><span>${item[2]?'IVA incluido':'Se valorará con presupuesto'}</span></div><button type="button" data-service="${i}">Solicitar</button></article>`).join('')}</section>
     <nav class="bottom" aria-label="Menú de Reparado"><button data-view="requests">📋 Solicitudes</button><button data-view="chat">💬 Chat</button><button data-view="agenda">📅 Agenda</button><button data-view="profile">👤 Perfil</button><button data-view="notifications">🔔 Avisos</button>${userIsStaff()?'<button data-view="admin">🧰 Gestión</button>':''}</nav>`;
   }
   function requestForm(service){
     if(!service || !session)return renderHome();
     currentView='new-request';
-    main.innerHTML=`<section class="card">${backButton}<h2>${esc(service[1])}</h2><p>Precio orientativo: <strong>${money(service[2])}</strong> ${service[2]?'(IVA incluido)':''}</p>
+    main.innerHTML=`<section class="card">${backButton}<h2>${esc(service[1])}</h2><p>Precio orientativo: <strong>${service[2]?money(service[2]):'Por presupuesto'}</strong> ${service[2]?'(IVA incluido)':''}</p>
       <form id="new-request">
       <label>Calle<input name="street" required maxlength="120" autocomplete="street-address"></label>
       <label>Número, piso y puerta<input name="address_number" required maxlength="80"></label>

@@ -58,3 +58,7 @@ El paquete **Integración v3** puede sustituir esta base cuando estén disponibl
 - Formulario de registro con confirmación de contraseña, sin ventanas emergentes que muestran secretos.
 - Nombre y teléfono editables desde el perfil sin poder cambiar el rol.
 - Los nuevos registros son siempre cuentas de cliente; las de administrador/operario se provisionan aparte desde Supabase.
+
+### Ajustes de navegación y precios
+- El menú móvil distribuye los botones en una rejilla accesible, evitando que queden fuera de pantalla.
+- Los presupuestos con importe confirmado de 0 € se muestran como 0,00 € y no como «Por presupuesto»; los servicios que requieren valoración siguen indicándolo.
