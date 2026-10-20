@@ -205,3 +205,28 @@ body,.shell,.customer-header,.customer-nav {background:#fff}
 @media(prefers-reduced-motion:reduce){
   .category-view .category-hero .category-art svg{animation:none!important}
 }
+
+/* Los cuatro trabajos principales se muestran primero, como en la referencia.
+   El resto se conserva y se despliega bajo petición. */
+.category-services .service-extra[hidden]{display:none!important}
+.services-expand{
+ display:flex;align-items:center;justify-content:center;gap:7px;
+ margin:10px auto 14px;padding:11px 18px;min-height:44px;
+ border:1px solid #cce4ff;border-radius:999px;background:#f5fbff;
+ color:#126dca;font-size:13px;font-weight:800;cursor:pointer;
+}
+.services-expand .ui-icon{width:16px;height:16px}
+.services-expand:hover{border-color:#60b7fc;background:#e6f4ff}
+.services-expand:focus-visible{outline:3px solid #1c9eff;outline-offset:2px}
+.category-view .category-hero{
+ min-height:190px;
+ border-radius:0 0 17px 17px;
+ padding-top:14px;
+ padding-bottom:13px;
+}
+.category-view .trust-badges{position:relative;z-index:2;margin-top:-6px}
+.category-view .section-heading{margin-top:18px}
+@media(max-width:540px){
+ .category-view .category-hero{min-height:185px;padding-top:12px;padding-bottom:10px}
+ .category-view .category-hero .category-art{top:10px}
+}

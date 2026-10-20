@@ -89,3 +89,23 @@ test('el grifo de la cabecera es vectorial y no muestra otras partes del atlas',
  assert.ok(hero.includes('role="img" aria-label="Grifo azul"'));
  assert.ok(!hero.includes('mirror-atlas.webp'));
 });
+
+test('la vista de Fontanería presenta cuatro servicios y conserva el catálogo completo',()=>{
+ const many=[
+ ['Fontanería','Reparación de fuga',115],
+ ['Fontanería','Desatasco de lavabo o fregadero',89],
+ ['Fontanería','Instalación de termo eléctrico',0],
+ ['Fontanería','Sustitución de grifo',105],
+ ['Fontanería','Cambio de sifón',79],
+ ['Fontanería','Mecanismo de cisterna',119]
+ ];
+ const html=renderCategory(many,'Fontanería');
+ assert.ok(html.includes('data-expand-services'));
+ assert.ok(html.includes('Ver todos los servicios (6)'));
+ assert.equal((html.match(/class="catalog-service service-extra" hidden/g)||[]).length,2);
+ assert.ok(html.includes('Reparación de fugas'));
+ assert.ok(html.includes('Desatascos'));
+ assert.ok(html.includes('Instalación de termos'));
+ assert.ok(html.includes('Instalación de grifería'));
+ assert.ok(html.includes('data-service="5"'));
+});

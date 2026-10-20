@@ -104,6 +104,14 @@ export function mountLocal({app,services}){
     };
   }
   app.addEventListener('click',event=>{
+    const expand=event.target.closest('[data-expand-services]');
+    if(expand){
+      const opened=expand.getAttribute('aria-expanded')==='true';
+      main.querySelectorAll('.category-services .service-extra').forEach(btn=>{btn.hidden=opened});
+      expand.setAttribute('aria-expanded',String(!opened));
+      expand.innerHTML=opened?'Ver todos los servicios →':'Mostrar menos servicios ↑';
+      return;
+    }
     const filterButton=event.target.closest('[data-toggle-filters]');
     if(filterButton){
       const panel=main.querySelector('#category-quick-filters');

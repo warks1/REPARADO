@@ -131,6 +131,12 @@ const featuredServiceIndices={
  'Parquet':[16,21,17,18],
  'Reformas integrales':[22,23,24]
 };
+const serviceViewLabels={
+ 'Reparación de fuga':'Reparación de fugas',
+ 'Desatasco de lavabo o fregadero':'Desatascos',
+ 'Instalación de termo eléctrico':'Instalación de termos',
+ 'Sustitución de grifo':'Instalación de grifería'
+};
 const catExamples={
  plumbing:['Fontanería','Fugas, grifería y sanitarios'],
  masonry:['Albañilería y Pladur','Paredes y techos'],
@@ -143,17 +149,23 @@ export function serviceRow(s,i) {
   const symbol=(/grifo/i.test(s[1])?'🚰':/fuga/i.test(s[1])?'💧':/desatasco|sifón/i.test(s[1])?'🛁':/cisterna/i.test(s[1])?'🚽':/pladur/i.test(s[1])?'🧱':/alicatado/i.test(s[1])?'▦':/parquet|tabla|barniz/i.test(s[1])?'🪵':cat.slug==='renovation'?'🏡':'🛠️');
   const photo=cat.slug==='plumbing'?(/fuga/i.test(s[1])?'leak':/desatasco/i.test(s[1])?'drain':/termo/i.test(s[1])?'heater':/grifo/i.test(s[1])?'faucet':null):null;
   return '<button type="button" class="catalog-service" data-service="'+i+'"><span class="service-thumb thumb-'+cat.slug+'">'+(photo?atlasSprite(photo,'Foto de '+s[1]):symbol)+'</span>'+
-   '<span class="service-details"><strong>'+esc(s[1])+'</strong><small>'+esc(serviceDescriptions[s[1]]||cat.description)+'</small><em>'+(s[2]?'Desde '+esc(priceFor(s)):'Por presupuesto')+'</em></span><span class="service-chevron">'+ico('arrow')+'</span></button>';
+   '<span class="service-details"><strong>'+esc(serviceViewLabels[s[1]]||s[1])+'</strong><small>'+esc(serviceDescriptions[s[1]]||cat.description)+'</small><em>'+(s[2]?'Desde '+esc(priceFor(s)):'Por presupuesto')+'</em></span><span class="service-chevron">'+ico('arrow')+'</span></button>';
 }
 export function renderCategory(services,id) {
   const c=catFor(id);
   const relevant=services.map((s,i)=>({s,i})).filter(x=>x.s[0]===c.id);
+  const ranked=relevant.sort((a,b)=>{
+    const ranks=featuredServiceIndices[c.id]||[];
+    const aa=ranks.indexOf(a.i),bb=ranks.indexOf(b.i);
+    return (aa<0?99:aa)-(bb<0?99:bb);
+  });
   return '<div class="customer-page category-view theme-'+c.slug+'">'+
      '<button class="screen-back" type="button" data-back>'+ico('back')+' Volver</button>'+
      '<section class="category-hero"><div class="category-hero-copy"><h1>'+esc(c.title)+'</h1><p>'+esc(c.description)+'</p></div>'+categoryHeroArt(c.slug)+'</section>'+
      '<div class="trust-badges"><span>'+ico('shield')+' Solicitud segura</span><span>'+ico('star')+' Atención personalizada</span><span>'+ico('wallet')+' Precios orientativos</span></div>'+
      '<div class="section-heading"><h2>Servicios más solicitados</h2></div>'+
-     '<div class="category-services">'+relevant.sort((a,b)=>{const ranks=featuredServiceIndices[c.id]||[];const aa=ranks.indexOf(a.i),bb=ranks.indexOf(b.i);return (aa<0?99:aa)-(bb<0?99:bb)}).map(x=>serviceRow(x.s,x.i)).join('')+'</div>'+
+     '<div class="category-services">'+ranked.map((x,i)=>i<4?serviceRow(x.s,x.i):serviceRow(x.s,x.i).replace('class="catalog-service"','class="catalog-service service-extra" hidden')).join('')+'</div>'+
+     (ranked.length>4?'<button type="button" class="services-expand" data-expand-services aria-expanded="false">Ver todos los servicios ('+ranked.length+') '+ico('arrow')+'</button>':'')+
      '<div class="custom-request"><div><h3>¿No encuentras lo que necesitas?</h3><p>Cuéntanos tu caso y te ayudamos.</p></div>'+
      '<button type="button" class="primary-cta" data-custom-request="'+esc(c.id)+'">Solicitar servicio '+ico('arrow')+'</button></div>'+
      '</div>';
