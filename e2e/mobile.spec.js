@@ -43,6 +43,11 @@ test('filtros, categoría y formulario de cliente navegan y vuelven correctament
   await expect(page.locator('.category-view h1')).toHaveText('Fontanería');
   await expect(page.locator('.category-services .catalog-service').first()).toBeVisible();
   await expect(page.locator('.category-services .catalog-service:visible')).toHaveCount(4);
+  const photoSizes=await page.locator('.category-services .catalog-service:visible .service-photo').evaluateAll(items=>
+    items.map(img=>({loaded:img.complete,width:img.naturalWidth}))
+  );
+  expect(photoSizes).toHaveLength(4);
+  expect(photoSizes.every(img=>img.loaded && img.width>=100)).toBeTruthy();
   const allServices=page.locator('[data-expand-services]');
   await expect(allServices).toHaveAttribute('aria-expanded','false');
   await allServices.click();

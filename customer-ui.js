@@ -151,7 +151,8 @@ export function serviceRow(s,i) {
   const cat=catFor(s[0]);
   const symbol=(/grifo/i.test(s[1])?'🚰':/fuga/i.test(s[1])?'💧':/desatasco|sifón/i.test(s[1])?'🛁':/cisterna/i.test(s[1])?'🚽':/pladur/i.test(s[1])?'🧱':/alicatado/i.test(s[1])?'▦':/parquet|tabla|barniz/i.test(s[1])?'🪵':cat.slug==='renovation'?'🏡':'🛠️');
   const photo=cat.slug==='plumbing'?(/fuga/i.test(s[1])?'leak':/desatasco/i.test(s[1])?'drain':/termo/i.test(s[1])?'heater':/grifo/i.test(s[1])?'faucet':null):null;
-  return '<button type="button" class="catalog-service" data-service="'+i+'"><span class="service-thumb thumb-'+cat.slug+'">'+(photo?atlasSprite(photo,'Foto de '+s[1]):symbol)+'</span>'+
+  const photoUrl=photo?(import.meta.env?.BASE_URL || './')+'services/'+photo+'.webp':null;
+  return '<button type="button" class="catalog-service" data-service="'+i+'"><span class="service-thumb thumb-'+cat.slug+'">'+(photo?'<img class="service-photo" src="'+esc(photoUrl)+'" width="105" height="91" loading="lazy" decoding="async" alt="Foto de '+esc(s[1])+'">':symbol)+'</span>'+
    '<span class="service-details"><strong>'+esc(serviceViewLabels[s[1]]||s[1])+'</strong><small>'+esc(serviceDescriptions[s[1]]||cat.description)+'</small><em>'+(s[2]?'Desde '+esc(priceFor(s)):'Por presupuesto')+'</em></span><span class="service-chevron">'+ico('arrow')+'</span></button>';
 }
 export function renderCategory(services,id) {

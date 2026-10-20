@@ -128,3 +128,6 @@ La categoría muestra primero cuatro servicios tal como se ve en el boceto selec
 
 ### Ilustraciones independientes del boceto
 Las cuatro tarjetas utilizan imágenes WebP recortadas directamente de la referencia facilitada, guardadas en `public/categories/`. Ya no se dibujan desde regiones compartidas del atlas y se eliminan los fragmentos cruzados. La cabecera de cada categoría sigue utilizando un SVG adaptable. El banner y las miniaturas de servicios siguen pendientes de mayor resolución.
+
+### Fotografías de los cuatro servicios principales de Fontanería
+Las miniaturas de fugas, desatascos, termos y grifería se incluyen como cuatro WebP independientes en `public/services/`, extraídos de la referencia; se comprueba su carga en iPhone, Android y tablet.

@@ -34,7 +34,7 @@ test('el boceto integrado mantiene los controles interactivos',()=>{
  assert.ok(home.includes('mirror-atlas.webp'));
  assert.ok(home.includes('data-category-open="Fontanería"'));
  const detail=renderCategory(services,'Fontanería');
- assert.ok(detail.includes('class="reference-sprite"'));
+ assert.ok(detail.includes('class="service-photo"'));
  assert.ok(detail.includes('data-service="0"'));
 });
 
@@ -116,4 +116,18 @@ test('las categorías usan imágenes propias, no recortes entremezclados del atl
    assert.ok(html.includes('categories/'+slug+'.webp'));
  }
  assert.equal((html.match(/class="category-photo"/g)||[]).length,4);
+});
+
+test('las fotografías destacadas son independientes del atlas',()=>{
+ const plumbing=[
+ ['Fontanería','Reparación de fuga',115],
+ ['Fontanería','Desatasco de lavabo o fregadero',89],
+ ['Fontanería','Instalación de termo eléctrico',0],
+ ['Fontanería','Sustitución de grifo',105]
+ ];
+ const html=renderCategory(plumbing,'Fontanería');
+ for(const filename of ['leak','drain','heater','faucet']){
+   assert.ok(html.includes('services/'+filename+'.webp'));
+ }
+ assert.equal((html.match(/class="service-photo"/g)||[]).length,4);
 });

@@ -246,3 +246,13 @@ body,.shell,.customer-header,.customer-nav {background:#fff}
 .category-tile .category-art{height:60%;max-height:112px}
 .summary-art .category-photo{object-fit:cover;border-radius:10px}
 @media(prefers-reduced-motion:reduce){.category-art .category-photo{animation:none!important}}
+
+/* Fotografías independientes de fugas, desatascos, termos y grifos. */
+.service-thumb:has(.service-photo){overflow:hidden;padding:0}
+.service-thumb .service-photo{
+ display:block;width:100%;height:100%;
+ object-fit:cover;object-position:center;
+ border-radius:12px;
+ filter:saturate(1.13) contrast(1.08);
+}
+@media(prefers-reduced-motion:reduce){.service-photo{animation:none!important}}
