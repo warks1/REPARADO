@@ -251,9 +251,9 @@ export function mountConnected({app, services, supabase}) {
       const total=Number(button.dataset.acceptTotal);
       const valid=vatIncluded(total);
       if(!valid){message('No se pudo verificar el importe. Actualiza la solicitud.',true);return;}
-      const accepted=window.confirm('¿Confirmas que aceptas el presupuesto de '+money(valid.total)+
+      const confirmed=window.confirm('¿Confirmas que aceptas el presupuesto de '+money(valid.total)+
         ' (IVA del 21 % incluido) para esta reparación? Esta acción se registrará en Reparado.');
-      if(!accepted)return;
+      if(!confirmed)return;
       button.disabled=true;
       const {data:accepted,error}=await supabase.rpc('accept_reparado_quote',{p_request_id:button.dataset.acceptQuote});
       if(error){message('No se pudo aceptar el presupuesto: '+error.message,true);button.disabled=false;return}
