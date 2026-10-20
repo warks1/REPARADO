@@ -1,6 +1,7 @@
 import {appHeader,bottomNavigation,setActiveNav,renderLanding,renderCategory,serviceFormHeader,formPeriodPicker,serviceRow,matchServices} from './customer-ui.js'
 import { operatorMaySetStatus } from './rules.js'
 import {jobFilters,filterJobs,jobCounters,vatIncluded,sameOperatorSlot,validateAdminJobUpdate} from './staff-workflows.js'
+import {staffProgressMarkup,staffDocument} from './staff-documents.js'
 import { renderInvoices } from './invoices.js'
 import { renderNotifications } from './notifications.js'
 import { Capacitor } from '@capacitor/core'
@@ -398,14 +399,18 @@ export function mountConnected({app, services, supabase}) {
     <div class="staff-filters" role="group" aria-label="Filtrar trabajos">${jobFilters.filter(f=>admin||f.id!=='unassigned').map(f=>`<button type="button" data-admin-filter="${f.id}" aria-pressed="${filter===f.id}">${esc(f.label)} (${counts[f.id]})</button>`).join('')}</div>
     <p class="notice">Los precios indicados incluyen el 21 % de IVA. Este panel no emite facturas fiscales.</p>
     <p data-feedback class="feedback" role="status"></p></section>
-    ${chosen.map(job=>`<article class="card job-card"><div class="staff-job-title"><h3>${esc(job.service_name)}</h3><span class="staff-status">${esc(statusLabels[job.status]||job.status)}</span></div><p>${esc(job.street)} ${esc(job.address_number)}, ${esc(job.city)}</p><p>Tel.: ${esc(job.phone)} · ${money(job.price)}</p><p class="notice">Operario: ${esc(job.operator_name||'Sin asignar')} · Visita: ${esc(safeTime(job.scheduled_at))}</p><p class="notice">${esc(job.description)}</p>
+    ${chosen.map(job=>`<article class="card job-card"><div class="staff-job-title"><h3>${esc(job.service_name)}</h3><span class="staff-status">${esc(statusLabels[job.status]||job.status)}</span></div><p>${esc(job.street)} ${esc(job.address_number)}, ${esc(job.city)}</p><p>Tel.: ${esc(job.phone)} · ${money(job.price)}</p><p class="notice">Operario: ${esc(job.operator_name||'Sin asignar')} · Visita: ${esc(safeTime(job.scheduled_at))}</p><p class="notice">${esc(job.description)}</p>${staffProgressMarkup(job.status)}
       <a target="_blank" rel="noopener noreferrer" href="https://www.google.com/maps/search/?api=1&amp;query=${encodeURIComponent(`${job.street} ${job.address_number}, ${job.city}`)}">📍 Abrir Google Maps</a>
       <form data-job-id="${esc(job.id)}">
         <label>Estado<select name="status">${statuses.map(s=>`<option value="${s.id}" ${job.status===s.id?'selected':''}>${esc(s.label)}</option>`).join('')}</select></label>
         <label>Precio confirmado (€ IVA incluido)<input type="number" name="price" min="0" max="999999" step="0.01" value="${job.price==null?'':esc(job.price)}" placeholder="Pendiente de presupuesto"></label><p class="staff-vat" data-vat-preview>${job.price==null?'Indica un importe para ver base e IVA.':(()=>{const breakdown=vatIncluded(job.price);return breakdown?'Base '+money(breakdown.base)+' · IVA 21 % '+money(breakdown.vat):'Precio no válido';})()}</p><label>Operario<select name="operator_id"><option value="">Sin asignar</option>${operators.map(op=>`<option value="${esc(op.id)}" ${job.operator_id===op.id?'selected':''}>${esc(op.full_name||'Operario')}</option>`).join('')}</select></label>
         <label>Fecha y hora<input type="datetime-local" name="scheduled_at" value="${job.scheduled_at?new Date(job.scheduled_at).toLocaleString('sv-SE').replace(' ','T').slice(0,16):''}"></label>
         <div class="flex-actions"><button type="submit">Guardar cambios</button><button type="button" data-photos="${esc(job.id)}" data-owner="${esc(job.customer_id)}">Ver fotos</button><button type="button" data-staff-chat="${esc(job.customer_id)}" data-chat-service="${esc(job.service_name)}">💬 Chat</button></div>
-      </form><div class="photo-links" data-photo-output="${esc(job.id)}"></div>
+      </form><div class="staff-documents-toolbar">
+        <button type="button" data-doc-kind="order" data-doc-job="${esc(job.id)}">Orden de trabajo</button>
+        ${admin?'<button type="button" data-doc-kind="quote" data-doc-job="'+esc(job.id)+'">Vista de presupuesto</button>':''}
+      </div><div class="staff-document-host" data-document-host="${esc(job.id)}"></div>
+      <div class="photo-links" data-photo-output="${esc(job.id)}"></div>
     </article>`).join('')||'<section class="card"><p>No hay solicitudes en esta vista.</p></section>'}`;
     main.querySelectorAll('[data-admin-filter]').forEach(btn=>btn.addEventListener('click',()=>renderAdmin(btn.dataset.adminFilter)));
     if(!admin){
@@ -463,6 +468,30 @@ export function mountConnected({app, services, supabase}) {
       }).eq('id',form.dataset.jobId);
       if(error)message('No se han guardado los cambios: '+error.message,true);
       else {await renderAdmin(filter);message('Solicitud actualizada.')}
+    }));
+    // Los documentos se generan solo a partir de los trabajos consultados con
+    // los permisos actuales. No se envían, firman ni insertan en facturación.
+    main.querySelectorAll('[data-doc-kind]').forEach(button=>button.addEventListener('click',()=>{
+      if(currentView!=='admin'||!userIsStaff())return;
+      const job=all.find(x=>String(x.id)===button.dataset.docJob);
+      const host=button.closest('.job-card')?.querySelector('[data-document-host]');
+      if(!job||!host)return;
+      const kind=button.dataset.docKind;
+      if(kind==='quote'&&!admin)return;
+      try {
+        const form=host.closest('.job-card')?.querySelector('form[data-job-id]');
+        const typedPrice=form?.querySelector('[name="price"]')?.value;
+        const price=kind==='quote'?typedPrice:job.price;
+        const html=staffDocument(job,{kind,price});
+        host.innerHTML='<div class="staff-documents-toolbar"><button type="button" data-print-staff>Imprimir / guardar PDF</button><button type="button" data-close-staff-document>Cerrar</button></div>'+html;
+        host.querySelector('[data-print-staff]').addEventListener('click',()=>{
+          if(typeof window.print==='function')window.print();
+          else message('Este navegador no permite imprimir.',true);
+        });
+        host.querySelector('[data-close-staff-document]').addEventListener('click',()=>host.replaceChildren());
+      }catch(error){
+        message(error.message||'No se pudo preparar el documento.',true);
+      }
     }));
     main.querySelectorAll('[data-staff-chat]').forEach(button=>button.addEventListener('click',()=>loadStaffChat(button.dataset.staffChat,button.dataset.chatService)));
     main.querySelectorAll('[data-photos]').forEach(button=>button.addEventListener('click',async()=>{
