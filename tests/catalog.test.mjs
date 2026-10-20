@@ -179,3 +179,11 @@ test('el navegador puede iniciar el cliente sin empaquetador al servir GitHub Pa
  assert.ok(browser.includes("mountLocal({app:root,services})"));
  assert.ok(browser.includes("window.__reparadoBoot?.ready()"));
 });
+
+test('la ruta alternativa publica los recursos del directorio public',async()=>{
+ const {readFileSync}=await import('node:fs');
+ const code=readFileSync(new URL('../customer-ui.js',import.meta.url),'utf8');
+ const loader=readFileSync(new URL('../index.html',import.meta.url),'utf8');
+ assert.ok(code.includes("globalThis.__reparadoRawPages ? './public/'"));
+ assert.ok(loader.includes("window.__reparadoRawPages = true"));
+});

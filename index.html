@@ -64,6 +64,7 @@
     import('./main.js').catch(async error => {
       console.warn('Reparado: iniciando compatibilidad web',error);
       try {
+        window.__reparadoRawPages = true;
         const {startLocalBrowser}=await import('./browser-main.js');
         startLocalBrowser();
       } catch (fallbackError) {

@@ -44,7 +44,8 @@ const art={
  renovation:'<svg viewBox="0 0 160 138" role="img" aria-label="Casa de reformas"><defs><linearGradient id="roof" x2="1" y2="1"><stop stop-color="#ffcb91"/><stop offset="1" stop-color="#f46e31"/></linearGradient></defs><g class="float-slow"><path d="M23 63 80 19l58 44v61H23z" fill="#fff1d9" stroke="#b47bcb" stroke-width="3"/><path d="M14 65 80 12l66 53-10 12-56-44-56 44z" fill="url(#roof)" stroke="#e57a35" stroke-width="2"/><rect x="41" y="78" width="28" height="25" rx="4" fill="#67c6e8"/><rect x="88" y="78" width="29" height="46" rx="5" fill="#c68cfa"/><path d="M101 32V18h16v29" stroke="#a269c9" stroke-width="9"/><path d="m73 106 11 11 28-29" stroke="#30b989" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/></g></svg>'
 };
 
-const atlasUrl=(import.meta.env?.BASE_URL || './')+'mirror-atlas.webp';
+const imageBase=()=>globalThis.__reparadoRawPages ? './public/' : (import.meta.env?.BASE_URL || './');
+const atlasUrl=imageBase()+'mirror-atlas.webp';
 const atlasRects={
   promo:[0,0,320,111],
   // Solo arte: se recortan los rótulos impresos, el texto queda en HTML.
@@ -70,14 +71,14 @@ function atlasSprite(name,description=''){
 export function categoryArt(slug) {
   const category=categories.find(c=>c.slug===slug);
   const safe=category?.slug || 'plumbing';
-  const src=(import.meta.env?.BASE_URL || './')+'categories/'+safe+'.webp';
+  const src=imageBase()+'categories/'+safe+'.webp';
   return '<div class="category-art art-'+esc(safe)+'"><img class="category-photo" src="'+esc(src)+'" width="215" height="87" loading="lazy" decoding="async" alt="Ilustración de '+esc(category?.title || 'reparación')+'"></div>';
 }
 // En la cabecera grande, la imagen de baja resolución del atlas producía
 // artefactos. El vector original permite un grifo definido a cualquier tamaño.
 export function categoryHeroArt(slug){
   if(slug==='plumbing'){
-    const src=(import.meta.env?.BASE_URL || './')+'hero-plumbing.webp';
+    const src=imageBase()+'hero-plumbing.webp';
     return '<div class="category-art art-plumbing"><img class="hero-illustration" src="'+esc(src)+'" width="213" height="205" decoding="async" alt="Grifo azul tridimensional"></div>';
   }
   return '<div class="category-art art-'+esc(slug)+'">'+(art[slug]||art.renovation)+'</div>';
@@ -161,7 +162,7 @@ export function serviceRow(s,i) {
   const cat=catFor(s[0]);
   const symbol=(/grifo/i.test(s[1])?'🚰':/fuga/i.test(s[1])?'💧':/desatasco|sifón/i.test(s[1])?'🛁':/cisterna/i.test(s[1])?'🚽':/pladur/i.test(s[1])?'🧱':/alicatado/i.test(s[1])?'▦':/parquet|tabla|barniz/i.test(s[1])?'🪵':cat.slug==='renovation'?'🏡':'🛠️');
   const photo=cat.slug==='plumbing'?(/fuga/i.test(s[1])?'leak':/desatasco/i.test(s[1])?'drain':/termo/i.test(s[1])?'heater':/grifo/i.test(s[1])?'faucet':null):null;
-  const photoUrl=photo?(import.meta.env?.BASE_URL || './')+'services/'+photo+'.webp':null;
+  const photoUrl=photo?imageBase()+'services/'+photo+'.webp':null;
   return '<button type="button" class="catalog-service" data-service="'+i+'"><span class="service-thumb thumb-'+cat.slug+'">'+(photo?'<img class="service-photo" src="'+esc(photoUrl)+'" width="105" height="91" loading="lazy" decoding="async" alt="Foto de '+esc(s[1])+'">':symbol)+'</span>'+
    '<span class="service-details"><strong>'+esc(serviceViewLabels[s[1]]||s[1])+'</strong><small>'+esc(serviceDescriptions[s[1]]||cat.description)+'</small><em>'+(s[2]?'Desde '+esc(priceFor(s)):'Por presupuesto')+'</em></span><span class="service-chevron">'+ico('arrow')+'</span></button>';
 }
