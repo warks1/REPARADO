@@ -57,6 +57,20 @@
     });
   }());
   </script>
-  <script type="module" src="./main.js"></script>
+  <script type="module">
+    // Primero prueba la aplicación Vite/Capacitor completa. Si GitHub Pages
+    // publica archivos fuente por error, inicia el mismo cliente en modo local
+    // con módulos nativos y CSS cargado correctamente.
+    import('./main.js').catch(async error => {
+      console.warn('Reparado: iniciando compatibilidad web',error);
+      try {
+        const {startLocalBrowser}=await import('./browser-main.js');
+        startLocalBrowser();
+      } catch (fallbackError) {
+        console.error('Reparado: no se pudo iniciar el cliente local',fallbackError);
+        window.__reparadoBoot?.fail();
+      }
+    });
+  </script>
 </body>
 </html>

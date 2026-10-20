@@ -165,3 +165,17 @@ test('el botón de recuperación evita la caché antigua de Pages',async()=>{
  assert.ok(html.includes('Diagnóstico:'));
  assert.ok(html.includes('Actualizar y volver a intentar'));
 });
+
+test('el navegador puede iniciar el cliente sin empaquetador al servir GitHub Pages desde el repositorio',async()=>{
+ const {readFileSync}=await import('node:fs');
+ const main=readFileSync(new URL('../main.js',import.meta.url),'utf8');
+ const index=readFileSync(new URL('../index.html',import.meta.url),'utf8');
+ const browser=readFileSync(new URL('../browser-main.js',import.meta.url),'utf8');
+ const {services}=await import('../catalog-data.js');
+ assert.ok(services.length>=25);
+ assert.ok(main.includes("import { services } from './catalog-data.js'"));
+ assert.ok(index.includes("import('./main.js').catch(async error"));
+ assert.ok(index.includes("import('./browser-main.js')"));
+ assert.ok(browser.includes("mountLocal({app:root,services})"));
+ assert.ok(browser.includes("window.__reparadoBoot?.ready()"));
+});
