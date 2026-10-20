@@ -26,8 +26,10 @@ jobs:
         with:
           distribution: temurin
           java-version: '21'
-      - name: Preparar herramientas Android
-        uses: android-actions/setup-android@v3
+      - name: Verificar SDK Android del servidor
+        run: |
+          test -d "$ANDROID_HOME" || { echo 'No hay SDK Android en el servidor'; exit 1; }
+          echo "SDK Android instalado en $ANDROID_HOME"
       - name: Instalar dependencias
         run: npm install --no-audit --no-fund
       - name: Ejecutar pruebas unitarias
