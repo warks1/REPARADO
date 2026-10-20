@@ -15,7 +15,7 @@ permissions:
   contents: read
 jobs:
   ios-simulator:
-    runs-on: macos-latest
+    runs-on: macos-26-intel
     timeout-minutes: 40
     steps:
       - uses: actions/checkout@v4
@@ -35,6 +35,11 @@ jobs:
         run: |
           npx cap add ios
           npx cap sync ios
+      - name: Comprobar configuración de Xcode
+        run: |
+          xcodebuild -version
+          ls -lah ios/App/
+          xcodebuild -list -project ios/App/App.xcodeproj
       - name: Compilar versión para simulador sin firma
         run: |
           xcodebuild \
@@ -45,7 +50,7 @@ jobs:
             -destination 'generic/platform=iOS Simulator' \
             -derivedDataPath ios-build \
             CODE_SIGNING_ALLOWED=NO \
-            -quiet build
+            build
       - name: Conservar versión para simulador
         uses: actions/upload-artifact@v4
         with:
