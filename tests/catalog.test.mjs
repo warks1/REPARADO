@@ -157,3 +157,11 @@ test('el arranque muestra recuperación si falla JavaScript en producción',asyn
  assert.ok(html.includes('No hemos podido abrir Reparado'));
  assert.ok(main.includes('window.__reparadoBoot?.ready()'));
 });
+
+test('el botón de recuperación evita la caché antigua de Pages',async()=>{
+ const {readFileSync}=await import('node:fs');
+ const html=readFileSync(new URL('../index.html',import.meta.url),'utf8');
+ assert.ok(html.includes('reparado_reload'));
+ assert.ok(html.includes('Diagnóstico:'));
+ assert.ok(html.includes('Actualizar y volver a intentar'));
+});

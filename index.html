@@ -16,38 +16,44 @@
 <body>
   <div id="app"><div class="startup">🛠️<p>Iniciando Reparado…</p></div></div>
   <script>
-  // Independiente de los módulos: si falla el arranque, nunca dejar pantalla blanca.
+  // Guardia independiente de Vite. En iOS, reintentar debe cargar un HTML
+  // NUEVO: location.reload() puede reutilizar HTML antiguo con JS ya borrado.
   (function () {
-    var initialized = false, shown = false;
-    function hasContent() {
-      var root = document.querySelector('#app');
-      var main = root && root.querySelector('main');
+    var initialized = false, shown = false, cause = 'TIEMPO_DE_CARGA';
+    function readyContent() {
+      var main = document.querySelector('#app main');
       return !!(main && main.textContent && main.textContent.trim().length > 15);
     }
-    function recover() {
-      if (shown || initialized || hasContent()) return;
+    function cacheBustedUrl() {
+      var url = new URL(window.location.href);
+      url.searchParams.set('reparado_reload', String(Date.now()));
+      return url.href;
+    }
+    function recover(code) {
+      if (initialized || readyContent() || shown) return;
+      cause = code || cause;
       shown = true;
       var root = document.querySelector('#app');
       if (!root) return;
-      root.innerHTML = '<main role="alert" style="font-family:system-ui,-apple-system,sans-serif;min-height:75dvh;padding:32px 22px;display:flex;flex-direction:column;justify-content:center;max-width:520px;margin:auto;color:#102143;background:#fff"><div style="font-size:48px;color:#ff6127">⌂</div><h1 style="font-size:26px;margin:12px 0">No hemos podido abrir Reparado</h1><p style="line-height:1.6;color:#52627b">Se ha interrumpido la carga. Puedes volver a intentarlo sin perder tus solicitudes guardadas.</p><button id="reparado-retry" type="button" style="background:#ff6127;color:white;border:0;border-radius:14px;padding:16px;font-weight:700;cursor:pointer">Volver a intentar</button></main>';
-      var retry = document.querySelector('#reparado-retry');
-      if (retry) retry.addEventListener('click', function () { location.reload(); });
+      root.innerHTML = '<main role="alert" style="font-family:system-ui,-apple-system,sans-serif;min-height:75dvh;padding:32px 22px;display:flex;flex-direction:column;justify-content:center;max-width:520px;margin:auto;color:#102143;background:#fff"><div style="font-size:48px;color:#ff6127">⌂</div><h1 style="font-size:26px;margin:12px 0">No hemos podido abrir Reparado</h1><p style="line-height:1.6;color:#52627b">No se ha podido completar la carga. Puedes actualizar los archivos sin borrar las solicitudes de este dispositivo.</p><button id="reparado-retry" type="button" style="background:#ff6127;color:white;border:0;border-radius:14px;padding:16px;font-weight:700;cursor:pointer">Actualizar y volver a intentar</button><small id="reparado-cause" style="margin-top:16px;color:#52627b">Diagnóstico: '+cause+'</small></main>';
+      var button = document.querySelector('#reparado-retry');
+      if (button) button.addEventListener('click', function () { window.location.assign(cacheBustedUrl()); });
     }
     window.__reparadoBoot = {
       ready: function () { initialized = true; },
-      fail: recover
+      fail: function () { recover('ERROR_DE_INICIO'); }
     };
     window.addEventListener('error', function (event) {
       if (initialized) return;
       var source = event.target;
-      if (source && source.tagName === 'SCRIPT') recover();
-      else if (!source || source === window) setTimeout(recover, 0);
+      if (source && source.tagName === 'SCRIPT') recover('ARCHIVO_JS_NO_CARGADO');
+      else if (!source || source === window) setTimeout(function () { recover('ERROR_DE_JAVASCRIPT'); }, 0);
     }, true);
     window.addEventListener('unhandledrejection', function () {
-      if (!initialized) setTimeout(recover, 0);
+      if (!initialized) setTimeout(function () { recover('ERROR_DE_MODULO'); }, 0);
     });
     document.addEventListener('DOMContentLoaded', function () {
-      setTimeout(function () { if (!initialized) recover(); }, 9000);
+      setTimeout(function () { if (!initialized) recover('TIEMPO_DE_CARGA'); }, 15000);
     });
   }());
   </script>

@@ -115,3 +115,14 @@ test('un perfil local guardado como null no rompe el arranque',async({page})=>{
  await page.locator('.customer-nav [data-view="requests"]').click();
  await expect(page.getByRole('heading',{name:'Mis solicitudes'})).toBeVisible();
 });
+
+test('reintentar desde error no reutiliza HTML en caché',async({page})=>{
+ await page.route('**/assets/*.js',route=>route.abort('failed'));
+ await page.goto('/');
+ await expect(page.getByRole('heading',{name:'No hemos podido abrir Reparado'})).toBeVisible({timeout:17000});
+ await expect(page.locator('#reparado-cause')).toContainText(/DIAGNÓSTICO|Diagnóstico/);
+ const click=page.waitForURL(url=>url.searchParams.has('reparado_reload'),{timeout:12000});
+ await page.locator('#reparado-retry').click();
+ await click;
+ expect(new URL(page.url()).searchParams.get('reparado_reload')).toMatch(/^\\d+$/);
+});
