@@ -35,14 +35,23 @@ const services=[
 ];
 const app=document.querySelector('#app');
 
+function startupFailed(error) {
+  console.error('Reparado: fallo de arranque',error);
+  window.__reparadoBoot?.fail();
+}
 if(isConfigured){
   import('./connected.js')
-    .then(({mountConnected})=>mountConnected({app,services,supabase}))
-    .catch(error=>{
-      console.error('Reparado: fallo de arranque',error);
-      app.innerHTML='<section class="card" style="max-width:600px;margin:8vh auto"><h1>Reparado</h1><p>No hemos podido iniciar el servicio. Comprueba tu conexión e inténtalo de nuevo.</p><button onclick="location.reload()">Reintentar</button></section>';
-    });
+    .then(({mountConnected})=>{
+      mountConnected({app,services,supabase});
+      window.__reparadoBoot?.ready();
+    })
+    .catch(startupFailed);
 }else{
-  // No se simula un backend: la interfaz es real, pero guardará solo en local.
-  mountLocal({app,services});
+  try {
+    // Se conserva el catálogo funcional sin simular envíos a operarios.
+    mountLocal({app,services});
+    window.__reparadoBoot?.ready();
+  } catch (error) {
+    startupFailed(error);
+  }
 }

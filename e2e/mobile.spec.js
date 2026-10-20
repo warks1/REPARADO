@@ -86,3 +86,32 @@ test('la búsqueda encuentra un servicio fuera de los cuatro destacados',async({
  await input.fill('servicio inexistente único');
  await expect(page.locator('.no-results')).toBeVisible();
 });
+
+test('la versión compilada inicia y no se queda en blanco',async({page})=>{
+ const errors=[];
+ page.on('pageerror',error=>errors.push(error.message));
+ await page.goto('/');
+ await expect(page.locator('.customer-page h1')).toContainText('Tu hogar');
+ await expect(page.locator('.customer-nav button')).toHaveCount(5);
+ expect(errors).toEqual([]);
+});
+
+test('si falla el JavaScript se muestra una pantalla de recuperación',async({page})=>{
+ await page.route('**/assets/*.js',route=>route.abort('failed'));
+ await page.goto('/');
+ await expect(page.getByRole('heading',{name:'No hemos podido abrir Reparado'})).toBeVisible({timeout:11000});
+ await expect(page.getByRole('button',{name:'Volver a intentar'})).toBeVisible();
+});
+
+test('un perfil local guardado como null no rompe el arranque',async({page})=>{
+ await page.addInitScript(()=>{
+   localStorage.setItem('reparado-local-profile','null');
+   localStorage.setItem('reparado-local-requests','null');
+ });
+ await page.goto('/');
+ await expect(page.locator('.customer-page h1')).toContainText('Tu hogar');
+ await page.locator('.customer-nav [data-view="profile"]').click();
+ await expect(page.getByRole('heading',{name:'Mi perfil'})).toBeVisible();
+ await page.locator('.customer-nav [data-view="requests"]').click();
+ await expect(page.getByRole('heading',{name:'Mis solicitudes'})).toBeVisible();
+});

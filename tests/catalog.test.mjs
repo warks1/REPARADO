@@ -148,3 +148,12 @@ test('el detalle tiene un grifo 3D y un botón Volver accesible',()=>{
  assert.ok(html.includes('aria-label="Volver"'));
  assert.ok(html.includes('data-back aria-label'));
 });
+
+test('el arranque muestra recuperación si falla JavaScript en producción',async()=>{
+ const {readFileSync}=await import('node:fs');
+ const html=readFileSync(new URL('../index.html',import.meta.url),'utf8');
+ const main=readFileSync(new URL('../main.js',import.meta.url),'utf8');
+ assert.ok(html.includes('window.__reparadoBoot'));
+ assert.ok(html.includes('No hemos podido abrir Reparado'));
+ assert.ok(main.includes('window.__reparadoBoot?.ready()'));
+});

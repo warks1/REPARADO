@@ -460,5 +460,14 @@ export function mountConnected({app, services, supabase}) {
     if(event==='SIGNED_OUT'){session=null;profile=null;pendingService=null;pendingView=null;renderHome()}
     else if(event==='SIGNED_IN')queueMicrotask(()=>boot());
   });
-  boot().catch(error=>{console.error(error);main.innerHTML=`<section class="card"><h2>Error al conectar</h2><p>Comprueba la configuración de Supabase y vuelve a cargar.</p></section>`});
+  // Mostrar la portada inmediatamente, incluso si la sesión tarda o no hay red.
+  renderHome();
+  boot().catch(error=>{
+    console.error('Reparado: error de sesión',error);
+    renderHome();
+    const note=document.createElement('p');
+    note.className='notice';
+    note.textContent='No se pudo conectar con el servicio. Puedes consultar el catálogo y volver a intentarlo más tarde.';
+    main.prepend(note);
+  });
 }

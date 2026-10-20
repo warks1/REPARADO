@@ -148,3 +148,7 @@ Consultar [`docs/production-readiness.md`](docs/production-readiness.md) para la
 
 ### Cabecera 3D original de Fontanería
 Se incluye `public/hero-plumbing.webp`, recorte con bordes suavizados del grifo 3D del boceto original. El título, la descripción y el botón de volver siguen siendo HTML accesible, sin convertir la página completa en una captura.
+
+
+### Recuperación al arrancar y pruebas sobre la compilación final
+La versión de cliente incluye un guardián de arranque independiente del bundle JavaScript: si falla la carga o no hay contenido tras nueve segundos, se presenta una pantalla visible con botón «Volver a intentar», sin borrar las solicitudes locales. Se conserva la portada de inmediato cuando hay una conexión Supabase lenta. Playwright ahora ejecuta `vite build` seguido de `vite preview` y comprueba **la compilación de producción**, incluye un escenario con JavaScript bloqueado y prueba datos locales dañados. Las pruebas no sustituyen un diagnóstico en WebView real de Android/iOS.
