@@ -12,11 +12,15 @@ const textFields={
 export const localBackupLimit=500000;
 export function makeLocalCollection(requests,exportedAt=new Date().toISOString()){
  if(!Array.isArray(requests)||requests.length>250)throw new Error('Demasiadas solicitudes para esta copia.');
- return {
+ const backup={
   format:'reparado-local-collection',version:1,exported_at:exportedAt,
   sent_to_company:false,appointment_confirmed:false,
   requests:requests.map(r=>localRequestBackup(r,exportedAt).request)
  };
+ // Evita descargar una copia que la propia función de importación no admita.
+ if(JSON.stringify(backup).length>localBackupLimit)
+   throw new Error('La copia completa supera el tamaño permitido. Descarga las solicitudes por separado.');
+ return backup;
 }
 function parseBackup(input){
  if(typeof input!=='string'||input.length>localBackupLimit)
