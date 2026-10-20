@@ -135,3 +135,7 @@ Las miniaturas de fugas, desatascos, termos y grifería se incluyen como cuatro 
 
 ## APK de prueba para Android
 GitHub Actions ejecuta el flujo «Reparado Android beta APK» tras cambios de la app o desde «Run workflow». Instala Java 21, compila la web con Vite, crea la plataforma Android con Capacitor 8 y ejecuta Gradle para producir `app-debug.apk`. El resultado estará disponible durante 14 días como artefacto `Reparado-Android-Beta-Debug-APK` en la ejecución de GitHub Actions. Es una APK **debug para pruebas**: no está firmada como versión de tienda, no es adecuada para distribución pública y requiere instalar manualmente desde el móvil. Si no existen los secretos VITE_SUPABASE_URL y VITE_SUPABASE_ANON_KEY, conserva el modo de almacenamiento local y no envía solicitudes al personal. Para iOS, el proyecto contiene Capacitor iOS, pero faltan el proyecto compilado, la firma Apple Developer, las pruebas en dispositivo y la distribución TestFlight/App Store.
+
+
+## Comprobación iOS sin firma
+La acción `Reparado iOS simulator check` utiliza un runner Mac, genera el proyecto Capacitor iOS y compila un `.app` para el simulador de Xcode (sin código de firma). Se conserva en GitHub como artefacto durante 14 días si supera la compilación. **No es una aplicación instalable directamente en iPhone**: para TestFlight o App Store hará falta el certificado/perfil de Apple Developer, un identificador de paquete verificado y pasar las pruebas de privacidad, permisos, notificaciones y publicación.
