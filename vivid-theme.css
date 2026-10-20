@@ -367,3 +367,27 @@ body,.shell,.customer-header,.customer-nav {background:#fff}
  .staff-document-host .request-document-print.staff-document{display:block!important;border:0!important;box-shadow:none!important;border-radius:0!important;padding:0!important}
  .staff-documents-toolbar,.staff-stage-list,.staff-stage-help{display:none!important}
 }
+
+/* Presupuestos de partidas: editor funcional, sin modificar los colores de la portada. */
+.quote-toggle{display:block;min-height:44px;margin:8px 0 10px;border:1px solid #b8dcfa;background:#eaf7ff;
+ border-radius:12px;color:#125fa3;font-weight:790;padding:9px 15px}
+.quote-builder{background:#f6fbff;border:1px solid #cce5fb;border-radius:15px;padding:14px;margin:12px 0 16px}
+.quote-builder[hidden]{display:none!important}
+.quote-line{display:grid;grid-template-columns:minmax(0,2fr) minmax(64px,.65fr) minmax(110px,1fr) auto;align-items:end;
+ gap:8px;padding:11px 0;border-bottom:1px solid #d9eaf7}
+.quote-line label{font-size:11px;color:#315b7c;min-width:0}
+.quote-line input{display:block;width:100%;min-height:43px;border-radius:10px;margin-top:5px}
+.quote-line [data-quote-remove]{min-height:43px;border:1px solid #f1c6bb;border-radius:10px;padding:7px 10px;background:#fff3ed;color:#983b2e}
+.quote-actions{display:flex;flex-wrap:wrap;gap:9px;margin:14px 0 10px}
+.quote-actions button{min-height:44px;border:1px solid #b4d5f2;border-radius:11px;padding:10px 14px;
+ background:#e8f6ff;color:#095a98;font-weight:770}
+.quote-builder [data-quote-summary]{background:#e9f5ff;padding:12px;border-radius:11px;color:#154f7a;
+ font-weight:750;line-height:1.6;font-size:12px;overflow-wrap:anywhere}
+.quote-acceptance-summary{background:#f3faff;color:#174871;border:1px solid #d5eaff;border-radius:12px;padding:11px;font-size:12px;line-height:1.5}
+.staff-itemized-heading{font-size:14px;font-weight:800;color:#0f4778;margin:15px 0 4px;padding-bottom:5px;border-bottom:2px solid #b6dffb}
+.quote-builder button:focus-visible,.quote-toggle:focus-visible{outline:3px solid #119afa;outline-offset:2px}
+@media(max-width:660px){.quote-line{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .quote-line label:first-child{grid-column:1 / -1}
+ .quote-line [data-quote-remove]{grid-column:1 / -1;justify-self:end}
+}
+@media print{.quote-builder,.quote-toggle,.quote-actions,.quote-acceptance-summary{display:none!important}}

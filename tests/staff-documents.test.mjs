@@ -37,3 +37,16 @@ test('presupuesto no simula aceptación ni facturación',()=>{
  assert.throws(()=>staffDocument(job,{kind:'quote',price:-1}),/importe válido/);
  assert.throws(()=>staffDocument(job,{kind:'invoice',price:121}),/Documento no válido/);
 });
+
+test('borrador por partidas incluye desglose y comprueba coincidencia con el precio',()=>{
+ const items=[
+  {name:'Mano de obra',quantity:'2',unitPrice:'60.50'},
+  {name:'Material & accesorios',quantity:'1',unitPrice:'24.20'}
+ ];
+ const html=staffDocument(job,{kind:'quote',price:145.20,items});
+ assert.ok(html.includes('Partidas del borrador'));
+ assert.ok(html.includes('Mano de obra'));
+ assert.ok(html.includes('Material &amp; accesorios'));
+ assert.ok(html.includes('145,20 €'));
+ assert.throws(()=>staffDocument(job,{kind:'quote',price:120,items}),/no coincide con el desglose/);
+});

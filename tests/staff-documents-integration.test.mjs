@@ -28,3 +28,12 @@ test('la impresión mantiene una sola orden o presupuesto activo',()=>{
  assert.ok(code.includes("main.querySelectorAll('[data-document-host]').forEach"));
  assert.ok(code.includes('other.replaceChildren()'));
 });
+
+test('el precio del presupuesto requiere confirmación del cliente y coincidencia del desglose',()=>{
+ const code=readFileSync(new URL('../connected.js',import.meta.url),'utf8');
+ assert.ok(code.includes('window.confirm('));
+ assert.ok(code.includes('data-accept-total='));
+ assert.ok(code.includes('quote=calculateQuoteLines(itemLines)'));
+ assert.ok(code.includes('Aplicar total al formulario'));
+ assert.ok(code.includes('No se pudo verificar el importe'));
+});
