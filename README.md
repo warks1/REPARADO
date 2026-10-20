@@ -159,3 +159,7 @@ Los flujos de compilación Android e iOS generan ahora los iconos adaptativos y 
 
 ### Pruebas de compatibilidad con iPhone / Safari
 Se ha añadido WebKit al conjunto de pruebas en GitHub Actions. Las mismas comprobaciones de inicio, errores de carga, catálogo, formularios y navegación se ejecutan sobre un navegador Safari/WebKit automatizado, además de Chromium. Esto aproxima el entorno del navegador iPhone, aunque no sustituye un dispositivo Apple real.
+
+
+### Arranque real de GitHub Pages, incluido el navegador Safari/WebKit
+La acción `Verificar Reparado publicado en iPhone y Android` se ejecuta cuando termina la publicación de Pages y abre **la URL pública**, tanto normal como con un parámetro de actualización. Comprueba que aparezcan la portada y las cuatro categorías y guarda errores de carga de JavaScript o de red. El botón de recuperación ahora fuerza una URL sin caché y presenta un código de fallo para diagnosticar el navegador integrado de iPhone. La prueba usa Safari/WebKit emulado y no prueba el navegador de ChatGPT dentro de iOS.

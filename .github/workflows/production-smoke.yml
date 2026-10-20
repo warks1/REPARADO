@@ -1,0 +1,34 @@
+name: Verificar Reparado publicado en iPhone y Android
+on:
+  workflow_run:
+    workflows: ["Publicar Reparado en GitHub Pages"]
+    types: [completed]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  comprobar-pagina-publica:
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Instalar dependencias
+        run: npm install --no-audit --no-fund
+      - name: Instalar Chromium y WebKit
+        run: npx playwright install --with-deps chromium webkit
+      - name: Abrir la web real en navegadores móviles
+        env:
+          REPARADO_SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
+        run: npx playwright test --config playwright.production.config.mjs
+      - name: Guardar trazas de errores
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: diagnostico-reparado-publicado
+          path: test-results
+          if-no-files-found: warn
+          retention-days: 7
