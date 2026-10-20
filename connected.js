@@ -13,7 +13,7 @@ export function mountConnected({app, services, supabase}) {
   const iconFor = name => ({'Fontanería':'🚰','Albañilería':'🧱','Parquet':'🪵','Reformas integrales':'🏠'})[name] || '🛠️';
   const statusLabels = {new:'Nueva', quoted:'Presupuesto',accepted:'Aceptada',scheduled:'Programada',in_progress:'En curso',completed:'Terminada',cancelled:'Cancelada'};
   const validStatus = Object.keys(statusLabels);
-  let session=null, profile=null, pushReady=false, currentView='home', adminFilter='all', lastCategory=null;
+  let session=null, profile=null, pushReady=false, currentView='home', adminFilter='all', lastCategory=null, pendingService=null;
   app.innerHTML = `<div class="shell">${appHeader()}<main id="main"></main><footer>© Reparado · Servicios para tu hogar <button type="button" id="logout" class="hidden" hidden>Cerrar sesión</button></footer></div>${bottomNavigation()}`;
   const main=app.querySelector('#main');
   const message = (text, error=false) => {
@@ -42,8 +42,8 @@ export function mountConnected({app, services, supabase}) {
     const menu=event.target.closest('[data-view]');
     if(menu){
       const view=menu.dataset.view;
-      if(view==='home'){renderHome();return}
-      if(!session){showLogin();return}
+      if(view==='home'){pendingService=null;renderHome();return}
+      if(!session){pendingService=null;showLogin();return}
       if(view==='requests')loadRequests();
       else if(view==='agenda')loadAgenda();
       else if(view==='chat')loadChat();
@@ -56,7 +56,7 @@ export function mountConnected({app, services, supabase}) {
   app.querySelector('#logout').addEventListener('click', async () => {
     const {error}=await supabase.auth.signOut();
     if(error){message(error.message,true);return}
-    session=null;profile=null;renderHome();
+    session=null;profile=null;pendingService=null;renderHome();
   });
   function showLogin(){
     currentView='login';setActiveNav(app,'profile');session=null;profile=null;
@@ -67,7 +67,8 @@ export function mountConnected({app, services, supabase}) {
       const data=new FormData(event.currentTarget);
       const {error}=await supabase.auth.signInWithPassword({email:String(data.get('email')).trim(),password:String(data.get('password'))});
       if(error){message(error.message,true);return}
-      await boot();
+      // Supabase emitirá SIGNED_IN y restaurará la solicitud escogida.
+      message('Acceso correcto. Cargando tu solicitud…');
     });
     main.querySelector('#register').addEventListener('click',()=>{
       const registerForm=main.querySelector('#register-form');
@@ -103,7 +104,10 @@ export function mountConnected({app, services, supabase}) {
     app.querySelector('#logout').classList.add('hidden');
     const avatar=app.querySelector('.round-profile');
     if(avatar && profile?.full_name)avatar.textContent=profile.full_name.trim().slice(0,1).toUpperCase();
-    renderHome();
+    const selected=pendingService;
+    pendingService=null;
+    if(selected)requestForm(selected);
+    else renderHome();
     registerNativePush();
   }
   async function registerNativePush(){
@@ -143,7 +147,7 @@ export function mountConnected({app, services, supabase}) {
   }
   function requestForm(service){
     if(!service)return renderHome();
-    if(!session){showLogin();return}
+    if(!session){pendingService=service;showLogin();return}
     currentView='new-request';setActiveNav(app,'requests');
     main.innerHTML='<div class="request-screen"><button type="button" class="screen-back" data-back>← Volver</button>'+
       '<section class="card"><h2>Nueva solicitud</h2>'+serviceFormHeader(service)+
@@ -440,7 +444,7 @@ export function mountConnected({app, services, supabase}) {
     }));
   }
   supabase.auth.onAuthStateChange((event)=>{
-    if(event==='SIGNED_OUT'){session=null;profile=null;renderHome()}
+    if(event==='SIGNED_OUT'){session=null;profile=null;pendingService=null;renderHome()}
     else if(event==='SIGNED_IN')queueMicrotask(()=>boot());
   });
   boot().catch(error=>{console.error(error);main.innerHTML=`<section class="card"><h2>Error al conectar</h2><p>Comprueba la configuración de Supabase y vuelve a cargar.</p></section>`});
