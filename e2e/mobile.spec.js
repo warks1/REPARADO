@@ -9,11 +9,16 @@ test('portada real por categorías, imágenes y navegación sin desbordamiento',
   await expect(page.locator('.category-tile')).toHaveCount(4);
   await expect(page.locator('.customer-nav button')).toHaveCount(5);
   await expect(page.locator('.promo-banner')).toBeVisible();
-  const assets=await page.locator('.category-tile img.category-photo').evaluateAll(items=>
-    items.map(img=>({complete:img.complete,width:img.naturalWidth,height:img.naturalHeight}))
-  );
-  expect(assets).toHaveLength(4);
-  expect(assets.every(img=>img.complete && img.width>=200 && img.height>=80)).toBeTruthy();
+  const photos=page.locator('.category-tile img.category-photo');
+  await expect(photos).toHaveCount(4);
+  // Safari pospone las imágenes loading=lazy hasta que se desplazan a pantalla.
+  // Comprobamos que cada imagen carga de verdad, no su estado prematuro.
+  for (const photo of await photos.all()) {
+    await photo.scrollIntoViewIfNeeded();
+    await expect.poll(()=>photo.evaluate(img=>
+      img.complete && img.naturalWidth>=200 && img.naturalHeight>=80
+    ),{timeout:12000}).toBeTruthy();
+  }
   const dims=await page.evaluate(()=>({
     documentWidth:document.documentElement.scrollWidth,
     viewportWidth:window.innerWidth,
