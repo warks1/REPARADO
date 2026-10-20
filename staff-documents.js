@@ -1,4 +1,5 @@
 import {vatIncluded,jobStatusLabels} from './staff-workflows.js';
+import {calculateQuoteLines} from './quote-calculator.js';
 
 // Solo presentaciones de registros que la consulta autorizada ya ha devuelto.
 // Ni este documento ni su impresión envían mensajes o generan facturas.
@@ -28,11 +29,14 @@ export function staffProgressMarkup(status){
       (step.current?' aria-current="step"':'')+'>'+esc(step.label)+'</li>').join('')+'</ol>'+
     '<p class="staff-stage-help">Etapas basadas en el estado actual. No representan fechas de ejecución.</p>';
 }
-export function staffDocument(job,{kind='order',price}={}){
+export function staffDocument(job,{kind='order',price,items=null}={}){
   if(!job||!['order','quote'].includes(kind))throw new Error('Documento no válido');
   const quote=kind==='quote';
-  const breakdown=vatIncluded(quote?price:job.price);
+  const detail=quote&&items!==null?calculateQuoteLines(items):null;
+  const breakdown=detail||vatIncluded(quote?price:job.price);
   if(quote&&!breakdown)throw new Error('Introduce un importe válido antes de previsualizar el presupuesto.');
+  if(detail&&Math.round(detail.total*100)!==Math.round(Number(price)*100))
+    throw new Error('El precio del formulario no coincide con el desglose. Aplica el total antes de previsualizar.');
   const row=(label,value)=>'<div class="staff-doc-row"><dt>'+esc(label)+'</dt><dd>'+esc(value)+'</dd></div>';
   const address=[job.street,job.address_number,job.city].filter(Boolean).join(', ');
   const disclaimer=quote
@@ -49,6 +53,8 @@ export function staffDocument(job,{kind='order',price}={}){
     row('Operario',job.operator_name||'Sin asignar')+
     row('Estado',jobStatusLabels[job.status]||'No indicado')+
     row('Fecha registrada',readableJobDate(job.scheduled_at))+
+    (detail?'<div class="staff-itemized-heading">Partidas del borrador</div>'+
+      detail.lines.map(line=>row(line.name+' · '+line.quantity.toLocaleString('es-ES')+' × '+amount(line.unitPrice),amount(line.total))).join(''):'')+
     (breakdown?row('Base estimada',amount(breakdown.base))+row('IVA incluido · 21 %',amount(breakdown.vat))+
       row('Total IVA incluido',amount(breakdown.total)):row('Importe','Por presupuesto'))+
     '</dl>'+
