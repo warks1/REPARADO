@@ -124,5 +124,5 @@ test('reintentar desde error no reutiliza HTML en caché',async({page})=>{
  const click=page.waitForURL(url=>url.searchParams.has('reparado_reload'),{timeout:12000});
  await page.locator('#reparado-retry').click();
  await click;
- expect(new URL(page.url()).searchParams.get('reparado_reload')).toMatch(/^\\d+$/);
+ expect(new URL(page.url()).searchParams.get('reparado_reload')).toMatch(/^[0-9]+$/);
 });
