@@ -19,5 +19,10 @@ create policy "reparado photo read own or staff" on storage.objects
 for select to authenticated using (
  bucket_id='request-photos' and
  ((storage.foldername(name))[1]=(select auth.uid()::text)
- or public.is_reparado_staff())
+ or public.is_reparado_admin()
+ or exists (
+   select 1 from public.service_requests r
+   where r.id::text=(storage.foldername(name))[2]
+   and r.operator_id=auth.uid() and public.is_reparado_staff()
+ ))
 );
