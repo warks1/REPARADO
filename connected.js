@@ -241,16 +241,20 @@ export function mountConnected({app, services, supabase}) {
     if(!userIsStaff()){renderHome();return}
     currentView='admin';adminFilter=filter;
     main.innerHTML=`<section class="card">${backButton}<h2>Panel interno</h2><p>Cargando solicitudes…</p></section>`;
+    const admin=profile?.role==='admin';
+    const baseJobs=supabase.from('service_requests')
+      .select('id,customer_id,service_name,street,address_number,city,phone,description,status,scheduled_at,operator_id,operator_name,price')
+      .order('created_at',{ascending:false}).limit(150);
     const [jobs,team]=await Promise.all([
-      supabase.from('service_requests').select('id,customer_id,service_name,street,address_number,city,phone,description,status,scheduled_at,operator_id,operator_name,price').order('created_at',{ascending:false}).limit(150),
-      supabase.from('profiles').select('id,full_name,role').eq('role','operator')
+      admin ? baseJobs : baseJobs.eq('operator_id',session.user.id),
+      admin ? supabase.from('profiles').select('id,full_name,role').eq('role','operator') : Promise.resolve({data:[],error:null})
     ]);
     if(currentView!=='admin')return;
     if(jobs.error){main.innerHTML=`<section class="card">${backButton}<h2>Panel interno</h2><p>${esc(jobs.error.message)}</p></section>`;return}
     const all=jobs.data||[], operators=team.data||[];
     const chosen=filter==='agenda'?all.filter(j=>['scheduled','in_progress'].includes(j.status)):all;
     const statuses=validStatus.map(x=>({id:x,label:statusLabels[x]}));
-    main.innerHTML=`<section class="card">${backButton}<h2>Panel interno · Reparado</h2><p class="notice">Solo personal autorizado. Máximo 150 solicitudes recientes.</p>
+    main.innerHTML=`<section class="card">${backButton}<h2>Panel interno · Reparado</h2><p class="notice">${admin?'Panel de administración':'Solicitudes asignadas a tu cuenta'}. Máximo 150 recientes.</p>
     <div class="flex-actions"><button type="button" data-admin-filter="all">Todas (${all.length})</button><button type="button" data-admin-filter="agenda">Agenda (${all.filter(j=>['scheduled','in_progress'].includes(j.status)).length})</button></div>
     <p data-feedback class="feedback" role="status"></p></section>
     ${chosen.map(job=>`<article class="card job-card"><h3>${esc(job.service_name)}</h3><p>${esc(job.street)} ${esc(job.address_number)}, ${esc(job.city)}</p><p>Tel.: ${esc(job.phone)} · ${money(job.price)}</p><p class="notice">${esc(job.description)}</p>
@@ -263,16 +267,43 @@ export function mountConnected({app, services, supabase}) {
       </form><div class="photo-links" data-photo-output="${esc(job.id)}"></div>
     </article>`).join('')||'<section class="card"><p>No hay solicitudes en esta vista.</p></section>'}`;
     main.querySelectorAll('[data-admin-filter]').forEach(btn=>btn.addEventListener('click',()=>renderAdmin(btn.dataset.adminFilter)));
+    if(!admin){
+      main.querySelectorAll('form[data-job-id]').forEach(form=>{
+        const job=all.find(j=>j.id===form.dataset.jobId);
+        if(!job)return;
+        for(const field of ['price','operator_id','scheduled_at']){
+          form.querySelector('[name="'+field+'"]')?.closest('label')?.remove();
+        }
+        form.querySelectorAll('select[name="status"] option').forEach(opt=>{
+          if(opt.value!==job.status &&
+             !(job.status==='scheduled' && opt.value==='in_progress') &&
+             !(job.status==='in_progress' && opt.value==='completed'))opt.remove();
+        });
+      });
+    }
     main.querySelectorAll('form[data-job-id]').forEach(form=>form.addEventListener('submit',async e=>{
       e.preventDefault();
       const fields=new FormData(form);
       const status=String(fields.get('status'));
+      if(!admin){
+        const original=all.find(j=>j.id===form.dataset.jobId);
+        if(!original)return message('Solicitud no encontrada.',true);
+        const allowed=status===original.status
+          || (original.status==='scheduled' && status==='in_progress')
+          || (original.status==='in_progress' && status==='completed');
+        if(!allowed)return message('El operario no puede realizar esta transición.',true);
+        const {error}=await supabase.from('service_requests').update({status}).eq('id',form.dataset.jobId);
+        if(error)message('No se pudo actualizar: '+error.message,true);
+        else {await renderAdmin(filter);message('Estado del trabajo actualizado.');}
+        return;
+      }
       const operator_id=String(fields.get('operator_id'))||null;
       const date=String(fields.get('scheduled_at'));
       const rawPrice=String(fields.get('price')??'').trim();
       const quotedPrice=rawPrice===''?null:Number(rawPrice);
       if(quotedPrice!==null && (!Number.isFinite(quotedPrice) || quotedPrice<0 || quotedPrice>999999))return message('Importe no válido.',true);
       if(!validStatus.includes(status))return message('Estado inválido.',true);
+      if(status==='quoted' && quotedPrice===null)return message('Indica el precio del presupuesto antes de enviarlo.',true);
       if(status==='scheduled' && (!operator_id || !date))return message('Para programar, selecciona operario y fecha.',true);
       const operator=operators.find(op=>op.id===operator_id);
       const stamp=date?new Date(date):null;
