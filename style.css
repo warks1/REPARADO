@@ -46,3 +46,8 @@ button:disabled{opacity:.55;cursor:wait}
   .bottom button {width:100%;min-width:0;white-space:normal;line-height:1.15;padding:7px 3px;overflow-wrap:anywhere;font-size:12px}
   main {padding-bottom:155px}
 }
+
+/* Catálogo: filtros y ocultación de tarjetas */
+.filters{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:16px}
+.service[hidden]{display:none}
+@media(max-width:650px){.filters{grid-template-columns:1fr}}

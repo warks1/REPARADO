@@ -78,3 +78,7 @@ El paquete **Integración v3** puede sustituir esta base cuando estén disponibl
 - En Perfil > Mis facturas se consultan las facturas registradas para el cliente que no están en borrador, mostrando base, IVA y total.
 - La aplicación no genera todavía documentos fiscales ni PDFs firmados; no debe utilizarse como sistema de facturación fiscal definitivo.
 - Para una instalación existente, tras V4 y V5, ejecuta también `supabase/migration-v6.sql`. Para una instalación nueva basta `schema.sql` y, opcionalmente, el SQL de fotos.
+
+### Catálogo
+- Buscador y filtro por fontanería, albañilería, parquet y reformas en el modo conectado.
+- Los precios unitarios de revestimientos y parquet muestran expresamente «€/m²». La superficie y el presupuesto definitivo deben verificarse antes de confirmar la visita; el catálogo no calcula un total automáticamente.

@@ -105,13 +105,26 @@ export function mountConnected({app, services, supabase}) {
     currentView='home';
     const name=profile?.full_name?` ${esc(profile.full_name)}`:'';
     main.innerHTML=`<section class="hero"><h1>Hola${name} 👋</h1><p>¿Qué necesitas reparar?</p><p class="notice">Precios orientativos con 21 % de IVA incluido. Materiales y trabajos especiales sujetos a presupuesto.</p></section>
-    <section class="grid">${services.map((item,i)=>`<article class="card service"><div class="ico">${iconFor(item[0])}</div><div><small>${esc(item[0])}</small><h3>${esc(item[1])}</h3><b>${item[2]?money(item[2]):'Por presupuesto'}</b><span>${item[2]?'IVA incluido':'Se valorará con presupuesto'}</span></div><button type="button" data-service="${i}">Solicitar</button></article>`).join('')}</section>
+    <section class="filters card"><label>Buscar reparación<input id="service-search" type="search" placeholder="Ej. grifo, parquet, pladur"></label><label>Tipo de servicio<select id="service-category"><option value="">Todos los servicios</option><option>Fontanería</option><option>Albañilería</option><option>Parquet</option><option>Reformas integrales</option></select></label></section><section class="grid">${services.map((item,i)=>`<article class="card service" data-category="${esc(item[0])}" data-service-name="${esc(item[1])}"><div class="ico">${iconFor(item[0])}</div><div><small>${esc(item[0])}</small><h3>${esc(item[1])}</h3><b>${item[2]?money(item[2])+(item[3]?' / '+item[3]:''):'Por presupuesto'}</b><span>${item[2]?'IVA incluido':'Se valorará con presupuesto'}</span></div><button type="button" data-service="${i}">Solicitar</button></article>`).join('')}</section>
     <nav class="bottom" aria-label="Menú de Reparado"><button data-view="requests">📋 Solicitudes</button><button data-view="chat">💬 Chat</button><button data-view="agenda">📅 Agenda</button><button data-view="profile">👤 Perfil</button><button data-view="notifications">🔔 Avisos</button>${userIsStaff()?'<button data-view="admin">🧰 Gestión</button>':''}</nav>`;
+    const search=main.querySelector('#service-search');
+    const category=main.querySelector('#service-category');
+    const applyFilters=()=>{
+      const term=search.value.trim().toLocaleLowerCase('es-ES');
+      const selected=category.value;
+      for(const card of main.querySelectorAll('.service')){
+        const title=card.dataset.serviceName.toLocaleLowerCase('es-ES');
+        card.hidden=Boolean((selected && card.dataset.category!==selected) ||
+          (term && !title.includes(term) && !card.dataset.category.toLocaleLowerCase('es-ES').includes(term)));
+      }
+    };
+    search.addEventListener('input',applyFilters);
+    category.addEventListener('change',applyFilters);
   }
   function requestForm(service){
     if(!service || !session)return renderHome();
     currentView='new-request';
-    main.innerHTML=`<section class="card">${backButton}<h2>${esc(service[1])}</h2><p>Precio orientativo: <strong>${service[2]?money(service[2]):'Por presupuesto'}</strong> ${service[2]?'(IVA incluido)':''}</p>
+    main.innerHTML=`<section class="card">${backButton}<h2>${esc(service[1])}</h2><p>Precio orientativo: <strong>${service[2]?money(service[2])+(service[3]?' / '+service[3]:''):'Por presupuesto'}</strong> ${service[2]?'(IVA incluido)':''}</p>
       <form id="new-request">
       <label>Calle<input name="street" required maxlength="120" autocomplete="street-address"></label>
       <label>Número, piso y puerta<input name="address_number" required maxlength="80"></label>
