@@ -34,3 +34,8 @@ button:disabled{opacity:.55;cursor:wait}
  .bottom button{font-size:12px}
 }
 @media(max-width:360px){header .logo{width:36px;height:36px}.demo-tag{max-width:112px}}
+
+/* Formularios de acceso y registro seguros, sin diálogos de contraseña */
+.auth form.hidden{display:none}
+.auth form label{text-align:left}
+.auth form button{min-height:44px}

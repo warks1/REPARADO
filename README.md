@@ -53,3 +53,8 @@ El paquete **Integración v3** puede sustituir esta base cuando estén disponibl
 - El cliente ya no puede establecer el precio real ni la asignación al crear una solicitud. El precio solo lo confirma el personal desde el panel y se muestra con IVA incluido.
 - Volver a ejecutar `schema.sql` en el proyecto Supabase de pruebas para aplicar los permisos por columna.
 - **Sin validación contra una base de datos real, no se considera listo para producción.**
+
+### Mejoras del registro y perfil
+- Formulario de registro con confirmación de contraseña, sin ventanas emergentes que muestran secretos.
+- Nombre y teléfono editables desde el perfil sin poder cambiar el rol.
+- Los nuevos registros son siempre cuentas de cliente; las de administrador/operario se provisionan aparte desde Supabase.

@@ -44,7 +44,7 @@ export function mountConnected({app, services, supabase}) {
   function showLogin(){
     currentView='login';session=null;profile=null;
     app.querySelector('#logout').classList.add('hidden');
-    main.innerHTML=`<section class="auth card"><div class="heroicon">🛠️</div><h1>Reparado</h1><p>Accede a tus servicios de reparación.</p><form id="login"><input name="email" type="email" autocomplete="email" placeholder="Correo electrónico" required><input name="password" type="password" autocomplete="current-password" placeholder="Contraseña" required><button>Entrar</button></form><button id="register" class="link" type="button">Crear una cuenta</button><p data-feedback class="feedback" role="status"></p></section>`;
+    main.innerHTML=`<section class="auth card"><div class="heroicon">🛠️</div><h1>Reparado</h1><p>Accede a tus servicios de reparación.</p><form id="login"><input name="email" type="email" autocomplete="email" placeholder="Correo electrónico" required><input name="password" type="password" autocomplete="current-password" placeholder="Contraseña" required><button>Entrar</button></form><button id="register" class="link" type="button">Crear una cuenta</button><form id="register-form" class="hidden"><label>Nombre y apellidos<input name="full_name" autocomplete="name" maxlength="100" required></label><label>Correo electrónico<input name="email" type="email" autocomplete="email" required></label><label>Contraseña<input name="password" type="password" autocomplete="new-password" minlength="8" required></label><label>Repetir contraseña<input name="password_confirm" type="password" autocomplete="new-password" minlength="8" required></label><button type="submit">Crear cuenta de cliente</button></form><p data-feedback class="feedback" role="status"></p></section>`;
     main.querySelector('#login').addEventListener('submit',async event=>{
       event.preventDefault();
       const data=new FormData(event.currentTarget);
@@ -52,20 +52,36 @@ export function mountConnected({app, services, supabase}) {
       if(error){message(error.message,true);return}
       await boot();
     });
-    main.querySelector('#register').addEventListener('click',async()=>{
-      const email=window.prompt('Introduce tu correo electrónico:');
-      if(!email)return;
-      const password=window.prompt('Elige una contraseña (mínimo 6 caracteres):');
-      if(!password)return;
-      const {error}=await supabase.auth.signUp({email:email.trim(),password});
-      message(error?error.message:'Cuenta registrada. Revisa tu correo electrónico para confirmar el acceso.',Boolean(error));
+    main.querySelector('#register').addEventListener('click',()=>{
+      const registerForm=main.querySelector('#register-form');
+      const creating=registerForm.classList.contains('hidden');
+      registerForm.classList.toggle('hidden',!creating);
+      main.querySelector('#login').classList.toggle('hidden',creating);
+      main.querySelector('#register').textContent=creating?'Ya tengo cuenta':'Crear una cuenta';
+      message('');
+    });
+    main.querySelector('#register-form').addEventListener('submit',async event=>{
+      event.preventDefault();
+      const form=event.currentTarget;
+      const fields=new FormData(form);
+      const email=String(fields.get('email')||'').trim();
+      const password=String(fields.get('password')||'');
+      if(password!==fields.get('password_confirm'))return message('Las contraseñas no coinciden.',true);
+      if(password.length<8)return message('La contraseña debe tener al menos 8 caracteres.',true);
+      const submit=form.querySelector('[type=submit]');submit.disabled=true;
+      const {error}=await supabase.auth.signUp({
+        email,password,options:{data:{full_name:String(fields.get('full_name')||'').trim()}}
+      });
+      submit.disabled=false;
+      message(error?error.message:'Cuenta registrada. Revisa tu correo electrónico si necesitas confirmar el acceso.',Boolean(error));
+      if(!error)form.reset();
     });
   }
   async function boot(){
     const {data,error}=await supabase.auth.getSession();
     if(error || !data?.session){showLogin();return}
     session=data.session;
-    const result=await supabase.from('profiles').select('id,full_name,role').eq('id',session.user.id).maybeSingle();
+    const result=await supabase.from('profiles').select('id,full_name,phone,role').eq('id',session.user.id).maybeSingle();
     profile=result.data || {role:'customer',full_name:''};
     app.querySelector('#logout').classList.remove('hidden');
     renderHome();
@@ -177,7 +193,19 @@ export function mountConnected({app, services, supabase}) {
   }
   function loadProfile(){
     currentView='profile';
-    main.innerHTML=`<section class="card">${backButton}<h2>Mi perfil</h2><p>${esc(session.user.email)}</p><p>Tipo de cuenta: ${esc(profile?.role||'customer')}</p></section>`;
+    main.innerHTML=`<section class="card">${backButton}<h2>Mi perfil</h2><p>${esc(session.user.email)}</p><p>Tipo de cuenta: ${esc(profile?.role||'customer')}</p>
+      <form id="profile-form"><label>Nombre completo<input name="full_name" autocomplete="name" maxlength="100" value="${esc(profile?.full_name||'')}"></label><label>Teléfono<input name="phone" type="tel" autocomplete="tel" maxlength="25" value="${esc(profile?.phone||'')}"></label><button type="submit">Guardar perfil</button></form>
+      <p data-feedback class="feedback" role="status"></p></section>`;
+    main.querySelector('#profile-form').addEventListener('submit',async event=>{
+      event.preventDefault();
+      const fields=new FormData(event.currentTarget);
+      const full_name=String(fields.get('full_name')||'').trim();
+      const phone=String(fields.get('phone')||'').trim();
+      if(full_name.length>100 || phone.length>25)return message('Los datos son demasiado largos.',true);
+      const {error}=await supabase.from('profiles').update({full_name,phone}).eq('id',session.user.id);
+      if(error){message('No se pudo guardar: '+error.message,true);return;}
+      profile={...profile,full_name,phone};message('Perfil actualizado.');
+    });
   }
 
   async function loadStaffChat(customerId, serviceName){
