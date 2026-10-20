@@ -1,3 +1,4 @@
+import { renderNotifications } from './notifications.js'
 import { Capacitor } from '@capacitor/core'
 import { PushNotifications } from '@capacitor/push-notifications'
 
@@ -30,6 +31,7 @@ export function mountConnected({app, services, supabase}) {
       else if(view==='agenda')loadAgenda();
       else if(view==='chat')loadChat();
       else if(view==='profile')loadProfile();
+      else if(view==='notifications')loadNotifications();
       else if(view==='admin')renderAdmin();
       else renderHome();
     }
@@ -87,7 +89,7 @@ export function mountConnected({app, services, supabase}) {
     const name=profile?.full_name?` ${esc(profile.full_name)}`:'';
     main.innerHTML=`<section class="hero"><h1>Hola${name} 👋</h1><p>¿Qué necesitas reparar?</p><p class="notice">Precios orientativos con 21 % de IVA incluido. Materiales y trabajos especiales sujetos a presupuesto.</p></section>
     <section class="grid">${services.map((item,i)=>`<article class="card service"><div class="ico">${iconFor(item[0])}</div><div><small>${esc(item[0])}</small><h3>${esc(item[1])}</h3><b>${money(item[2])}</b><span>${item[2]?'IVA incluido':'Se valorará con presupuesto'}</span></div><button type="button" data-service="${i}">Solicitar</button></article>`).join('')}</section>
-    <nav class="bottom" aria-label="Menú de Reparado"><button data-view="requests">📋 Solicitudes</button><button data-view="chat">💬 Chat</button><button data-view="agenda">📅 Agenda</button><button data-view="profile">👤 Perfil</button>${userIsStaff()?'<button data-view="admin">🧰 Gestión</button>':''}</nav>`;
+    <nav class="bottom" aria-label="Menú de Reparado"><button data-view="requests">📋 Solicitudes</button><button data-view="chat">💬 Chat</button><button data-view="agenda">📅 Agenda</button><button data-view="profile">👤 Perfil</button><button data-view="notifications">🔔 Avisos</button>${userIsStaff()?'<button data-view="admin">🧰 Gestión</button>':''}</nav>`;
   }
   function requestForm(service){
     if(!service || !session)return renderHome();
@@ -138,7 +140,15 @@ export function mountConnected({app, services, supabase}) {
     const {data,error}=await supabase.from('service_requests').select('id,service_name,status,price,street,address_number,city,preferred_date,scheduled_at,operator_name').eq('customer_id',session.user.id).order('created_at',{ascending:false});
     if(currentView!=='requests')return;
     if(error){main.innerHTML=`<section class="card">${backButton}<h2>Mis solicitudes</h2><p>${esc(error.message)}</p></section>`;return}
-    main.innerHTML=`<section class="card">${backButton}<h2>Mis solicitudes</h2>${data?.length?data.map(r=>`<article class="request"><strong>${esc(r.service_name)}</strong><span>${esc(statusLabels[r.status]||r.status)}</span><p>${esc(r.street)}, ${esc(r.address_number)} · ${esc(r.city)}</p>${r.price!=null?`<p>Importe confirmado: <b>${money(r.price)}</b> (IVA incluido)</p>`:''}<small>${r.scheduled_at?'Visita: '+esc(safeTime(r.scheduled_at)):'Fecha preferida: '+esc(r.preferred_date||'No indicada')}</small></article>`).join(''):'<p>Todavía no tienes solicitudes.</p>'}</section>`;
+    main.innerHTML=`<section class="card">${backButton}<h2>Mis solicitudes</h2>${data?.length?data.map(r=>`<article class="request"><strong>${esc(r.service_name)}</strong><span>${esc(statusLabels[r.status]||r.status)}</span><p>${esc(r.street)}, ${esc(r.address_number)} · ${esc(r.city)}</p>${r.price!=null?`<p>Importe confirmado: <b>${money(r.price)}</b> (IVA incluido)</p>`:''}<small>${r.scheduled_at?'Visita: '+esc(safeTime(r.scheduled_at)):'Fecha preferida: '+esc(r.preferred_date||'No indicada')}</small>${r.status==="quoted" && r.price!==null ? `<div class="flex-actions"><button type="button" data-accept-quote="${esc(r.id)}">Aceptar presupuesto de ${money(r.price)}</button></div>` : ""}</article>`).join(''):'<p>Todavía no tienes solicitudes.</p>'}</section>`;
+    main.querySelectorAll('[data-accept-quote]').forEach(button=>button.addEventListener('click',async()=>{
+      button.disabled=true;
+      const {data:accepted,error}=await supabase.rpc('accept_reparado_quote',{p_request_id:button.dataset.acceptQuote});
+      if(error){message('No se pudo aceptar el presupuesto: '+error.message,true);button.disabled=false;return}
+      if(!accepted){message('Este presupuesto ya no está disponible. Actualiza la solicitud.',true);button.disabled=false;return}
+      await loadRequests();
+      message('Presupuesto aceptado. Reparado podrá programar la visita.');
+    }));
   }
   async function loadAgenda(){
     currentView='agenda';main.innerHTML=`<section class="card">${backButton}<h2>Mi agenda</h2><p>Cargando…</p></section>`;
@@ -160,6 +170,10 @@ export function mountConnected({app, services, supabase}) {
       if(error){message(error.message,true);return}
       await loadChat();
     });
+  }
+  async function loadNotifications(){
+    currentView='notifications';
+    await renderNotifications({main,supabase,session,backButton,onRefresh:()=>currentView==='notifications'});
   }
   function loadProfile(){
     currentView='profile';
