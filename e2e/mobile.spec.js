@@ -41,6 +41,9 @@ test('filtros, categoría y formulario de cliente navegan y vuelven correctament
   await expect(page.locator('#category-quick-filters')).toBeVisible();
   await page.locator('.category-tile[data-category-open="Fontanería"]').click();
   await expect(page.locator('.category-view h1')).toHaveText('Fontanería');
+  const hero=page.locator('.category-view .hero-illustration');
+  await expect(hero).toBeVisible();
+  await expect.poll(()=>hero.evaluate(img=>img.complete && img.naturalWidth>=200)).toBe(true);
   await expect(page.locator('.category-services .catalog-service').first()).toBeVisible();
   await expect(page.locator('.category-services .catalog-service:visible')).toHaveCount(4);
   const photoSizes=await page.locator('.category-services .catalog-service:visible .service-photo').evaluateAll(items=>

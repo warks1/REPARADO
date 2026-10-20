@@ -76,6 +76,10 @@ export function categoryArt(slug) {
 // En la cabecera grande, la imagen de baja resolución del atlas producía
 // artefactos. El vector original permite un grifo definido a cualquier tamaño.
 export function categoryHeroArt(slug){
+  if(slug==='plumbing'){
+    const src=(import.meta.env?.BASE_URL || './')+'hero-plumbing.webp';
+    return '<div class="category-art art-plumbing"><img class="hero-illustration" src="'+esc(src)+'" width="213" height="205" decoding="async" alt="Grifo azul tridimensional"></div>';
+  }
   return '<div class="category-art art-'+esc(slug)+'">'+(art[slug]||art.renovation)+'</div>';
 }
 export function logo() {
@@ -170,7 +174,7 @@ export function renderCategory(services,id) {
     return (aa<0?99:aa)-(bb<0?99:bb);
   });
   return '<div class="customer-page category-view theme-'+c.slug+'">'+
-     '<button class="screen-back" type="button" data-back>'+ico('back')+' Volver</button>'+
+     '<button class="screen-back" type="button" data-back aria-label="Volver">'+ico('back')+'</button>'+
      '<section class="category-hero"><div class="category-hero-copy"><h1>'+esc(c.title)+'</h1><p>'+esc(c.description)+'</p></div>'+categoryHeroArt(c.slug)+'</section>'+
      '<div class="trust-badges"><span>'+ico('shield')+' Solicitud segura</span><span>'+ico('star')+' Atención personalizada</span><span>'+ico('wallet')+' Precios orientativos</span></div>'+
      '<div class="section-heading"><h2>Servicios más solicitados</h2></div>'+

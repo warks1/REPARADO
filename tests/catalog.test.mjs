@@ -86,7 +86,8 @@ test('el grifo de la cabecera es vectorial y no muestra otras partes del atlas',
  const detail=renderCategory(services,'Fontanería');
  const hero=detail.match(/<section class="category-hero">([\s\S]*?)<\/section>/)?.[1];
  assert.ok(hero);
- assert.ok(hero.includes('role="img" aria-label="Grifo azul"'));
+ assert.ok(hero.includes('hero-plumbing.webp'));
+ assert.ok(hero.includes('class="hero-illustration"'));
  assert.ok(!hero.includes('mirror-atlas.webp'));
 });
 
@@ -139,4 +140,11 @@ test('el buscador encuentra cualquier servicio, también los no destacados',asyn
  assert.deepEqual(matchServices(items,'parquet').map(x=>x.i),[2]);
  assert.equal(matchServices(items,'ninguno').length,0);
  assert.equal(matchServices(items,'').length,3);
+});
+
+test('el detalle tiene un grifo 3D y un botón Volver accesible',()=>{
+ const html=renderCategory(services,'Fontanería');
+ assert.ok(html.includes('hero-plumbing.webp'));
+ assert.ok(html.includes('aria-label="Volver"'));
+ assert.ok(html.includes('data-back aria-label'));
 });

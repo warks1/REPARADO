@@ -145,3 +145,6 @@ El buscador utiliza el mismo filtro en la app conectada y en el modo local. Encu
 
 ## Puesta en producción de Reparado
 Consultar [`docs/production-readiness.md`](docs/production-readiness.md) para la configuración de Supabase, pruebas de seguridad, notificaciones y las publicaciones Android y Apple. Las apps nativas de pruebas no deben distribuirse como versiones finales sin esas comprobaciones.
+
+### Cabecera 3D original de Fontanería
+Se incluye `public/hero-plumbing.webp`, recorte con bordes suavizados del grifo 3D del boceto original. El título, la descripción y el botón de volver siguen siendo HTML accesible, sin convertir la página completa en una captura.
