@@ -82,3 +82,7 @@ El paquete **Integración v3** puede sustituir esta base cuando estén disponibl
 ### Catálogo
 - Buscador y filtro por fontanería, albañilería, parquet y reformas en el modo conectado.
 - Los precios unitarios de revestimientos y parquet muestran expresamente «€/m²». La superficie y el presupuesto definitivo deben verificarse antes de confirmar la visita; el catálogo no calcula un total automáticamente.
+
+### Acceso desde el móvil
+- Se ha añadido icono SVG propio (paleta, metro y tubería), un manifiesto web y metadatos para acceso desde la pantalla de inicio.
+- El manifiesto permite presentación tipo aplicación donde el navegador lo admita, **sin sustituir las compilaciones nativas Android/iOS**. No se ha añadido un service worker para evitar servir versiones antiguas almacenadas en caché.

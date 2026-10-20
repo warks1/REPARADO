@@ -1,0 +1,20 @@
+{
+  "name": "Reparado - Servicios de reparación",
+  "short_name": "Reparado",
+  "description": "Solicitudes de fontanería, albañilería, pladur y parquet",
+  "lang": "es",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#ffffff",
+  "theme_color": "#f7f9fb",
+  "icons": [
+    {
+      "src": "./icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
