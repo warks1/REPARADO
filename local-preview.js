@@ -7,7 +7,7 @@ export function mountLocal({app,services}){
   const storeKey='reparado-local-requests';
   const profileKey='reparado-local-profile';
   const saved=()=>{try{const items=JSON.parse(localStorage.getItem(storeKey)||'[]');return Array.isArray(items)?items:[]}catch{return []}};
-  const profile=()=>{try{const data=JSON.parse(localStorage.getItem(profileKey)||'{}');return data && typeof data==='object' && !Array.isArray(data)?data:{}}catch{return {}};
+  const profile=()=>{try{const data=JSON.parse(localStorage.getItem(profileKey)||'{}');return data && typeof data==='object' && !Array.isArray(data)?data:{}}catch{return {}}};
   const persist=items=>localStorage.setItem(storeKey,JSON.stringify(items));
   let page='home',lastCategory=null;
   app.innerHTML='<div class="shell">'+appHeader({name:profile().name})+'<main id="main"></main><footer>© Reparado · Servicios para tu hogar</footer></div>'+bottomNavigation();
