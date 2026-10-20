@@ -1,0 +1,55 @@
+name: Reparado Android beta APK
+on:
+  push:
+    branches: [main]
+    paths:
+      - '*.js'
+      - '*.css'
+      - '*.ts'
+      - 'public/**'
+      - 'package.json'
+      - 'capacitor.config.ts'
+      - '.github/workflows/android-beta.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  build-android-apk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - name: Preparar herramientas Android
+        uses: android-actions/setup-android@v3
+      - name: Instalar dependencias
+        run: npm install --no-audit --no-fund
+      - name: Ejecutar pruebas unitarias
+        run: npm test
+      - name: Compilar web para aplicación nativa
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+        run: npm run build
+      - name: Crear plataforma Android e integrar Capacitor
+        run: |
+          npx cap add android
+          npx cap sync android
+      - name: Compilar APK de prueba
+        run: |
+          cd android
+          chmod +x gradlew
+          ./gradlew assembleDebug --no-daemon
+      - name: Guardar APK para instalación de pruebas
+        uses: actions/upload-artifact@v4
+        with:
+          name: Reparado-Android-Beta-Debug-APK
+          path: android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+          retention-days: 14

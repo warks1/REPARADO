@@ -131,3 +131,7 @@ Las cuatro tarjetas utilizan imágenes WebP recortadas directamente de la refere
 
 ### Fotografías de los cuatro servicios principales de Fontanería
 Las miniaturas de fugas, desatascos, termos y grifería se incluyen como cuatro WebP independientes en `public/services/`, extraídos de la referencia; se comprueba su carga en iPhone, Android y tablet.
+
+
+## APK de prueba para Android
+GitHub Actions ejecuta el flujo «Reparado Android beta APK» tras cambios de la app o desde «Run workflow». Instala Java 21, compila la web con Vite, crea la plataforma Android con Capacitor 8 y ejecuta Gradle para producir `app-debug.apk`. El resultado estará disponible durante 14 días como artefacto `Reparado-Android-Beta-Debug-APK` en la ejecución de GitHub Actions. Es una APK **debug para pruebas**: no está firmada como versión de tienda, no es adecuada para distribución pública y requiere instalar manualmente desde el móvil. Si no existen los secretos VITE_SUPABASE_URL y VITE_SUPABASE_ANON_KEY, conserva el modo de almacenamiento local y no envía solicitudes al personal. Para iOS, el proyecto contiene Capacitor iOS, pero faltan el proyecto compilado, la firma Apple Developer, las pruebas en dispositivo y la distribución TestFlight/App Store.
