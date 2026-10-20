@@ -86,3 +86,12 @@ El paquete **Integración v3** puede sustituir esta base cuando estén disponibl
 ### Acceso desde el móvil
 - Se ha añadido icono SVG propio (paleta, metro y tubería), un manifiesto web y metadatos para acceso desde la pantalla de inicio.
 - El manifiesto permite presentación tipo aplicación donde el navegador lo admita, **sin sustituir las compilaciones nativas Android/iOS**. No se ha añadido un service worker para evitar servir versiones antiguas almacenadas en caché.
+
+
+## Interfaz visual de cliente (boceto elegido)
+
+- Pantalla inicial como el diseño aprobado: cabecera Reparado naranja, búsqueda, banner, categorías Fontanería, Albañilería y Pladur, Parquet y Reformas.
+- Iconos vectoriales con microanimaciones (respetan `prefers-reduced-motion`); fichas de categoría con servicios reales del catálogo y precios orientativos con IVA incluido.
+- Navegación inferior fija con Inicio, Solicitudes, Agenda, Chat y Perfil; adaptable a Android, iOS, tablets y web.
+- Solicitud cliente con dirección, teléfono, descripción, fotos, fecha y horario preferido. El horario queda incorporado en la descripción de la solicitud para mantener compatibilidad con la base actual.
+- Sin credenciales Supabase, se muestra la **misma interfaz de cliente** y se pueden probar flujos y guardar solicitudes **solo localmente**; no se finge el envío real al equipo. Para atender solicitudes reales hay que configurar Supabase.

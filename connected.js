@@ -1,3 +1,4 @@
+import {appHeader,bottomNavigation,setActiveNav,renderLanding,renderCategory,serviceFormHeader,formPeriodPicker,serviceRow} from './customer-ui.js'
 import { operatorMaySetStatus } from './rules.js'
 import { renderInvoices } from './invoices.js'
 import { renderNotifications } from './notifications.js'
@@ -12,8 +13,8 @@ export function mountConnected({app, services, supabase}) {
   const iconFor = name => ({'Fontanería':'🚰','Albañilería':'🧱','Parquet':'🪵','Reformas integrales':'🏠'})[name] || '🛠️';
   const statusLabels = {new:'Nueva', quoted:'Presupuesto',accepted:'Aceptada',scheduled:'Programada',in_progress:'En curso',completed:'Terminada',cancelled:'Cancelada'};
   const validStatus = Object.keys(statusLabels);
-  let session=null, profile=null, pushReady=false, currentView='home', adminFilter='all';
-  app.innerHTML = `<div class="shell"><header><div class="logo"><img src="./icon.svg" width="44" height="44" alt="Reparado"></div><div><b>Reparado</b><small>Servicios de reparación</small></div><button id="logout" class="ghost hidden">Cerrar sesión</button></header><main id="main"></main><footer>© AMS · Empresa propietaria del software</footer></div>`;
+  let session=null, profile=null, pushReady=false, currentView='home', adminFilter='all', lastCategory=null;
+  app.innerHTML = `<div class="shell">${appHeader()}<main id="main"></main><footer>© Reparado · Servicios para tu hogar <button type="button" id="logout" class="hidden" hidden>Cerrar sesión</button></footer></div>${bottomNavigation()}`;
   const main=app.querySelector('#main');
   const message = (text, error=false) => {
     const node=main.querySelector('[data-feedback]');
@@ -23,12 +24,20 @@ export function mountConnected({app, services, supabase}) {
   const safeTime = raw => raw ? new Date(raw).toLocaleString('es-ES') : 'Sin fecha';
   const userIsStaff = () => profile && ['admin','operator'].includes(profile.role);
   app.addEventListener('click', event => {
-    if(event.target.closest('[data-back]')){renderHome();return}
+    if(event.target.closest('[data-back]')){if(currentView==='new-request' && lastCategory)renderCategoryPage(lastCategory);else renderHome();return}
+    const categoryButton=event.target.closest('[data-category-open]');
+    if(categoryButton){renderCategoryPage(categoryButton.dataset.categoryOpen);return}
+    const customButton=event.target.closest('[data-custom-request]');
+    if(customButton){lastCategory=customButton.dataset.customRequest;requestForm([lastCategory,'Consulta personalizada',0]);return}
+    if(event.target.closest('[data-show-all]')){main.querySelector('.category-grid')?.scrollIntoView({behavior:'smooth'});return}
+    if(event.target.closest('[data-logout]')){app.querySelector('#logout').click();return}
     const s=event.target.closest('[data-service]');
     if(s){requestForm(services[Number(s.dataset.service)]);return}
     const menu=event.target.closest('[data-view]');
     if(menu){
       const view=menu.dataset.view;
+      if(view==='home'){renderHome();return}
+      if(!session){showLogin();return}
       if(view==='requests')loadRequests();
       else if(view==='agenda')loadAgenda();
       else if(view==='chat')loadChat();
@@ -41,10 +50,10 @@ export function mountConnected({app, services, supabase}) {
   app.querySelector('#logout').addEventListener('click', async () => {
     const {error}=await supabase.auth.signOut();
     if(error){message(error.message,true);return}
-    session=null;profile=null;showLogin();
+    session=null;profile=null;renderHome();
   });
   function showLogin(){
-    currentView='login';session=null;profile=null;
+    currentView='login';setActiveNav(app,'profile');session=null;profile=null;
     app.querySelector('#logout').classList.add('hidden');
     main.innerHTML=`<section class="auth card"><div class="heroicon"><img src="./icon.svg" width="44" height="44" alt=""></div><h1>Reparado</h1><p>Accede a tus servicios de reparación.</p><form id="login"><input name="email" type="email" autocomplete="email" placeholder="Correo electrónico" required><input name="password" type="password" autocomplete="current-password" placeholder="Contraseña" required><button>Entrar</button></form><button id="register" class="link" type="button">Crear una cuenta</button><form id="register-form" class="hidden"><label>Nombre y apellidos<input name="full_name" autocomplete="name" maxlength="100" required></label><label>Correo electrónico<input name="email" type="email" autocomplete="email" required></label><label>Contraseña<input name="password" type="password" autocomplete="new-password" minlength="8" required></label><label>Repetir contraseña<input name="password_confirm" type="password" autocomplete="new-password" minlength="8" required></label><button type="submit">Crear cuenta de cliente</button></form><p data-feedback class="feedback" role="status"></p></section>`;
     main.querySelector('#login').addEventListener('submit',async event=>{
@@ -81,11 +90,13 @@ export function mountConnected({app, services, supabase}) {
   }
   async function boot(){
     const {data,error}=await supabase.auth.getSession();
-    if(error || !data?.session){showLogin();return}
+    if(error || !data?.session){session=null;profile=null;renderHome();return}
     session=data.session;
     const result=await supabase.from('profiles').select('id,full_name,phone,role').eq('id',session.user.id).maybeSingle();
     profile=result.data || {role:'customer',full_name:''};
-    app.querySelector('#logout').classList.remove('hidden');
+    app.querySelector('#logout').classList.add('hidden');
+    const avatar=app.querySelector('.round-profile');
+    if(avatar && profile?.full_name)avatar.textContent=profile.full_name.trim().slice(0,1).toUpperCase();
     renderHome();
     registerNativePush();
   }
@@ -102,40 +113,57 @@ export function mountConnected({app, services, supabase}) {
     }catch(error){console.warn('Push nativo no disponible:',error)}
   }
   function renderHome(){
-    if(!session){showLogin();return}
-    currentView='home';
-    const name=profile?.full_name?` ${esc(profile.full_name)}`:'';
-    main.innerHTML=`<section class="hero"><h1>Hola${name} 👋</h1><p>¿Qué necesitas reparar?</p><p class="notice">Precios orientativos con 21 % de IVA incluido. Materiales y trabajos especiales sujetos a presupuesto.</p></section>
-    <section class="filters card"><label>Buscar reparación<input id="service-search" type="search" placeholder="Ej. grifo, parquet, pladur"></label><label>Tipo de servicio<select id="service-category"><option value="">Todos los servicios</option><option>Fontanería</option><option>Albañilería</option><option>Parquet</option><option>Reformas integrales</option></select></label></section><section class="grid">${services.map((item,i)=>`<article class="card service" data-category="${esc(item[0])}" data-service-name="${esc(item[1])}"><div class="ico">${iconFor(item[0])}</div><div><small>${esc(item[0])}</small><h3>${esc(item[1])}</h3><b>${item[2]?money(item[2])+(item[3]?' / '+item[3]:''):'Por presupuesto'}</b><span>${item[2]?'IVA incluido':'Se valorará con presupuesto'}</span></div><button type="button" data-service="${i}">Solicitar</button></article>`).join('')}</section>
-    <nav class="bottom" aria-label="Menú de Reparado"><button data-view="requests">📋 Solicitudes</button><button data-view="chat">💬 Chat</button><button data-view="agenda">📅 Agenda</button><button data-view="profile">👤 Perfil</button><button data-view="notifications">🔔 Avisos</button>${userIsStaff()?'<button data-view="admin">🧰 Gestión</button>':''}</nav>`;
-    const search=main.querySelector('#service-search');
-    const category=main.querySelector('#service-category');
-    const applyFilters=()=>{
+    currentView='home';lastCategory=null;setActiveNav(app,'home');
+    main.innerHTML=renderLanding(services);
+    const search=main.querySelector('#category-search');
+    search?.addEventListener('input',()=>{
       const term=search.value.trim().toLocaleLowerCase('es-ES');
-      const selected=category.value;
-      for(const card of main.querySelectorAll('.service')){
-        const title=card.dataset.serviceName.toLocaleLowerCase('es-ES');
-        card.hidden=Boolean((selected && card.dataset.category!==selected) ||
-          (term && !title.includes(term) && !card.dataset.category.toLocaleLowerCase('es-ES').includes(term)));
-      }
-    };
-    search.addEventListener('input',applyFilters);
-    category.addEventListener('change',applyFilters);
+      const matches=services.map((s,i)=>({s,i}))
+        .filter(({s})=>!term || s[1].toLocaleLowerCase('es-ES').includes(term) || s[0].toLocaleLowerCase('es-ES').includes(term));
+      main.querySelector('.popular-list').innerHTML=(!term?matches.slice(0,4):matches)
+        .map(({s,i})=>serviceRow(s,i)).join('');
+      let visible=0;
+      main.querySelectorAll('.category-tile').forEach(tile=>{
+        const id=tile.dataset.categoryOpen;
+        const hasMatch=matches.some(({s})=>s[0]===id);
+        tile.hidden=!hasMatch;if(hasMatch)visible++;
+      });
+      main.querySelector('.no-results').hidden=Boolean(visible || matches.length);
+    });
+  }
+  function renderCategoryPage(id){
+    lastCategory=id;currentView='category';setActiveNav(app,'home');
+    main.innerHTML=renderCategory(services,id);
   }
   function requestForm(service){
-    if(!service || !session)return renderHome();
-    currentView='new-request';
-    main.innerHTML=`<section class="card">${backButton}<h2>${esc(service[1])}</h2><p>Precio orientativo: <strong>${service[2]?money(service[2])+(service[3]?' / '+service[3]:''):'Por presupuesto'}</strong> ${service[2]?'(IVA incluido)':''}</p>
-      <form id="new-request">
-      <label>Calle<input name="street" required maxlength="120" autocomplete="street-address"></label>
-      <label>Número, piso y puerta<input name="address_number" required maxlength="80"></label>
-      <div class="row"><label>Código postal<input name="postal_code" inputmode="numeric" maxlength="5" pattern="[0-9]{5}" required></label><label>Municipio<input name="city" value="Barcelona" required maxlength="90"></label></div>
-      <label>Teléfono<input name="phone" type="tel" required maxlength="25"></label>
-      <label>Fecha preferida<input name="preferred_date" type="date"></label>
-      <label>Descripción<textarea name="description" required maxlength="2000"></textarea></label>
-      <label>Fotografías opcionales (hasta 4, máximo 8 MB cada una)<input name="photos" type="file" accept="image/jpeg,image/png,image/webp,image/heic" multiple></label>
-      <button type="submit">Enviar solicitud</button></form><p class="notice">Las fotos requieren que el almacenamiento privado de Supabase esté configurado. Si fallan, tu solicitud seguirá registrada y te avisaremos en pantalla.</p>
-      <p data-feedback class="feedback" role="status"></p></section>`;
+    if(!service)return renderHome();
+    if(!session){showLogin();return}
+    currentView='new-request';setActiveNav(app,'requests');
+    main.innerHTML='<div class="request-screen"><button type="button" class="screen-back" data-back>← Volver</button>'+
+      '<section class="card"><h2>Nueva solicitud</h2>'+serviceFormHeader(service)+
+      '<form id="new-request">'+
+      '<label>Dirección del servicio<input name="street" placeholder="Calle o avenida" required maxlength="120" autocomplete="street-address"></label>'+
+      '<label>Número, piso y puerta<input name="address_number" required maxlength="80"></label>'+
+      '<div class="row"><label>Código postal<input name="postal_code" inputmode="numeric" maxlength="5" pattern="[0-9]{5}" required></label>'+
+      '<label>Municipio<input name="city" value="Barcelona" maxlength="90" required></label></div>'+
+      '<label>Teléfono de contacto<input name="phone" type="tel" maxlength="25" required value="'+esc(profile?.phone||'')+'"></label>'+
+      '<label>Descripción del problema<textarea name="description" maxlength="1800" placeholder="Explícanos lo que necesitas reparar..." required></textarea></label>'+
+      '<label>Fotos (opcional, máximo 4)<input name="photos" type="file" accept="image/jpeg,image/png,image/webp,image/heic" multiple></label>'+
+      '<div class="photo-preview" aria-live="polite"></div>'+
+      '<label>Fecha preferida<input name="preferred_date" type="date"></label>'+formPeriodPicker()+
+      '<button type="submit">Enviar solicitud →</button></form>'+
+      '<p class="notice">Precio orientativo, IVA incluido cuando se indica. Los trabajos especiales se valoran mediante presupuesto.</p>'+
+      '<p data-feedback class="feedback" role="status"></p></section></div>';
+    const photos=main.querySelector('[name="photos"]');
+    let photoUrls=[];
+    photos.addEventListener('change',()=>{
+      photoUrls.forEach(URL.revokeObjectURL);photoUrls=[];
+      const wrap=main.querySelector('.photo-preview');wrap.replaceChildren();
+      for(const file of Array.from(photos.files||[]).slice(0,4)){
+        const url=URL.createObjectURL(file);photoUrls.push(url);
+        const img=document.createElement('img');img.src=url;img.alt='Foto seleccionada';wrap.append(img);
+      }
+    });
     const form=main.querySelector('#new-request');
     form.addEventListener('submit',async event=>{
       event.preventDefault();
@@ -151,7 +179,7 @@ export function mountConnected({app, services, supabase}) {
         street:String(fields.get('street')).trim(),
         address_number:String(fields.get('address_number')).trim(),postal_code:String(fields.get('postal_code')).trim(),
         city:String(fields.get('city')).trim(),phone:String(fields.get('phone')).trim(),
-        preferred_date:fields.get('preferred_date')||null,description:String(fields.get('description')).trim()
+        preferred_date:fields.get('preferred_date')||null,description:String(fields.get('description')).trim()+'\nHorario preferido: '+String(fields.get('preferred_period')||'Indiferente')
       };
       const {data,error}=await supabase.from('service_requests').insert(payload).select('id').single();
       if(error){message('No se pudo guardar la solicitud: '+error.message,true);button.disabled=false;return}
@@ -163,10 +191,12 @@ export function mountConnected({app, services, supabase}) {
         if(uploaded.error)failures++;
       }
       form.remove();
-      message(failures?`Solicitud registrada, pero ${failures} foto(s) no se pudieron subir. Comunícalo por el chat.`:'Solicitud enviada correctamente. Puedes seguirla desde Mis solicitudes.',Boolean(failures));
+      main.querySelector('.request-screen .card').insertAdjacentHTML('beforeend','<div class="request-confirm"><h2>Solicitud recibida</h2><p>Hemos registrado tu solicitud. Puedes consultar su estado en Mis solicitudes.</p><button type="button" class="primary-cta" data-view="requests">Ver mis solicitudes →</button></div>');
+      message(failures?`La solicitud se registró, pero ${failures} foto(s) no se pudieron subir.`:'Solicitud enviada correctamente.',Boolean(failures));
     });
   }
   async function loadRequests(){
+    setActiveNav(app,'requests');
     currentView='requests';main.innerHTML=`<section class="card">${backButton}<h2>Mis solicitudes</h2><p>Cargando…</p></section>`;
     const {data,error}=await supabase.from('service_requests').select('id,service_name,status,price,street,address_number,city,preferred_date,scheduled_at,operator_name').eq('customer_id',session.user.id).order('created_at',{ascending:false});
     if(currentView!=='requests')return;
@@ -201,12 +231,14 @@ export function mountConnected({app, services, supabase}) {
     }));
   }
   async function loadAgenda(){
+    setActiveNav(app,'agenda');
     currentView='agenda';main.innerHTML=`<section class="card">${backButton}<h2>Mi agenda</h2><p>Cargando…</p></section>`;
     const {data,error}=await supabase.from('service_requests').select('service_name,scheduled_at,status,operator_name').eq('customer_id',session.user.id).in('status',['scheduled','in_progress']).order('scheduled_at');
     if(currentView!=='agenda')return;
     main.innerHTML=`<section class="card">${backButton}<h2>Mi agenda</h2>${error?`<p>${esc(error.message)}</p>`:data?.length?data.map(r=>`<article class="request"><b>${esc(r.service_name)}</b><p>${esc(safeTime(r.scheduled_at))}</p><small>${esc(statusLabels[r.status])} · Operario: ${esc(r.operator_name||'Por asignar')}</small></article>`).join(''):'<p>No hay visitas programadas.</p>'}</section>`;
   }
   async function loadChat(){
+    setActiveNav(app,'chat');
     currentView='chat';main.innerHTML=`<section class="card">${backButton}<h2>Chat con Reparado</h2><p>Cargando…</p></section>`;
     const {data,error}=await supabase.from('messages').select('sender_id,body,created_at').eq('customer_id',session.user.id).order('created_at');
     if(currentView!=='chat')return;
@@ -222,17 +254,21 @@ export function mountConnected({app, services, supabase}) {
     });
   }
   async function loadNotifications(){
+    setActiveNav(app,'profile');
     currentView='notifications';
     await renderNotifications({main,supabase,session,backButton,onRefresh:()=>currentView==='notifications'});
   }
   async function loadInvoices(){
+    setActiveNav(app,'profile');
     currentView='invoices';
     await renderInvoices({main,supabase,session,onRefresh:()=>currentView==='invoices'});
   }
   function loadProfile(){
+    setActiveNav(app,'profile');
+    if(!session){showLogin();return}
     currentView='profile';
     main.innerHTML=`<section class="card">${backButton}<h2>Mi perfil</h2><p>${esc(session.user.email)}</p><p>Tipo de cuenta: ${esc(profile?.role||'customer')}</p>
-      <form id="profile-form"><label>Nombre completo<input name="full_name" autocomplete="name" maxlength="100" value="${esc(profile?.full_name||'')}"></label><label>Teléfono<input name="phone" type="tel" autocomplete="tel" maxlength="25" value="${esc(profile?.phone||'')}"></label><button type="submit">Guardar perfil</button></form><div class="flex-actions"><button type="button" id="view-invoices">🧾 Mis facturas</button></div>
+      <form id="profile-form"><label>Nombre completo<input name="full_name" autocomplete="name" maxlength="100" value="${esc(profile?.full_name||'')}"></label><label>Teléfono<input name="phone" type="tel" autocomplete="tel" maxlength="25" value="${esc(profile?.phone||'')}"></label><button type="submit">Guardar perfil</button></form><div class="flex-actions"><button type="button" data-logout>Cerrar sesión</button><button type="button" id="view-invoices">🧾 Mis facturas</button></div>
       <p data-feedback class="feedback" role="status"></p></section>`;
     main.querySelector('#view-invoices').addEventListener('click',loadInvoices);
     main.querySelector('#profile-form').addEventListener('submit',async event=>{
@@ -305,6 +341,7 @@ export function mountConnected({app, services, supabase}) {
   }
 
   async function renderAdmin(filter=adminFilter){
+    setActiveNav(app,'profile');
     if(!userIsStaff()){renderHome();return}
     currentView='admin';adminFilter=filter;
     main.innerHTML=`<section class="card">${backButton}<h2>Panel interno</h2><p>Cargando solicitudes…</p></section>`;
@@ -397,7 +434,7 @@ export function mountConnected({app, services, supabase}) {
     }));
   }
   supabase.auth.onAuthStateChange((event)=>{
-    if(event==='SIGNED_OUT'){session=null;profile=null;showLogin()}
+    if(event==='SIGNED_OUT'){session=null;profile=null;renderHome()}
     else if(event==='SIGNED_IN')queueMicrotask(()=>boot());
   });
   boot().catch(error=>{console.error(error);main.innerHTML=`<section class="card"><h2>Error al conectar</h2><p>Comprueba la configuración de Supabase y vuelve a cargar.</p></section>`});
