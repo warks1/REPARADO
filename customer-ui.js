@@ -42,8 +42,30 @@ const art={
  parquet:'<svg viewBox="0 0 160 138" role="img" aria-label="Suelo de parquet"><defs><linearGradient id="wood" x2="1" y2="1"><stop stop-color="#eab978"/><stop offset="1" stop-color="#9a551b"/></linearGradient></defs><g class="float-slow" transform="translate(4 9) rotate(-13 80 70)"><path d="M7 52 118 25l31 54-111 28z" fill="#99531f" opacity=".35" transform="translate(0 8)"/><path d="M7 52 118 25l31 54-111 28z" fill="url(#wood)" stroke="#95531c" stroke-width="3"/><path d="M30 48 61 101M60 40l31 53M91 33l31 52" stroke="#f8dfa9" stroke-width="3"/><path d="M9 66 125 38M20 84l117-29M39 106l110-27" stroke="#92511d" stroke-width="2"/><path d="M19 56 120 31M45 96l89-22" stroke="#ffe2a4" stroke-width="2" opacity=".7"/></g></svg>',
  renovation:'<svg viewBox="0 0 160 138" role="img" aria-label="Casa de reformas"><defs><linearGradient id="roof" x2="1" y2="1"><stop stop-color="#ffcb91"/><stop offset="1" stop-color="#f46e31"/></linearGradient></defs><g class="float-slow"><path d="M23 63 80 19l58 44v61H23z" fill="#fff1d9" stroke="#b47bcb" stroke-width="3"/><path d="M14 65 80 12l66 53-10 12-56-44-56 44z" fill="url(#roof)" stroke="#e57a35" stroke-width="2"/><rect x="41" y="78" width="28" height="25" rx="4" fill="#67c6e8"/><rect x="88" y="78" width="29" height="46" rx="5" fill="#c68cfa"/><path d="M101 32V18h16v29" stroke="#a269c9" stroke-width="9"/><path d="m73 106 11 11 28-29" stroke="#30b989" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/></g></svg>'
 };
+
+const atlasUrl=(import.meta.env?.BASE_URL || './')+'mirror-atlas.webp';
+const atlasRects={
+  promo:[0,0,320,111],
+  plumbing:[0,113,155,79],
+  masonry:[164,113,155,79],
+  parquet:[0,196,155,78],
+  renovation:[164,196,155,78],
+  tap:[0,280,135,136],
+  leak:[150,280,75,66],
+  drain:[235,280,75,66],
+  heater:[150,349,75,66],
+  faucet:[235,349,75,66]
+};
+function atlasSprite(name,description=''){
+  const rect=atlasRects[name];
+  if(!rect)return '';
+  const [x,y,w,h]=rect;
+  return '<svg class="reference-sprite" viewBox="'+[x,y,w,h].join(' ')+'" preserveAspectRatio="xMidYMid slice" role="img" aria-label="'+esc(description)+'">'+
+    '<image href="'+esc(atlasUrl)+'" x="0" y="0" width="320" height="420"/></svg>';
+}
+
 export function categoryArt(slug) {
-  return '<div class="category-art art-'+esc(slug)+'">'+(art[slug]||art.renovation)+'</div>';
+  return '<div class="category-art art-'+esc(slug)+'">'+atlasSprite(slug,'Ilustración de '+catFor(categories.find(c=>c.slug===slug)?.id).title)+'</div>';
 }
 export function logo() {
   return '<span class="brand-house" aria-hidden="true"><svg viewBox="0 0 48 48"><path d="M7 23 24 8l17 15v16H28V27h-9v12H7z" fill="#ff662a"/><path d="m7 23 17-15 17 15" fill="none" stroke="#ff662a" stroke-width="6" stroke-linecap="round"/></svg></span><span class="brand-word">Reparado</span>';
@@ -74,7 +96,7 @@ export function renderLanding(services,{notice=''}={}) {
   return '<div class="customer-page">'+
     '<section class="intro"><h1>Tu hogar<br>en buenas manos</h1><p>Profesionales para cualquier<br>reparación o reforma.</p></section>'+
     '<label class="search-pill">'+ico('search')+'<input type="search" id="category-search" aria-label="Buscar reparaciones" placeholder="¿Qué necesitas reparar?" autocomplete="off"></label>'+
-    '<section class="promo-banner"><div class="promo-copy"><h2>Pequeñas<br>reparaciones,<br>grandes cambios</h2><p>Hogares más cómodos,<br>seguros y con vida.</p></div><button type="button" class="promo-cta" data-category-open="Reformas integrales" aria-label="Explorar reformas">'+ico('arrow')+'</button></section>'+
+    '<section class="promo-banner"><div class="reference-promo" aria-hidden="true">'+atlasSprite('promo')+'</div><div class="promo-copy"><h2>Pequeñas<br>reparaciones,<br>grandes cambios</h2><p>Hogares más cómodos,<br>seguros y con vida.</p></div><button type="button" class="promo-cta" data-category-open="Reformas integrales" aria-label="Explorar reformas">'+ico('arrow')+'</button></section>'+
     '<div class="section-heading"><h2>Categorías de servicios</h2><button class="text-action" data-show-all type="button">Ver todos '+ico('arrow')+'</button></div>'+
     '<section class="category-grid">'+categories.map(c=>
       '<button type="button" class="category-tile theme-'+c.slug+'" data-category-open="'+esc(c.id)+'">'+
@@ -110,7 +132,8 @@ export function serviceRow(s,i) {
   if(!s)return '';
   const cat=catFor(s[0]);
   const symbol=(/grifo/i.test(s[1])?'🚰':/fuga/i.test(s[1])?'💧':/desatasco|sifón/i.test(s[1])?'🛁':/cisterna/i.test(s[1])?'🚽':/pladur/i.test(s[1])?'🧱':/alicatado/i.test(s[1])?'▦':/parquet|tabla|barniz/i.test(s[1])?'🪵':cat.slug==='renovation'?'🏡':'🛠️');
-  return '<button type="button" class="catalog-service" data-service="'+i+'"><span class="service-thumb thumb-'+cat.slug+'">'+symbol+'</span>'+
+  const photo=cat.slug==='plumbing'?(/fuga/i.test(s[1])?'leak':/desatasco/i.test(s[1])?'drain':/termo/i.test(s[1])?'heater':/grifo/i.test(s[1])?'faucet':null):null;
+  return '<button type="button" class="catalog-service" data-service="'+i+'"><span class="service-thumb thumb-'+cat.slug+'">'+(photo?atlasSprite(photo,'Foto de '+s[1]):symbol)+'</span>'+
    '<span class="service-details"><strong>'+esc(s[1])+'</strong><small>'+esc(serviceDescriptions[s[1]]||cat.description)+'</small><em>'+(s[2]?'Desde '+esc(priceFor(s)):'Por presupuesto')+'</em></span><span class="service-chevron">'+ico('arrow')+'</span></button>';
 }
 export function renderCategory(services,id) {

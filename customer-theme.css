@@ -237,3 +237,25 @@ background-image:linear-gradient(90deg,#0d2d52 0%,rgba(13,45,82,.98) 20%,rgba(15
  .category-tile strong{font-size:13px}
  .category-tile>span:not(.tile-arrow){font-size:9.5px}
 }
+
+
+/* Recortes de la imagen de referencia aportada por el usuario.
+   Cada zona sigue siendo un control navegable y el texto sigue siendo HTML accesible. */
+.reference-sprite{display:block;width:100%;height:100%;overflow:hidden}
+.reference-promo{display:none}
+.category-art{overflow:visible}
+.category-art .reference-sprite{width:100%;height:100%;max-width:175px;animation:illustration-bob 3.6s ease-in-out infinite}
+.service-thumb:has(.reference-sprite){padding:0;overflow:hidden}
+.service-thumb .reference-sprite{width:100%;height:100%}
+.category-hero .category-art .reference-sprite{max-width:215px}
+@media(max-width:600px){
+  .promo-banner{position:relative;background-image:none!important;background:#132f53}
+  .reference-promo{position:absolute;inset:0;display:block;pointer-events:none}
+  .reference-promo .reference-sprite{width:100%;height:100%}
+  .promo-banner .promo-copy{opacity:0;pointer-events:none}
+  .promo-banner .promo-cta{background:transparent;box-shadow:none;color:transparent;min-width:50px;min-height:50px}
+  .promo-banner .promo-cta:focus-visible{outline:3px solid #fff}
+}
+@media(prefers-reduced-motion:reduce){
+  .category-art .reference-sprite{animation:none}
+}

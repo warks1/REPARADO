@@ -100,3 +100,6 @@ El paquete **Integración v3** puede sustituir esta base cuando estén disponibl
 
 ### Fidelidad respecto a la referencia
 Se han ajustado el texto de portada, la proporción 2×2 de categorías y el orden y descripción de servicios. No se han inventado los precios ni sustituido los datos reales por los del boceto. La coincidencia total de las ilustraciones todavía está pendiente.
+
+### Recursos visuales de referencia
+Se ha incorporado `public/mirror-atlas.webp`, un atlas comprimido construido con recortes de la imagen de referencia que el propietario compartió. Sustituye en la portada las ilustraciones vectoriales aproximadas por los dibujos del propio boceto y añade fotografías de fontanería en sus fichas. El atlas es de resolución limitada por proceder de una captura; los textos, precios y botones permanecen independientes y funcionales. En móvil, el banner se reproduce visualmente desde el recorte; en escritorio conserva su composición adaptable.
