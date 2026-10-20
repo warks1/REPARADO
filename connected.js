@@ -24,6 +24,12 @@ export function mountConnected({app, services, supabase}) {
   const safeTime = raw => raw ? new Date(raw).toLocaleString('es-ES') : 'Sin fecha';
   const userIsStaff = () => profile && ['admin','operator'].includes(profile.role);
   app.addEventListener('click', event => {
+    const filterButton=event.target.closest('[data-toggle-filters]');
+    if(filterButton){
+      const panel=main.querySelector('#category-quick-filters');
+      if(panel){panel.hidden=!panel.hidden;filterButton.setAttribute('aria-expanded',String(!panel.hidden))}
+      return;
+    }
     if(event.target.closest('[data-back]')){if(currentView==='new-request' && lastCategory)renderCategoryPage(lastCategory);else renderHome();return}
     const categoryButton=event.target.closest('[data-category-open]');
     if(categoryButton){renderCategoryPage(categoryButton.dataset.categoryOpen);return}

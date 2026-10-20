@@ -24,6 +24,7 @@ const p = {
  chat:'<path d="M21 11.5a8.5 8.5 0 0 1-8.5 8.5c-1.6 0-3-.4-4.2-1L3 21l1.8-5A8.5 8.5 0 1 1 21 11.5z"/>',
  profile:'<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>',
  search:'<circle cx="10.8" cy="10.8" r="7"/><path d="m16 16 5 5"/>',
+ filter:'<path d="M4 6h16M4 12h16M4 18h16"/><circle cx="9" cy="6" r="2" fill="white"/><circle cx="15" cy="12" r="2" fill="white"/><circle cx="10" cy="18" r="2" fill="white"/>',
  arrow:'<path d="m9 18 6-6-6-6"/>',
  back:'<path d="m15 18-6-6 6-6"/>',
  pin:'<path d="M20 10c0 5-8 12-8 12S4 15 4 10a8 8 0 1 1 16 0z"/><circle cx="12" cy="10" r="2.5"/>',
@@ -97,7 +98,8 @@ const overview=[
 export function renderLanding(services,{notice=''}={}) {
   return '<div class="customer-page">'+
     '<section class="intro"><h1>Tu hogar<br>en buenas manos</h1><p>Profesionales para cualquier<br>reparación o reforma.</p></section>'+
-    '<label class="search-pill">'+ico('search')+'<input type="search" id="category-search" aria-label="Buscar reparaciones" placeholder="¿Qué necesitas reparar?" autocomplete="off"></label>'+
+    '<div class="search-pill">'+ico('search')+'<input type="search" id="category-search" aria-label="Buscar reparaciones" placeholder="¿Qué necesitas reparar?" autocomplete="off"><button type="button" class="search-filter-button" data-toggle-filters aria-controls="category-quick-filters" aria-expanded="false" aria-label="Filtrar por categorías">'+ico('filter')+'</button></div>'+
+    '<div class="category-quick-filters" id="category-quick-filters" hidden aria-label="Elegir categoría">'+categories.map(c=>'<button type="button" class="category-filter-chip" data-category-open="'+esc(c.id)+'">'+esc(c.title)+'</button>').join('')+'</div>'+
     '<section class="promo-banner"><div class="reference-promo" aria-hidden="true">'+atlasSprite('promo')+'</div><div class="promo-copy"><h2>Pequeñas<br>reparaciones,<br>grandes cambios</h2><p>Hogares más cómodos,<br>seguros y con vida.</p></div><button type="button" class="promo-cta" data-category-open="Reformas integrales" aria-label="Explorar reformas">'+ico('arrow')+'</button></section>'+
     '<div class="section-heading"><h2>Categorías de servicios</h2><button class="text-action" data-show-all type="button">Ver todos '+ico('arrow')+'</button></div>'+
     '<section class="category-grid">'+categories.map(c=>

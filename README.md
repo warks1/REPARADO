@@ -106,3 +106,6 @@ Se ha incorporado `public/mirror-atlas.webp`, un atlas comprimido construido con
 
 ## Paleta viva del boceto (octubre de 2026)
 La nueva hoja `vivid-theme.css` se carga después de `customer-theme.css` y ajusta azules, naranjas, verdes y violetas para parecerse más a la imagen aprobada. Mantiene el contenido, servicios y botones existentes; incrementa saturación, brillo y contraste de los recortes gráficos en CSS, y conserva la preferencia del dispositivo de reducir animaciones. Esto es un ajuste visual, no una prueba de identidad píxel a píxel ni una validación en teléfonos físicos.
+
+### Filtros de categoría
+El icono de ajustes situado al final del buscador permite abrir y cerrar accesos directos a las cuatro categorías. El control funciona tanto en el flujo local como en el conectado; no es un elemento decorativo.

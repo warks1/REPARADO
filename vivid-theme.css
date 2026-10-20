@@ -125,3 +125,31 @@ body,.shell,.customer-header,.customer-nav {background:#fff}
   .category-tile,.catalog-service,.tile-arrow{transition:none!important}
   .category-art .reference-sprite{animation:none!important}
 }
+
+/* Filtro de categorías del buscador, como en la pantalla aprobada. */
+.search-filter-button{
+  display:grid;place-items:center;width:42px;height:42px;min-width:42px;
+  padding:9px;margin-right:-7px;border:0;border-radius:13px;background:transparent;color:#0c2e6a;
+  cursor:pointer;transition:background .16s ease,color .16s ease;
+}
+.search-filter-button:hover,.search-filter-button[aria-expanded="true"]{
+  background:#e4f4ff;color:#007de5;
+}
+.search-filter-button:focus-visible{outline:3px solid #218cfa;outline-offset:2px}
+.search-filter-button .ui-icon{width:22px;height:22px}
+.category-quick-filters{
+  display:flex;flex-wrap:wrap;align-items:center;gap:9px;
+  margin:-5px 0 15px;padding:9px 4px 2px;
+}
+.category-quick-filters[hidden]{display:none!important}
+.category-filter-chip{
+  font:inherit;font-size:12px;font-weight:750;color:#124375;
+  border:1px solid #bddfff;border-radius:999px;
+  background:linear-gradient(125deg,#fff,#ecf8ff);
+  padding:10px 14px;min-height:40px;cursor:pointer;
+  box-shadow:0 2px 6px rgba(16,95,154,.07);
+}
+.category-filter-chip:hover{border-color:#21a1f2;color:#ff5922}
+.category-filter-chip:focus-visible{outline:3px solid #168afb;outline-offset:2px}
+@media(max-width:370px){.category-quick-filters{gap:6px}.category-filter-chip{padding:8px 10px;font-size:11px}}
+@media(prefers-reduced-motion:reduce){.search-filter-button{transition:none}}

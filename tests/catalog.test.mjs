@@ -60,3 +60,11 @@ test('los cuatro colores brillantes del boceto están disponibles en la app',asy
  assert.ok(entry.includes("import './vivid-theme.css'"));
  assert.ok(theme.includes('prefers-reduced-motion'));
 });
+
+test('el icono de filtro del buscador permite abrir categorías',()=>{
+ const home=renderLanding(services);
+ assert.ok(home.includes('data-toggle-filters'));
+ assert.ok(home.includes('aria-expanded="false"'));
+ assert.ok(home.includes('id="category-quick-filters" hidden'));
+ for(const c of categories)assert.ok(home.includes('data-category-open="'+c.id+'"'));
+});

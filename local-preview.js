@@ -104,6 +104,12 @@ export function mountLocal({app,services}){
     };
   }
   app.addEventListener('click',event=>{
+    const filterButton=event.target.closest('[data-toggle-filters]');
+    if(filterButton){
+      const panel=main.querySelector('#category-quick-filters');
+      if(panel){panel.hidden=!panel.hidden;filterButton.setAttribute('aria-expanded',String(!panel.hidden))}
+      return;
+    }
     const service=event.target.closest('[data-service]');
     if(service)return request(services[Number(service.dataset.service)]);
     const categoryBtn=event.target.closest('[data-category-open]');
