@@ -1,0 +1,37 @@
+# Reparado — recuperación funcional desde GitHub (20-10-2026)
+
+Esta versión recupera **los archivos originales existentes en el historial** del repositorio (commit `f06acd2`, 9-10-2026), corrige el arranque de Vite y prepara el despliegue. **No equivale al paquete posterior `Reparado-Integracion-v3.zip`**; ese archivo no se ha podido recuperar aquí.
+
+## Probar la aplicación
+
+- Node.js 22 o superior
+- `npm install`
+- `npm run dev`
+- `npm run build` para compilar
+
+### GitHub Pages
+
+El flujo `.github/workflows/deploy.yml` compila y despliega desde `main`.
+En **Settings → Pages**, selecciona **GitHub Actions** como origen.
+La URL pública debería ser `https://warks1.github.io/REPARADO/` cuando Pages esté habilitado y el flujo termine con éxito.
+
+### Demo vs producción
+
+Sin `VITE_SUPABASE_URL` y `VITE_SUPABASE_ANON_KEY` se inicia una demostración local: las solicitudes quedan únicamente en el almacenamiento del navegador. **No se envían a técnicos**. Los precios son orientativos y muestran IVA incluido. No se aceptan pagos en esta beta.
+
+Para probar con Supabase, revisa y ejecuta `schema.sql` en una base de datos de pruebas y configura esas dos variables públicas de Vite en el entorno de construcción. Nunca publiques secretos `service_role`. La implementación de Storage para fotos, envío push, facturación fiscal, roles y operaciones administrativas todavía necesita pruebas de integración y revisión de seguridad antes de producción.
+
+### Dispositivos móviles
+
+El proyecto mantiene `capacitor.config.ts` y dependencias de Capacitor para continuar los empaquetados iOS/Android; **no hay APK o IPA publicado**.
+
+### Cambios de esta recuperación
+
+- Recuperados los nueve archivos del commit original.
+- Corregida la ruta de arranque `./main.js` (antes apuntaba a `./src/main.js` inexistente).
+- Definido el contenedor principal de la vista conectada; corregido el botón Volver.
+- Escapado HTML en el historial de solicitudes del modo demostración.
+- Añadido flujo de GitHub Actions, `.gitignore` y `.env.example`.
+- Endurecida la política inicial de perfiles para impedir la autoasignación de rol y evitar recursión de RLS.
+
+El paquete **Integración v3** puede sustituir esta base cuando estén disponibles sus archivos exactos.
