@@ -112,3 +112,7 @@ El icono de ajustes situado al final del buscador permite abrir y cerrar accesos
 
 ### Continuidad de solicitud tras identificarse
 En el modo conectado, si el cliente elige un trabajo antes de iniciar sesión, Reparado conserva esa selección durante el acceso y muestra su formulario al identificarse. La autenticación se resuelve únicamente a través del evento `SIGNED_IN` para evitar que dos cargas simultáneas redirijan al usuario a la portada.
+
+
+## Validación responsive automatizada (Android y iPhone)
+`npm run test:visual` ejecuta Playwright con Chrome móvil emulado a 390 px (tamaño tipo iPhone), 412 px (tamaño tipo Android) y 820 px (tablet). Se prueban la portada, cuatro categorías, el menú inferior, la presencia de las imágenes, el filtro, el formulario y el botón Volver. Las capturas se guardan como artefacto de GitHub Actions durante siete días. La ejecución emula pantallas; no sustituye una prueba en un dispositivo iOS o Android real, ni certifica que las imágenes coincidan píxel por píxel con el boceto.

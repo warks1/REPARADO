@@ -1,0 +1,40 @@
+name: Comprobar interfaz móvil Reparado
+on:
+  push:
+    branches: [main]
+    paths:
+      - '*.js'
+      - '*.css'
+      - 'public/**'
+      - 'e2e/**'
+      - 'playwright.config.mjs'
+      - 'package.json'
+      - '.github/workflows/mobile-qa.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  mobile-visual-qa:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Instalar dependencias
+        run: npm install --no-audit --no-fund
+      - name: Instalar navegador de pruebas
+        run: npx playwright install --with-deps chromium
+      - name: Pruebas y capturas móviles
+        run: npm run test:visual
+      - name: Guardar capturas y errores
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: reparado-evidencias-movil
+          path: |
+            test-results
+            playwright-report
+          if-no-files-found: warn
+          retention-days: 7
