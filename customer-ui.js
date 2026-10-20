@@ -68,7 +68,10 @@ function atlasSprite(name,description=''){
 }
 
 export function categoryArt(slug) {
-  return '<div class="category-art art-'+esc(slug)+'">'+atlasSprite(slug,'Ilustración de '+catFor(categories.find(c=>c.slug===slug)?.id).title)+'</div>';
+  const category=categories.find(c=>c.slug===slug);
+  const safe=category?.slug || 'plumbing';
+  const src=(import.meta.env?.BASE_URL || './')+'categories/'+safe+'.webp';
+  return '<div class="category-art art-'+esc(safe)+'"><img class="category-photo" src="'+esc(src)+'" width="215" height="87" loading="lazy" decoding="async" alt="Ilustración de '+esc(category?.title || 'reparación')+'"></div>';
 }
 // En la cabecera grande, la imagen de baja resolución del atlas producía
 // artefactos. El vector original permite un grifo definido a cualquier tamaño.

@@ -125,3 +125,6 @@ Las pruebas visuales ahora guardan, además de Inicio, una captura de la pantall
 
 ### Servicio destacado y listado completo
 La categoría muestra primero cuatro servicios tal como se ve en el boceto seleccionado. Un botón «Ver todos los servicios» despliega el resto sin eliminar ninguno; se conservan las denominaciones técnicas e importes originales en el formulario y la base de datos. Esta interacción tiene pruebas automatizadas en móvil.
+
+### Ilustraciones independientes del boceto
+Las cuatro tarjetas utilizan imágenes WebP recortadas directamente de la referencia facilitada, guardadas en `public/categories/`. Ya no se dibujan desde regiones compartidas del atlas y se eliminan los fragmentos cruzados. La cabecera de cada categoría sigue utilizando un SVG adaptable. El banner y las miniaturas de servicios siguen pendientes de mayor resolución.

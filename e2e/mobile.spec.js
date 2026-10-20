@@ -9,10 +9,11 @@ test('portada real por categorías, imágenes y navegación sin desbordamiento',
   await expect(page.locator('.category-tile')).toHaveCount(4);
   await expect(page.locator('.customer-nav button')).toHaveCount(5);
   await expect(page.locator('.promo-banner')).toBeVisible();
-  const cropStyle=await page.locator('.category-tile svg.reference-sprite').first()
-    .evaluate(el=>({overflow:getComputedStyle(el).overflowX,contain:getComputedStyle(el).contain}));
-  expect(cropStyle.overflow).toBe('hidden');
-  expect(cropStyle.contain).toContain('paint');
+  const assets=await page.locator('.category-tile img.category-photo').evaluateAll(items=>
+    items.map(img=>({complete:img.complete,width:img.naturalWidth,height:img.naturalHeight}))
+  );
+  expect(assets).toHaveLength(4);
+  expect(assets.every(img=>img.complete && img.width>=200 && img.height>=80)).toBeTruthy();
   const dims=await page.evaluate(()=>({
     documentWidth:document.documentElement.scrollWidth,
     viewportWidth:window.innerWidth,
@@ -21,7 +22,7 @@ test('portada real por categorías, imágenes y navegación sin desbordamiento',
   expect(dims.documentWidth).toBeLessThanOrEqual(dims.viewportWidth+2);
   expect(dims.fixedNav).toBeLessThanOrEqual(testInfo.project.use.viewport.height+2);
   const atlas=await page.evaluate(async()=>{
-    const image=document.querySelector('.category-tile image')?.getAttribute('href');
+    const image=document.querySelector('.category-tile img.category-photo')?.src;
     if(!image)return false;
     const response=await fetch(image);
     return response.ok && response.headers.get('content-type')?.includes('image/');

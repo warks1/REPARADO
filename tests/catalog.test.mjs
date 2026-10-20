@@ -109,3 +109,11 @@ test('la vista de Fontanería presenta cuatro servicios y conserva el catálogo 
  assert.ok(html.includes('Instalación de grifería'));
  assert.ok(html.includes('data-service="5"'));
 });
+
+test('las categorías usan imágenes propias, no recortes entremezclados del atlas',()=>{
+ const html=renderLanding(services);
+ for(const slug of ['plumbing','masonry','parquet','renovation']){
+   assert.ok(html.includes('categories/'+slug+'.webp'));
+ }
+ assert.equal((html.match(/class="category-photo"/g)||[]).length,4);
+});
