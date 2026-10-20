@@ -264,6 +264,10 @@ body,.shell,.customer-header,.customer-nav {background:#fff}
  object-fit:contain;object-position:right center;
  filter:saturate(1.18) contrast(1.05) brightness(1.04)
    drop-shadow(0 7px 9px rgba(13,120,204,.14));
+ /* Desvanecer el borde izquierdo del recorte para ocultar cualquier resto
+    de letras de la foto original, sin tapar la ilustración 3D principal. */
+ -webkit-mask-image:linear-gradient(90deg,transparent 0%,transparent 19%,#000 54%);
+ mask-image:linear-gradient(90deg,transparent 0%,transparent 19%,#000 54%);
 }
 .category-view .screen-back{
  display:flex;align-items:center;justify-content:center;
