@@ -1,5 +1,5 @@
 
-import {appHeader,bottomNavigation,renderLanding,renderCategory,serviceFormHeader,formPeriodPicker,priceFor,esc,setActiveNav} from './customer-ui.js';
+import {appHeader,bottomNavigation,renderLanding,renderCategory,serviceFormHeader,formPeriodPicker,priceFor,esc,setActiveNav,matchServices,serviceRow} from './customer-ui.js';
 
 // La misma interfaz que verá el cliente: si faltan credenciales, se conservan
 // solicitudes locales para probar la navegación, sin simular envíos a operarios.
@@ -18,18 +18,13 @@ export function mountLocal({app,services}){
     const input=main.querySelector('#category-search');
     input?.addEventListener('input',()=>{
       const term=input.value.trim().toLocaleLowerCase('es-ES');
-      let visible=0;
-      main.querySelectorAll('[data-category-open].category-tile').forEach(button=>{
-        const id=button.dataset.categoryOpen;
-        const ok=!term || id.toLocaleLowerCase('es-ES').includes(term)
-          || services.some(s=>s[0]===id && s[1].toLocaleLowerCase('es-ES').includes(term));
-        button.hidden=!ok;if(ok)visible++;
+      const matches=matchServices(services,term);
+      main.querySelector('.popular-list').innerHTML=(term?matches: [0,2,3,7].map(i=>({s:services[i],i})))
+        .map(({s,i})=>serviceRow(s,i)).join('');
+      main.querySelectorAll('.category-tile').forEach(tile=>{
+        tile.hidden=!matches.some(({s})=>s[0]===tile.dataset.categoryOpen);
       });
-      main.querySelector('.no-results').hidden=visible>0;
-      main.querySelectorAll('.popular-list [data-service]').forEach(button=>{
-        const s=services[Number(button.dataset.service)];
-        button.hidden=Boolean(term && !s[1].toLocaleLowerCase('es-ES').includes(term));
-      });
+      main.querySelector('.no-results').hidden=matches.length>0;
     });
   }
   function category(id){

@@ -70,3 +70,16 @@ test('filtros, categoría y formulario de cliente navegan y vuelven correctament
   const doc=await page.evaluate(()=>document.documentElement.scrollWidth);
   expect(doc).toBeLessThanOrEqual(testInfo.project.use.viewport.width+2);
 });
+
+test('la búsqueda encuentra un servicio fuera de los cuatro destacados',async({page})=>{
+ await page.goto('/');
+ const input=page.locator('#category-search');
+ await input.fill('cisterna');
+ await expect(page.locator('.popular-list [data-service="4"]')).toBeVisible();
+ await page.locator('.popular-list [data-service="4"]').click();
+ await expect(page.locator('#local-request')).toBeVisible();
+ await expect(page.locator('.form-service-summary')).toContainText('Mecanismo de cisterna');
+ await page.locator('[data-back]').first().click();
+ await input.fill('servicio inexistente único');
+ await expect(page.locator('.no-results')).toBeVisible();
+});

@@ -131,3 +131,12 @@ test('las fotografías destacadas son independientes del atlas',()=>{
  }
  assert.equal((html.match(/class="service-photo"/g)||[]).length,4);
 });
+
+test('el buscador encuentra cualquier servicio, también los no destacados',async()=>{
+ const {matchServices}=await import('../customer-ui.js');
+ const items=[['Fontanería','Reparación de fuga',115],['Fontanería','Mecanismo de cisterna',119],['Parquet','Reparación de tablas',110]];
+ assert.deepEqual(matchServices(items,'cisterna').map(x=>x.i),[1]);
+ assert.deepEqual(matchServices(items,'parquet').map(x=>x.i),[2]);
+ assert.equal(matchServices(items,'ninguno').length,0);
+ assert.equal(matchServices(items,'').length,3);
+});

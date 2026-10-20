@@ -1,4 +1,4 @@
-import {appHeader,bottomNavigation,setActiveNav,renderLanding,renderCategory,serviceFormHeader,formPeriodPicker,serviceRow} from './customer-ui.js'
+import {appHeader,bottomNavigation,setActiveNav,renderLanding,renderCategory,serviceFormHeader,formPeriodPicker,serviceRow,matchServices} from './customer-ui.js'
 import { operatorMaySetStatus } from './rules.js'
 import { renderInvoices } from './invoices.js'
 import { renderNotifications } from './notifications.js'
@@ -142,8 +142,7 @@ export function mountConnected({app, services, supabase}) {
     const search=main.querySelector('#category-search');
     search?.addEventListener('input',()=>{
       const term=search.value.trim().toLocaleLowerCase('es-ES');
-      const matches=services.map((s,i)=>({s,i}))
-        .filter(({s})=>!term || s[1].toLocaleLowerCase('es-ES').includes(term) || s[0].toLocaleLowerCase('es-ES').includes(term));
+      const matches=matchServices(services,term);
       main.querySelector('.popular-list').innerHTML=(!term?matches.slice(0,4):matches)
         .map(({s,i})=>serviceRow(s,i)).join('');
       let visible=0;

@@ -139,3 +139,6 @@ GitHub Actions ejecuta el flujo «Reparado Android beta APK» tras cambios de la
 
 ## Comprobación iOS sin firma
 La acción `Reparado iOS simulator check` utiliza un runner Mac, genera el proyecto Capacitor iOS y compila un `.app` para el simulador de Xcode (sin código de firma). Se conserva en GitHub como artefacto durante 14 días si supera la compilación. **No es una aplicación instalable directamente en iPhone**: para TestFlight o App Store hará falta el certificado/perfil de Apple Developer, un identificador de paquete verificado y pasar las pruebas de privacidad, permisos, notificaciones y publicación.
+
+### Búsqueda completa de servicios
+El buscador utiliza el mismo filtro en la app conectada y en el modo local. Encuentra reparaciones por nombre de servicio o por categoría, muestra resultados fuera de los cuatro destacados y permite pasar a la solicitud directamente. La búsqueda local se valida con pruebas de navegación.

@@ -103,6 +103,12 @@ const overview=[
   ['Parquet','Suelos de madera','Montaje, reparación, lijado y barnizado'],
   ['Reformas integrales','Proyectos y reformas','Baños, cocinas y reformas completas']
 ];
+export function matchServices(services,term){
+ const query=String(term||'').trim().toLocaleLowerCase('es-ES');
+ return services.map((s,i)=>({s,i})).filter(({s})=>!query
+   || s[0].toLocaleLowerCase('es-ES').includes(query)
+   || s[1].toLocaleLowerCase('es-ES').includes(query));
+}
 export function renderLanding(services,{notice=''}={}) {
   return '<div class="customer-page">'+
     '<section class="intro"><h1>Tu hogar<br>en buenas manos</h1><p>Profesionales para cualquier<br>reparación o reforma.</p></section>'+
