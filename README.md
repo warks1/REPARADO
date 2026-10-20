@@ -180,3 +180,7 @@ Estos módulos necesitan una conexión real de Supabase para operar con clientes
 
 ### Reparado inicia aunque Pages publique la rama sin compilar
 El HTML intenta cargar el cliente Vite/Capacitor. Si GitHub Pages sirve los archivos fuente en vez de la carpeta `dist`, cambia automáticamente a `browser-main.js`, que utiliza módulos JavaScript nativos, CSS como hojas de estilo y exactamente los mismos servicios y formularios locales. Esto corrige el fallo `ARCHIVO_JS_NO_CARGADO` al importar CSS como módulo. El modo alternativo no conecta Supabase ni genera confirmaciones falsas. Para publicación conectada a Supabase debe configurarse **Settings → Pages → Build and deployment → Source: GitHub Actions**; con la publicación desde rama únicamente funcionará el cliente local.
+
+
+### Seguimiento y documentos locales de cada solicitud
+En «Mis solicitudes → Ver detalles y editar» el cliente dispone de historial local de guardado y modificación de preferencias, una ficha imprimible como **resguardo informativo (no factura)** y una copia JSON descargable de su solicitud para conservación personal. Los historiales anteriores a esta versión se muestran sin inventar fechas. Todo se genera bajo acción explícita del usuario y no se envía información a ningún servidor. Las copias JSON contienen datos personales; deben guardarse de forma privada. Las citas no están confirmadas hasta activar y verificar la conexión de operarios.

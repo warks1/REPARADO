@@ -194,3 +194,30 @@ test('Perfil rellena la dirección y Chat conserva un borrador sin enviarlo',asy
  await page.locator('[data-clear-chat-draft]').click();
  await expect(page.locator('#contact-preview [name="body"]')).toHaveValue('');
 });
+
+test('seguimiento local: historial, copia y resguardo imprimible',async({page})=>{
+ await page.goto('/');
+ await page.locator('.category-tile[data-category-open="Fontanería"]').click();
+ await page.locator('.category-services [data-service="2"]').click();
+ const form=page.locator('#local-request');
+ await form.locator('[name="street"]').fill('Calle Historial');
+ await form.locator('[name="address_number"]').fill('12');
+ await form.locator('[name="postal_code"]').fill('08003');
+ await form.locator('[name="city"]').fill('Barcelona');
+ await form.locator('[name="phone"]').fill('611222333');
+ await form.locator('[name="description"]').fill('Revisión del fregadero');
+ await form.locator('button[type="submit"]').click();
+ await page.locator('.request-confirm [data-view="requests"]').click();
+ await page.locator('[data-local-detail]').click();
+ await expect(page.locator('.local-timeline li')).toHaveCount(1);
+ await expect(page.locator('.local-timeline')).toContainText('Solicitud guardada');
+ await expect(page.locator('.request-document-print')).toContainText('NO es una factura');
+ const downloadPromise=page.waitForEvent('download');
+ await page.locator('[data-local-export]').click();
+ const download=await downloadPromise;
+ expect(download.suggestedFilename()).toMatch(/^reparado-solicitud-.*\.json$/);
+ await page.locator('#local-edit-request [name="preferred_date"]').fill('2026-11-15');
+ await page.locator('#local-edit-request button[type="submit"]').click();
+ await expect(page.locator('.local-timeline li')).toHaveCount(2);
+ await expect(page.locator('.request-document-print')).toContainText('2026-11-15');
+});

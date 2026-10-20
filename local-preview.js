@@ -1,4 +1,5 @@
 import {requestStorageKey,profileStorageKey,messageDraftStorageKey,safeReadJSON,localRequests,localProfile,localWrite,localAgenda,localSummary,localDateLabel,validLocalDate} from './local-data.js';
+import {localReceipt,localRequestBackup,localBackupName,historicalEvents,readableTimestamp} from './local-document.js';
 
 import {appHeader,bottomNavigation,renderLanding,renderCategory,serviceFormHeader,formPeriodPicker,priceFor,esc,setActiveNav,matchServices,serviceRow} from './customer-ui.js';
 
@@ -61,7 +62,8 @@ export function mountLocal({app,services}){
         postal_code:String(data.get('postal_code')||''),city:String(data.get('city')||''),
         phone:String(data.get('phone')||''),description:String(data.get('description')||''),
         period:String(data.get('preferred_period')||''),date:String(data.get('preferred_date')||''),
-        price:s[2],status:'Pendiente (local)'});
+        price:s[2],status:'Pendiente (local)',created_at:new Date().toISOString(),
+        history:[{type:'created',at:new Date().toISOString()}]});
       if(!persist(requests)){
         main.querySelector('[data-feedback]').textContent='No se ha podido guardar. Comprueba el almacenamiento de este navegador y vuelve a intentarlo.';
         return;
@@ -118,6 +120,16 @@ export function mountLocal({app,services}){
       '<p><b>Teléfono:</b> '+esc(x.phone||'No indicado')+'</p>'+
       '<p><b>Descripción:</b> '+esc(x.description||'No indicada')+'</p>'+
       '<p><b>Precio:</b> '+(Number(x.price)>0?esc(Number(x.price).toFixed(2).replace('.',',')+' € · orientativo, IVA incluido'):'Por presupuesto')+'</p>'+
+      '<h3>Seguimiento de esta solicitud</h3>'+
+      '<p class="notice">Historial local de las acciones realizadas en este dispositivo; no refleja asignaciones ni trabajos del equipo.</p>'+
+      '<ol class="local-timeline">'+(historicalEvents(x).length
+        ?historicalEvents(x).map(ev=>'<li><strong>'+esc(ev.label)+'</strong><small>'+esc(readableTimestamp(ev.at))+'</small></li>').join('')
+        :'<li>Esta solicitud se guardó antes de activar el historial. No consta la fecha original.</li>')+'</ol>'+
+      '<h3>Documentos de la solicitud</h3>'+
+      '<div class="local-doc-actions"><button type="button" data-local-print>Imprimir resguardo</button>'+
+      '<button type="button" data-local-export="'+esc(x.id)+'">Guardar copia JSON</button></div>'+
+      '<p class="notice">El resguardo no es una factura. La copia contiene teléfono y dirección: guárdala de forma segura.</p>'+
+      localReceipt(x)+
       '<h3>Preferencias de visita</h3><form id="local-edit-request">'+
       '<label>Fecha preferida<input type="date" name="preferred_date" value="'+esc(validLocalDate(x.date)?x.date:'')+'"></label>'+
       '<label>Horario<select name="preferred_period"><option value="Mañana (9:00–13:00)">Mañana (9:00–13:00)</option><option value="Tarde (13:00–17:00)">Tarde (13:00–17:00)</option><option value="Indiferente">Indiferente</option></select></label>'+
@@ -133,8 +145,16 @@ export function mountLocal({app,services}){
       const all=saved();
       const index=all.findIndex(row=>String(row.id)===String(id));
       if(index<0){requests();return}
-      all[index]={...all[index],date,period:form.elements.preferred_period.value};
+      const prior=all[index],period=form.elements.preferred_period.value;
+      if(prior.date===date && prior.period===period){
+        main.querySelector('[data-feedback]').textContent='No hay cambios que guardar.';return;
+      }
+      const now=new Date().toISOString();
+      const timeline=Array.isArray(prior.history)?prior.history.filter(ev=>ev&&typeof ev==='object').slice(-28):[];
+      timeline.push({type:'preferences_changed',at:now});
+      all[index]={...prior,date,period,updated_at:now,history:timeline};
       if(!persist(all)){main.querySelector('[data-feedback]').textContent='No se han guardado los cambios. Comprueba el almacenamiento.';return}
+      requestDetail(id,detailOrigin);
       main.querySelector('[data-feedback]').textContent='Preferencias actualizadas en este dispositivo. La cita no está confirmada.';
     });
   }
@@ -178,6 +198,28 @@ export function mountLocal({app,services}){
     };
   }
   app.addEventListener('click',event=>{
+    if(event.target.closest('[data-local-print]')){
+      if(typeof window.print==='function')window.print();
+      else main.querySelector('[data-feedback]').textContent='Tu navegador no permite imprimir esta pantalla.';
+      return;
+    }
+    const exportButton=event.target.closest('[data-local-export]');
+    if(exportButton){
+      const request=saved().find(r=>String(r.id)===exportButton.dataset.localExport);
+      if(!request){main.querySelector('[data-feedback]').textContent='No se encuentra esta solicitud.';return}
+      try {
+        const json=JSON.stringify(localRequestBackup(request),null,2);
+        const url=URL.createObjectURL(new Blob([json],{type:'application/json'}));
+        const link=document.createElement('a');
+        link.href=url;link.download=localBackupName(request);
+        document.body.append(link);link.click();link.remove();
+        setTimeout(()=>URL.revokeObjectURL(url),60000);
+        main.querySelector('[data-feedback]').textContent='Copia local preparada. Contiene datos personales: guárdala de forma segura.';
+      }catch{
+        main.querySelector('[data-feedback]').textContent='No se ha podido preparar la copia.';
+      }
+      return;
+    }
     const openDetail=event.target.closest('[data-local-detail]');
     if(openDetail)return requestDetail(openDetail.dataset.localDetail,page==='agenda'?'agenda':'requests');
     const deleteBtn=event.target.closest('[data-local-delete]');

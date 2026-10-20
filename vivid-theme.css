@@ -315,3 +315,27 @@ body,.shell,.customer-header,.customer-nav {background:#fff}
 .staff-vat{font-size:12px;color:#315471;margin:0 0 5px;line-height:1.5}
 .job-card{overflow-wrap:anywhere}
 @media(max-width:610px){.staff-summary{grid-template-columns:repeat(2,minmax(0,1fr))}.staff-summary strong{font-size:23px}.staff-filters button{font-size:11px;padding:8px 11px}}
+
+/* Historial y documentos del cliente, sin alterar las tarjetas aprobadas. */
+.local-timeline{list-style:none;margin:10px 0 20px;padding:0 0 0 20px;border-left:2px solid #a9d8fa}
+.local-timeline li{position:relative;padding:4px 0 16px 15px;color:#173e67;line-height:1.4}
+.local-timeline li:before{content:"";position:absolute;left:-26px;top:9px;width:10px;height:10px;border-radius:50%;background:#ff7135;border:3px solid white;box-shadow:0 0 0 1px #ffb798}
+.local-timeline small{display:block;margin-top:3px;color:#60758b}
+.local-doc-actions{display:flex;flex-wrap:wrap;gap:10px;margin:10px 0}
+.local-doc-actions button{border:1px solid #b4d6f4;background:#f1f9ff;color:#12538d;border-radius:13px;padding:12px 16px;min-height:44px;font-weight:750}
+.local-doc-actions button:focus-visible{outline:3px solid #1b93ec;outline-offset:2px}
+.request-document-print{display:none}
+@media print{
+  @page{margin:16mm}
+  body{background:white!important}
+  body *{visibility:hidden!important}
+  .request-document-print,.request-document-print *{visibility:visible!important}
+  .request-document-print{display:block!important;position:absolute;inset:0 auto auto 0;width:100%;background:#fff!important;color:#182c46!important;font:12pt/1.45 system-ui,sans-serif}
+  .request-document-print h1{font-size:23pt;color:#fb641f;margin:0}
+  .request-document-print h2{font-size:17pt;margin:5px 0 16px}
+  .request-document-print dl{display:block}
+  .receipt-row{display:grid;grid-template-columns:30% 70%;gap:8px;border-bottom:1px solid #d5dce5;padding:8px 0;break-inside:avoid}
+  .receipt-row dt{font-weight:700}.receipt-row dd{margin:0;overflow-wrap:anywhere}
+  .receipt-warning{border:1px solid #e0a17b;padding:12px;font-weight:700}
+  .receipt-footer{font-size:9pt;margin-top:25px;color:#54616d}
+}
