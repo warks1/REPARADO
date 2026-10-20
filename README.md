@@ -67,3 +67,9 @@ El paquete **Integración v3** puede sustituir esta base cuando estén disponibl
 1. Crea un proyecto en Supabase y ejecuta `schema.sql` (instalación nueva) o `supabase/migration-v4.sql` (actualización). Aplica `supabase/storage-photos.sql` para las fotos.
 2. Configura `VITE_SUPABASE_URL` y `VITE_SUPABASE_ANON_KEY` como **secrets** del repositorio para la compilación. No uses la clave `service_role` en el frontend.
 3. Los roles de personal deben asignarse desde el SQL Editor por el administrador. Una cuenta creada en la web siempre es cliente. Comprueba con tres cuentas separadas los permisos y avisos antes de atender solicitudes reales.
+
+## V5: avisos para el equipo
+- Una solicitud nueva genera avisos internos a las cuentas de administrador.
+- Los mensajes del cliente generan un aviso al administrador y a los operarios con un trabajo activo asignado de ese cliente.
+- Si el cliente acepta un presupuesto, el administrador recibe aviso.
+- **Supabase existente:** aplicar `supabase/migration-v4.sql` y después `supabase/migration-v5.sql`. **Supabase nuevo:** ejecutar `schema.sql` que ya contiene las dos migraciones, y `supabase/storage-photos.sql` para fotos.
