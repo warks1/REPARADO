@@ -171,7 +171,26 @@ export function mountConnected({app, services, supabase}) {
     const {data,error}=await supabase.from('service_requests').select('id,service_name,status,price,street,address_number,city,preferred_date,scheduled_at,operator_name').eq('customer_id',session.user.id).order('created_at',{ascending:false});
     if(currentView!=='requests')return;
     if(error){main.innerHTML=`<section class="card">${backButton}<h2>Mis solicitudes</h2><p>${esc(error.message)}</p></section>`;return}
-    main.innerHTML=`<section class="card">${backButton}<h2>Mis solicitudes</h2>${data?.length?data.map(r=>`<article class="request"><strong>${esc(r.service_name)}</strong><span>${esc(statusLabels[r.status]||r.status)}</span><p>${esc(r.street)}, ${esc(r.address_number)} · ${esc(r.city)}</p>${r.price!=null?`<p>Importe confirmado: <b>${money(r.price)}</b> (IVA incluido)</p>`:''}<small>${r.scheduled_at?'Visita: '+esc(safeTime(r.scheduled_at)):'Fecha preferida: '+esc(r.preferred_date||'No indicada')}</small>${r.status==="quoted" && r.price!==null ? `<div class="flex-actions"><button type="button" data-accept-quote="${esc(r.id)}">Aceptar presupuesto de ${money(r.price)}</button></div>` : ""}</article>`).join(''):'<p>Todavía no tienes solicitudes.</p>'}</section>`;
+    main.innerHTML=`<section class="card">${backButton}<h2>Mis solicitudes</h2><p data-feedback class="feedback" role="status"></p>${data?.length?data.map(r=>`<article class="request"><strong>${esc(r.service_name)}</strong><span>${esc(statusLabels[r.status]||r.status)}</span><p>${esc(r.street)}, ${esc(r.address_number)} · ${esc(r.city)}</p>${r.price!=null?`<p>Importe confirmado: <b>${money(r.price)}</b> (IVA incluido)</p>`:''}<small>${r.scheduled_at?'Visita: '+esc(safeTime(r.scheduled_at)):'Fecha preferida: '+esc(r.preferred_date||'No indicada')}</small><div class="flex-actions"><button type="button" data-customer-photos="${esc(r.id)}">📷 Mis fotos</button></div><div class="photo-links" data-customer-photo-output="${esc(r.id)}"></div>${r.status==="quoted" && r.price!==null ? `<div class="flex-actions"><button type="button" data-accept-quote="${esc(r.id)}">Aceptar presupuesto de ${money(r.price)}</button></div>` : ""}</article>`).join(''):'<p>Todavía no tienes solicitudes.</p>'}</section>`;
+    main.querySelectorAll('[data-customer-photos]').forEach(button=>button.addEventListener('click',async()=>{
+      const requestId=button.dataset.customerPhotos;
+      const out=main.querySelector('[data-customer-photo-output="'+requestId+'"]');
+      if(!out)return;
+      button.disabled=true;out.textContent='Cargando imágenes…';
+      const folder=session.user.id+'/'+requestId;
+      const {data,error}=await supabase.storage.from('request-photos').list(folder,{limit:30});
+      out.replaceChildren();button.disabled=false;
+      if(error){out.textContent='No se pudieron obtener las fotos: '+error.message;return}
+      if(!data?.length){out.textContent='No hay fotografías adjuntas.';return}
+      for(const photo of data){
+        if(!photo.name || photo.name.startsWith('.'))continue;
+        const {data:signed,error:signError}=await supabase.storage.from('request-photos').createSignedUrl(folder+'/'+photo.name,120);
+        if(signError || !signed?.signedUrl)continue;
+        const link=document.createElement('a');link.href=signed.signedUrl;link.target='_blank';
+        link.rel='noopener noreferrer';link.textContent='📷 Abrir fotografía';out.append(link);
+      }
+      if(!out.children.length)out.textContent='No hay fotos disponibles.';
+    }));
     main.querySelectorAll('[data-accept-quote]').forEach(button=>button.addEventListener('click',async()=>{
       button.disabled=true;
       const {data:accepted,error}=await supabase.rpc('accept_reparado_quote',{p_request_id:button.dataset.acceptQuote});
