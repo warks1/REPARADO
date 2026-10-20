@@ -197,3 +197,11 @@ background-image:linear-gradient(90deg,#0d2d52 0%,rgba(13,45,82,.98) 20%,rgba(15
  .category-art svg,.category-art .float-slow,.category-art .drip,.customer-page{animation:none!important}
  .category-tile,.catalog-service,.primary-cta{transition:none!important}
 }
+
+/* Ocultación efectiva de filtros, sin depender de estilos por defecto del navegador. */
+.category-tile[hidden],.catalog-service[hidden]{display:none!important}
+.photo-preview{display:flex;gap:9px;flex-wrap:wrap}
+.photo-preview img{width:86px;height:86px;object-fit:cover;border-radius:12px;border:1px solid #d7e3f1}
+.request-confirm{background:#ecf9f4;border:1px solid #bde7d4;padding:20px;border-radius:16px;margin-top:12px}
+.request-confirm h2{margin:0 0 8px;color:#195c45;font-size:22px}
+.request-confirm p{color:#396a5c;line-height:1.45}

@@ -95,3 +95,5 @@ El paquete **Integración v3** puede sustituir esta base cuando estén disponibl
 - Navegación inferior fija con Inicio, Solicitudes, Agenda, Chat y Perfil; adaptable a Android, iOS, tablets y web.
 - Solicitud cliente con dirección, teléfono, descripción, fotos, fecha y horario preferido. El horario queda incorporado en la descripción de la solicitud para mantener compatibilidad con la base actual.
 - Sin credenciales Supabase, se muestra la **misma interfaz de cliente** y se pueden probar flujos y guardar solicitudes **solo localmente**; no se finge el envío real al equipo. Para atender solicitudes reales hay que configurar Supabase.
+
+- La gestión administrativa continúa accesible desde Perfil para cuentas de personal autorizado, sin añadir opciones internas al menú público de cinco pestañas.
