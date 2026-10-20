@@ -20,6 +20,8 @@ jobs:
           node-version: '22'
       - name: Instalar dependencias
         run: npm install --no-audit --no-fund
+      - name: Pruebas de reglas de negocio
+        run: npm test
       - name: Compilar
         run: npm run build
         env:

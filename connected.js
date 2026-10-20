@@ -1,3 +1,4 @@
+import { operatorMaySetStatus } from './rules.js'
 import { renderInvoices } from './invoices.js'
 import { renderNotifications } from './notifications.js'
 import { Capacitor } from '@capacitor/core'
@@ -322,9 +323,7 @@ export function mountConnected({app, services, supabase}) {
           form.querySelector('[name="'+field+'"]')?.closest('label')?.remove();
         }
         form.querySelectorAll('select[name="status"] option').forEach(opt=>{
-          if(opt.value!==job.status &&
-             !(job.status==='scheduled' && opt.value==='in_progress') &&
-             !(job.status==='in_progress' && opt.value==='completed'))opt.remove();
+          if(!operatorMaySetStatus(job.status,opt.value))opt.remove();
         });
       });
     }
@@ -335,9 +334,7 @@ export function mountConnected({app, services, supabase}) {
       if(!admin){
         const original=all.find(j=>j.id===form.dataset.jobId);
         if(!original)return message('Solicitud no encontrada.',true);
-        const allowed=status===original.status
-          || (original.status==='scheduled' && status==='in_progress')
-          || (original.status==='in_progress' && status==='completed');
+        const allowed=operatorMaySetStatus(original.status,status);
         if(!allowed)return message('El operario no puede realizar esta transición.',true);
         const {error}=await supabase.from('service_requests').update({status}).eq('id',form.dataset.jobId);
         if(error)message('No se pudo actualizar: '+error.message,true);
