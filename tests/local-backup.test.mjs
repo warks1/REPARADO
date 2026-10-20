@@ -36,5 +36,5 @@ test('rechaza copias erróneas sin permitir escrituras parciales',()=>{
  assert.throws(()=>restoreLocalCollection('not json',[]),/JSON válido/);
  assert.throws(()=>restoreLocalCollection(JSON.stringify({format:'malicioso',version:1,requests:[row]}),[]),/Formato/);
  assert.throws(()=>restoreLocalCollection(JSON.stringify(makeLocalCollection([{...row,price:-1}])),[]),/precio inválido/);
- assert.throws(()=>restoreLocalCollection(JSON.stringify(makeLocalCollection([{...row,postal_code:'08001',history:[{type:'admin',at:'2026-10-20T20:00:00Z'}]}])),[]),/historial incorrecto/);
+ assert.throws(()=>restoreLocalCollection(JSON.stringify({format:'reparado-local-collection',version:1,requests:[{...row,history:[{type:'admin',at:'2026-10-20T20:00:00Z'}]}]}),[]),/historial incorrecto/);
 });
