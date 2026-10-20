@@ -116,3 +116,6 @@ En el modo conectado, si el cliente elige un trabajo antes de iniciar sesión, R
 
 ## Validación responsive automatizada (Android y iPhone)
 `npm run test:visual` ejecuta Playwright con Chrome móvil emulado a 390 px (tamaño tipo iPhone), 412 px (tamaño tipo Android) y 820 px (tablet). Se prueban la portada, cuatro categorías, el menú inferior, la presencia de las imágenes, el filtro, el formulario y el botón Volver. Las capturas se guardan como artefacto de GitHub Actions durante siete días. La ejecución emula pantallas; no sustituye una prueba en un dispositivo iOS o Android real, ni certifica que las imágenes coincidan píxel por píxel con el boceto.
+
+### Corrección basada en capturas móviles
+La auditoría visual automatizada detectó que el estilo SVG `overflow: visible` dejaba pintar fuera del recorte la imagen completa del atlas en las cuatro tarjetas. Se fuerza el recorte y el aislamiento en cada ilustración, se elimina el texto duplicado del banner y se comprueba el estilo de recorte mediante Playwright antes de publicar.

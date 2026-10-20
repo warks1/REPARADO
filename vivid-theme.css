@@ -165,3 +165,28 @@ body,.shell,.customer-header,.customer-nav {background:#fff}
   line-height:1.4;
 }
 .auth-pending strong{color:#092656}
+
+/* Corrección validada con capturas reales de Chromium móvil:
+   el CSS anterior permitía dibujar TODO el atlas fuera del SVG. */
+.category-art svg.reference-sprite{
+  overflow:hidden;
+  display:block;
+  max-width:100%;
+  clip-path:inset(0);
+  contain:paint;
+}
+.category-tile .category-art{
+  overflow:hidden;
+  isolation:isolate;
+  border-radius:inherit;
+}
+.category-hero .category-art{
+  overflow:hidden;
+  border-radius:22px;
+}
+/* El banner ya incluye letras en el recorte original: ocultamos la
+   zona de texto raster para que no aparezca duplicada bajo el HTML. */
+.reference-promo{
+  -webkit-mask-image:linear-gradient(90deg,transparent 0%,transparent 58%,#000 76%)!important;
+  mask-image:linear-gradient(90deg,transparent 0%,transparent 58%,#000 76%)!important;
+}

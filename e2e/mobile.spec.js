@@ -9,6 +9,10 @@ test('portada real por categorías, imágenes y navegación sin desbordamiento',
   await expect(page.locator('.category-tile')).toHaveCount(4);
   await expect(page.locator('.customer-nav button')).toHaveCount(5);
   await expect(page.locator('.promo-banner')).toBeVisible();
+  const cropStyle=await page.locator('.category-tile svg.reference-sprite').first()
+    .evaluate(el=>({overflow:getComputedStyle(el).overflowX,contain:getComputedStyle(el).contain}));
+  expect(cropStyle.overflow).toBe('hidden');
+  expect(cropStyle.contain).toContain('paint');
   const dims=await page.evaluate(()=>({
     documentWidth:document.documentElement.scrollWidth,
     viewportWidth:window.innerWidth,
