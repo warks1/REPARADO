@@ -51,10 +51,16 @@ jobs:
             -derivedDataPath ios-build \
             CODE_SIGNING_ALLOWED=NO \
             build
+      - name: Verificar aplicación compilada
+        run: |
+          test -f ios-build/Build/Products/Debug-iphonesimulator/App.app/Info.plist
+          test -f ios-build/Build/Products/Debug-iphonesimulator/App.app/App
       - name: Conservar versión para simulador
         uses: actions/upload-artifact@v4
         with:
           name: Reparado-iOS-Simulador
-          path: ios-build/Build/Products/Debug-iphonesimulator/App.app
+          # Subir el directorio PADRE conserva App.app como paquete instalable
+          # en el simulador, en lugar de aplanar sus archivos.
+          path: ios-build/Build/Products/Debug-iphonesimulator/
           if-no-files-found: error
           retention-days: 14
