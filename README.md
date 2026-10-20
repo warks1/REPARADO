@@ -142,3 +142,6 @@ La acción `Reparado iOS simulator check` utiliza un runner Mac, genera el proye
 
 ### Búsqueda completa de servicios
 El buscador utiliza el mismo filtro en la app conectada y en el modo local. Encuentra reparaciones por nombre de servicio o por categoría, muestra resultados fuera de los cuatro destacados y permite pasar a la solicitud directamente. La búsqueda local se valida con pruebas de navegación.
+
+## Puesta en producción de Reparado
+Consultar [`docs/production-readiness.md`](docs/production-readiness.md) para la configuración de Supabase, pruebas de seguridad, notificaciones y las publicaciones Android y Apple. Las apps nativas de pruebas no deben distribuirse como versiones finales sin esas comprobaciones.
