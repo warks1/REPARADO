@@ -97,3 +97,6 @@ El paquete **Integración v3** puede sustituir esta base cuando estén disponibl
 - Sin credenciales Supabase, se muestra la **misma interfaz de cliente** y se pueden probar flujos y guardar solicitudes **solo localmente**; no se finge el envío real al equipo. Para atender solicitudes reales hay que configurar Supabase.
 
 - La gestión administrativa continúa accesible desde Perfil para cuentas de personal autorizado, sin añadir opciones internas al menú público de cinco pestañas.
+
+### Fidelidad respecto a la referencia
+Se han ajustado el texto de portada, la proporción 2×2 de categorías y el orden y descripción de servicios. No se han inventado los precios ni sustituido los datos reales por los del boceto. La coincidencia total de las ilustraciones todavía está pendiente.

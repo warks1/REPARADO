@@ -205,3 +205,35 @@ background-image:linear-gradient(90deg,#0d2d52 0%,rgba(13,45,82,.98) 20%,rgba(15
 .request-confirm{background:#ecf9f4;border:1px solid #bde7d4;padding:20px;border-radius:16px;margin-top:12px}
 .request-confirm h2{margin:0 0 8px;color:#195c45;font-size:22px}
 .request-confirm p{color:#396a5c;line-height:1.45}
+
+/* Geometría 2x2 fiel al boceto: proporción de tarjetas y vista de fontanería */
+:root{--orange:#ff6127;--ink:#0c1d42}
+.category-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:11px}
+.category-tile{aspect-ratio:220/165;min-height:0!important;border-radius:19px;padding:6px 13px 13px}
+.category-tile .category-art{height:60%;max-height:132px}
+.category-tile strong{font-size:clamp(15px,1.85vw,21px);line-height:1.08}
+.category-tile>span:not(.tile-arrow){font-size:clamp(10px,1.3vw,13px);line-height:1.12}
+.promo-banner{min-height:165px;border-radius:21px}
+.promo-copy h2{font-size:clamp(19px,2.5vw,25px);line-height:1.12}
+.intro h1{letter-spacing:-1.5px;margin-bottom:11px}
+.intro p{color:#667187;line-height:1.35}
+.category-services{grid-template-columns:1fr}
+.category-services .catalog-service{min-height:104px}
+.category-services .service-thumb{height:86px;width:100px;font-size:35px}
+.category-services .service-details strong{font-size:15px}
+.category-services .service-details small{font-size:12px;line-height:1.3}
+.category-services .service-details em{font-size:13px;color:#ef6128}
+@media(max-width:540px){
+ .category-tile{aspect-ratio:220/165;padding:4px 12px 12px}
+ .category-tile .category-art{height:60%;max-height:100px}
+ .category-tile strong{font-size:15px}
+ .category-tile>span:not(.tile-arrow){font-size:11px}
+ .category-view .category-hero{min-height:215px}
+ .category-view .category-hero h1{font-size:clamp(32px,8vw,39px)}
+ .category-services .service-thumb{height:84px;width:95px}
+}
+@media(max-width:365px){
+ .category-tile{padding:3px 9px 7px}
+ .category-tile strong{font-size:13px}
+ .category-tile>span:not(.tile-arrow){font-size:9.5px}
+}

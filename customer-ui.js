@@ -2,10 +2,10 @@
 // Diseño compartido entre la web, Android (Capacitor) y iOS (Capacitor).
 // Son componentes reales de interfaz, no capturas ni imágenes de maqueta.
 export const categories = [
-  {id:'Fontanería',slug:'plumbing',title:'Fontanería',short:'Fugas, atascos e instalaciones',description:'Soluciones para el agua de tu hogar.'},
-  {id:'Albañilería',slug:'masonry',title:'Albañilería y Pladur',short:'Paredes, tabiques y techos',description:'Reparaciones, paredes, suelos y pladur.'},
-  {id:'Parquet',slug:'parquet',title:'Parquet',short:'Instalación y restauración',description:'Cuidado e instalación de suelos de madera.'},
-  {id:'Reformas integrales',slug:'renovation',title:'Reformas',short:'Baños, cocinas y viviendas',description:'Renovaciones parciales e integrales.'}
+  {id:'Fontanería',slug:'plumbing',title:'Fontanería',short:'Fugas, atascos, instalaciones...',description:'Soluciones para el agua de tu hogar.'},
+  {id:'Albañilería',slug:'masonry',title:'Albañilería y Pladur',short:'Paredes, tabiques, techos...',description:'Reparaciones, paredes, suelos y pladur.'},
+  {id:'Parquet',slug:'parquet',title:'Parquet',short:'Instalación, reparación y restauración...',description:'Cuidado e instalación de suelos de madera.'},
+  {id:'Reformas integrales',slug:'renovation',title:'Reformas',short:'Reformas parciales o integrales...',description:'Renovaciones parciales e integrales.'}
 ];
 
 export function esc(value) {
@@ -72,20 +72,34 @@ const overview=[
 ];
 export function renderLanding(services,{notice=''}={}) {
   return '<div class="customer-page">'+
-    '<section class="intro"><h1>Tu hogar<br>en buenas manos<span class="intro-accent">.</span></h1><p>Soluciones para reparar y mejorar tu hogar.</p></section>'+
+    '<section class="intro"><h1>Tu hogar<br>en buenas manos</h1><p>Profesionales para cualquier<br>reparación o reforma.</p></section>'+
     '<label class="search-pill">'+ico('search')+'<input type="search" id="category-search" aria-label="Buscar reparaciones" placeholder="¿Qué necesitas reparar?" autocomplete="off"></label>'+
-    '<section class="promo-banner"><div class="promo-copy"><p class="promo-kicker">REPARADO · TU HOGAR</p><h2>Pequeñas reparaciones,<br>grandes cambios</h2><p>Un hogar más cómodo empieza aquí.</p></div><button type="button" class="promo-cta" data-category-open="Reformas integrales" aria-label="Explorar reformas">'+ico('arrow')+'</button></section>'+
+    '<section class="promo-banner"><div class="promo-copy"><h2>Pequeñas<br>reparaciones,<br>grandes cambios</h2><p>Hogares más cómodos,<br>seguros y con vida.</p></div><button type="button" class="promo-cta" data-category-open="Reformas integrales" aria-label="Explorar reformas">'+ico('arrow')+'</button></section>'+
     '<div class="section-heading"><h2>Categorías de servicios</h2><button class="text-action" data-show-all type="button">Ver todos '+ico('arrow')+'</button></div>'+
     '<section class="category-grid">'+categories.map(c=>
       '<button type="button" class="category-tile theme-'+c.slug+'" data-category-open="'+esc(c.id)+'">'+
       categoryArt(c.slug)+'<strong>'+esc(c.title)+'</strong><span>'+esc(c.short)+'</span><span class="tile-arrow">'+ico('arrow')+'</span></button>'
     ).join('')+'</section>'+
-    '<div class="section-heading service-heading"><h2>Servicios populares</h2></div>'+
+    '<div class="section-heading service-heading"><h2>Servicios destacados</h2></div>'+
     '<div class="popular-list">'+[0,2,3,7].map(i=>serviceRow(services[i],i)).join('')+'</div>'+
     (notice?'<p class="subtle-notice">'+esc(notice)+'</p>':'')+
     '<div class="no-results" hidden>No hemos encontrado ese servicio. Puedes consultar todas las categorías.</div>'+
    '</div>';
 }
+const serviceDescriptions={
+ 'Reparación de fuga':'Localización y reparación de fugas de agua.',
+ 'Desatasco de lavabo o fregadero':'Limpieza de tuberías, fregaderos y desagües.',
+ 'Instalación de termo eléctrico':'Instalación y sustitución de termos eléctricos.',
+ 'Sustitución de grifo':'Montaje o sustitución de grifería.',
+ 'Cambio de sifón':'Revisión y sustitución de sifones.',
+ 'Mecanismo de cisterna':'Reparación de mecanismos y cisternas.'
+};
+const featuredServiceIndices={
+ 'Fontanería':[2,0,6,3],
+ 'Albañilería':[12,9,10,11],
+ 'Parquet':[16,21,17,18],
+ 'Reformas integrales':[22,23,24]
+};
 const catExamples={
  plumbing:['Fontanería','Fugas, grifería y sanitarios'],
  masonry:['Albañilería y Pladur','Paredes y techos'],
@@ -97,7 +111,7 @@ export function serviceRow(s,i) {
   const cat=catFor(s[0]);
   const symbol=(/grifo/i.test(s[1])?'🚰':/fuga/i.test(s[1])?'💧':/desatasco|sifón/i.test(s[1])?'🛁':/cisterna/i.test(s[1])?'🚽':/pladur/i.test(s[1])?'🧱':/alicatado/i.test(s[1])?'▦':/parquet|tabla|barniz/i.test(s[1])?'🪵':cat.slug==='renovation'?'🏡':'🛠️');
   return '<button type="button" class="catalog-service" data-service="'+i+'"><span class="service-thumb thumb-'+cat.slug+'">'+symbol+'</span>'+
-   '<span class="service-details"><strong>'+esc(s[1])+'</strong><small>'+esc(cat.title)+'</small><em>'+esc(priceFor(s))+(s[2]?' · IVA incluido':'')+'</em></span><span class="service-chevron">'+ico('arrow')+'</span></button>';
+   '<span class="service-details"><strong>'+esc(s[1])+'</strong><small>'+esc(serviceDescriptions[s[1]]||cat.description)+'</small><em>'+(s[2]?'Desde '+esc(priceFor(s)):'Por presupuesto')+'</em></span><span class="service-chevron">'+ico('arrow')+'</span></button>';
 }
 export function renderCategory(services,id) {
   const c=catFor(id);
@@ -105,9 +119,9 @@ export function renderCategory(services,id) {
   return '<div class="customer-page category-view theme-'+c.slug+'">'+
      '<button class="screen-back" type="button" data-back>'+ico('back')+' Volver</button>'+
      '<section class="category-hero"><div class="category-hero-copy"><h1>'+esc(c.title)+'</h1><p>'+esc(c.description)+'</p></div>'+categoryArt(c.slug)+'</section>'+
-     '<div class="trust-badges"><span>'+ico('shield')+' Solicitud online</span><span>'+ico('star')+' Atención personalizada</span><span>'+ico('wallet')+' IVA incluido</span></div>'+
+     '<div class="trust-badges"><span>'+ico('shield')+' Solicitud segura</span><span>'+ico('star')+' Atención personalizada</span><span>'+ico('wallet')+' Precios orientativos</span></div>'+
      '<div class="section-heading"><h2>Servicios más solicitados</h2></div>'+
-     '<div class="category-services">'+relevant.map(x=>serviceRow(x.s,x.i)).join('')+'</div>'+
+     '<div class="category-services">'+relevant.sort((a,b)=>{const ranks=featuredServiceIndices[c.id]||[];const aa=ranks.indexOf(a.i),bb=ranks.indexOf(b.i);return (aa<0?99:aa)-(bb<0?99:bb)}).map(x=>serviceRow(x.s,x.i)).join('')+'</div>'+
      '<div class="custom-request"><div><h3>¿No encuentras lo que necesitas?</h3><p>Cuéntanos tu caso y te ayudamos.</p></div>'+
      '<button type="button" class="primary-cta" data-custom-request="'+esc(c.id)+'">Solicitar servicio '+ico('arrow')+'</button></div>'+
      '</div>';
