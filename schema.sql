@@ -1,8 +1,14 @@
 -- REPARADO / SUPABASE
 create extension if not exists pgcrypto;
 
-create type public.user_role as enum ('customer','admin','operator');
-create type public.request_status as enum ('new','quoted','accepted','scheduled','in_progress','completed','cancelled');
+do $body$ begin
+  create type public.user_role as enum ('customer','admin','operator');
+exception when duplicate_object then null;
+end $body$;
+do $body$ begin
+  create type public.request_status as enum ('new','quoted','accepted','scheduled','in_progress','completed','cancelled');
+exception when duplicate_object then null;
+end $body$;
 
 create table if not exists public.profiles (
  id uuid primary key references auth.users(id) on delete cascade,
@@ -91,17 +97,28 @@ create trigger on_auth_user_created after insert on auth.users for each row exec
 -- instead of querying profiles from its own RLS policy (which causes recursion).
 create or replace function public.is_reparado_staff()
 returns boolean language sql stable security definer set search_path=public
-as $ select exists (select 1 from public.profiles p where p.id=auth.uid() and p.role in ('admin','operator')) $;
+as $$ select exists (select 1 from public.profiles p where p.id=auth.uid() and p.role in ('admin','operator')) $$;
 revoke all on function public.is_reparado_staff() from public;
 grant execute on function public.is_reparado_staff() to authenticated;
 -- Prevent a user from escalating their own role via profile update.
 revoke update on public.profiles from anon, authenticated;
 grant update (full_name, phone) on public.profiles to authenticated;
 
+drop policy if exists "profile own read" on public.profiles;
+drop policy if exists "profile own update" on public.profiles;
+drop policy if exists "request customer read" on public.service_requests;
+drop policy if exists "request customer create" on public.service_requests;
+drop policy if exists "request staff update" on public.service_requests;
+drop policy if exists "message participants" on public.messages;
+drop policy if exists "message own insert" on public.messages;
+drop policy if exists "notifications own" on public.notifications;
+drop policy if exists "tokens own" on public.device_tokens;
+drop policy if exists "invoice customer/staff" on public.invoices;
+
 create policy "profile own read" on public.profiles for select using (auth.uid()=id or public.is_reparado_staff());
 create policy "profile own update" on public.profiles for update using (auth.uid()=id);
 create policy "request customer read" on public.service_requests for select using (customer_id=auth.uid() or public.is_reparado_staff());
-create policy "request customer create" on public.service_requests for insert with check (customer_id=auth.uid());
+create policy "request customer create" on public.service_requests for insert with check (customer_id=auth.uid() and status='new' and operator_id is null and operator_name is null and scheduled_at is null);
 create policy "request staff update" on public.service_requests for update using (public.is_reparado_staff());
 create policy "message participants" on public.messages for select using (customer_id=auth.uid() or sender_id=auth.uid() or public.is_reparado_staff());
 create policy "message own insert" on public.messages for insert with check (sender_id=auth.uid() and (customer_id=auth.uid() or public.is_reparado_staff()));

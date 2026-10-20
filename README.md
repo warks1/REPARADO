@@ -35,3 +35,14 @@ El proyecto mantiene `capacitor.config.ts` y dependencias de Capacitor para cont
 - Endurecida la política inicial de perfiles para impedir la autoasignación de rol y evitar recursión de RLS.
 
 El paquete **Integración v3** puede sustituir esta base cuando estén disponibles sus archivos exactos.
+
+## Mejoras del 20-10-2026 (segunda revisión)
+
+- Corregida la sintaxis de SQL en `is_reparado_staff()` (la versión anterior tenía delimitadores rotos).
+- Pantalla conectada reorganizada en `connected.js`: sin dependencias de variables globales implícitas por ID.
+- Panel interno real básico para cuentas con rol `admin` o `operator`: lista de solicitudes, operarios, fecha y estado, agenda, Google Maps.
+- Solicitudes conectadas: subida de hasta cuatro fotografías a un bucket privado. Para activar esta función, ejecutar `supabase/storage-photos.sql` en Supabase.
+- Vista para consultar fotos de solicitudes desde el panel interno (enlaces privados temporales).
+- Navegación e inputs adaptados a pantallas táctiles; ocultación del registro push en navegadores web.
+
+**Importante:** Estas funciones conectadas requieren un proyecto Supabase real, aplicar `schema.sql` y `supabase/storage-photos.sql`, y configurar credenciales. El modo demostración guarda solicitudes solo en este navegador, sin asignaciones ni fotos reales. Panel interno, push y facturación fiscal requieren pruebas de integración antes de producción. El SQL inicial no sustituye a un sistema de migraciones versionadas y no se ha ejecutado contra tu Supabase.
