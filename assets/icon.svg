@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title">
+<title id="title">Reparado</title>
+<defs><linearGradient id="house" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#ff9a3f"/><stop offset="1" stop-color="#ff5824"/></linearGradient></defs>
+<rect width="512" height="512" rx="112" fill="#fffaf6"/>
+<rect x="12" y="12" width="488" height="488" rx="104" fill="#fff9f5" stroke="#ffe7d8" stroke-width="8"/>
+<path d="M97 246 256 110 415 246v159H307V290H205v115H97z" fill="url(#house)"/>
+<path d="m77 248 179-154 179 154" fill="none" stroke="#ff6927" stroke-linecap="round" stroke-linejoin="round" stroke-width="34"/>
+<path d="M205 400V290h102v110" fill="#fff9f5"/>
+</svg>

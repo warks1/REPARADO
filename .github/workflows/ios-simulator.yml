@@ -35,6 +35,8 @@ jobs:
         run: |
           npx cap add ios
           npx cap sync ios
+      - name: Crear iconos y splash de Reparado para iPhone
+        run: npx @capacitor/assets generate --ios --iconBackgroundColor '#fff9f5' --splashBackgroundColor '#ffffff'
       - name: Comprobar configuración de Xcode
         run: |
           xcodebuild -version

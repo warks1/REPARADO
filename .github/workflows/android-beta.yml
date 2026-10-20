@@ -43,6 +43,8 @@ jobs:
         run: |
           npx cap add android
           npx cap sync android
+      - name: Crear iconos y splash de Reparado para Android
+        run: npx @capacitor/assets generate --android --iconBackgroundColor '#fff9f5' --splashBackgroundColor '#ffffff'
       - name: Compilar APK de prueba
         run: |
           cd android

@@ -152,3 +152,7 @@ Se incluye `public/hero-plumbing.webp`, recorte con bordes suavizados del grifo 
 
 ### Recuperación al arrancar y pruebas sobre la compilación final
 La versión de cliente incluye un guardián de arranque independiente del bundle JavaScript: si falla la carga o no hay contenido tras nueve segundos, se presenta una pantalla visible con botón «Volver a intentar», sin borrar las solicitudes locales. Se conserva la portada de inmediato cuando hay una conexión Supabase lenta. Playwright ahora ejecuta `vite build` seguido de `vite preview` y comprueba **la compilación de producción**, incluye un escenario con JavaScript bloqueado y prueba datos locales dañados. Las pruebas no sustituyen un diagnóstico en WebView real de Android/iOS.
+
+
+### Identidad nativa del icono
+Los flujos de compilación Android e iOS generan ahora los iconos adaptativos y recursos de inicio desde `assets/icon.svg`, que coincide con la casa naranja de Reparado. Se utiliza el generador oficial `@capacitor/assets` tras crear y sincronizar el proyecto con Capacitor. Los iconos se actualizan en cada nueva compilación nativa, en lugar de mantener los de Capacitor por defecto.
