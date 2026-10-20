@@ -119,3 +119,5 @@ En el modo conectado, si el cliente elige un trabajo antes de iniciar sesión, R
 
 ### Corrección basada en capturas móviles
 La auditoría visual automatizada detectó que el estilo SVG `overflow: visible` dejaba pintar fuera del recorte la imagen completa del atlas en las cuatro tarjetas. Se fuerza el recorte y el aislamiento en cada ilustración, se elimina el texto duplicado del banner y se comprueba el estilo de recorte mediante Playwright antes de publicar.
+
+Las pruebas visuales ahora guardan, además de Inicio, una captura de la pantalla **Fontanería** para compararla con el segundo teléfono del boceto.

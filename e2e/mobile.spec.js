@@ -41,6 +41,11 @@ test('filtros, categoría y formulario de cliente navegan y vuelven correctament
   await page.locator('.category-tile[data-category-open="Fontanería"]').click();
   await expect(page.locator('.category-view h1')).toHaveText('Fontanería');
   await expect(page.locator('.category-services .catalog-service').first()).toBeVisible();
+  const imageDir=join(testInfo.outputDir,'evidencia-visual');
+  mkdirSync(imageDir,{recursive:true});
+  await page.screenshot({path:join(imageDir,'fontaneria-'+testInfo.project.name+'.png'),fullPage:true});
+  const width=await page.evaluate(()=>document.documentElement.scrollWidth);
+  expect(width).toBeLessThanOrEqual(testInfo.project.use.viewport.width+2);
   await page.locator('.category-services [data-service]').first().click();
   await expect(page.locator('.request-screen h2')).toHaveText('Nueva solicitud');
   await expect(page.locator('#local-request')).toBeVisible();
