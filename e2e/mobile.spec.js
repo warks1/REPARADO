@@ -221,3 +221,40 @@ test('seguimiento local: historial, copia y resguardo imprimible',async({page})=
  await expect(page.locator('.local-timeline li')).toHaveCount(2);
  await expect(page.locator('.request-document-print')).toContainText('2026-11-15');
 });
+
+test('mis solicitudes: exportar todas y restaurar una copia local sin perder datos',async({page})=>{
+ await page.goto('/');
+ await page.locator('.category-tile[data-category-open="Fontanería"]').click();
+ await page.locator('.category-services [data-service="2"]').click();
+ const form=page.locator('#local-request');
+ await form.locator('[name="street"]').fill('Calle Copia');
+ await form.locator('[name="address_number"]').fill('14');
+ await form.locator('[name="postal_code"]').fill('08010');
+ await form.locator('[name="city"]').fill('Barcelona');
+ await form.locator('[name="phone"]').fill('611222333');
+ await form.locator('[name="description"]').fill('Revisión de grifo');
+ await form.locator('button[type="submit"]').click();
+ await page.locator('.request-confirm [data-view="requests"]').click();
+ const downloadEvent=page.waitForEvent('download');
+ await page.locator('[data-export-all]').click();
+ const download=await downloadEvent;
+ expect(download.suggestedFilename()).toBe('reparado-solicitudes-locales.json');
+ const {readFileSync}=await import('node:fs');
+ const original=readFileSync(await download.path());
+ const backup=JSON.parse(original.toString('utf8'));
+ expect(backup.sent_to_company).toBe(false);
+ expect(backup.requests).toHaveLength(1);
+ await page.locator('[data-local-detail]').click();
+ page.once('dialog',dialog=>dialog.accept());
+ await page.locator('[data-local-delete]').click();
+ await expect(page.locator('#local-request-list')).toContainText('Todavía no has guardado ninguna solicitud');
+ page.once('dialog',dialog=>dialog.accept());
+ await page.locator('#local-import-file').setInputFiles({name:'reparado-solicitudes-locales.json',
+   mimeType:'application/json',buffer:original});
+ await expect(page.locator('[data-backup-feedback]')).toContainText('Importadas 1 solicitudes locales');
+ await expect(page.locator('[data-local-item]')).toHaveCount(1);
+ await page.locator('#local-import-file').setInputFiles({name:'reparado-solicitudes-locales.json',
+   mimeType:'application/json',buffer:original});
+ await expect(page.locator('[data-backup-feedback]')).toContainText('ya estaban guardadas');
+ await expect(page.locator('[data-local-item]')).toHaveCount(1);
+});

@@ -1,5 +1,6 @@
 import {requestStorageKey,profileStorageKey,messageDraftStorageKey,safeReadJSON,localRequests,localProfile,localWrite,localAgenda,localSummary,localDateLabel,validLocalDate} from './local-data.js';
 import {localReceipt,localRequestBackup,localBackupName,historicalEvents,readableTimestamp} from './local-document.js';
+import {makeLocalCollection,restoreLocalCollection,localBackupLimit} from './local-backup.js';
 
 import {appHeader,bottomNavigation,renderLanding,renderCategory,serviceFormHeader,formPeriodPicker,priceFor,esc,setActiveNav,matchServices,serviceRow} from './customer-ui.js';
 
@@ -87,11 +88,49 @@ export function mountLocal({app,services}){
     main.innerHTML='<section class="card local-module"><h2>'+(agenda?'Mi agenda':'Mis solicitudes')+'</h2>'+
       '<p class="notice">Sin conexión al equipo. Las fechas son preferencias, no citas confirmadas.</p>'+
       '<div class="local-stats"><span><strong>'+summary.total+'</strong> solicitudes</span><span><strong>'+summary.withDate+'</strong> con fecha preferida</span></div>'+
-      (agenda?'': '<label class="local-search">Buscar solicitud<input type="search" id="local-request-search" placeholder="Servicio, municipio o calle"></label>')+
+      (agenda?'': '<div class="local-backup-tools"><h3>Mis copias de seguridad</h3><p class="notice">Exporta las solicitudes de este dispositivo o recupera una copia JSON. Contiene datos personales, guárdala de forma privada. No se envía a Reparado.</p>'+
+        '<div class="flex-actions"><button type="button" data-export-all>Descargar copia de solicitudes</button><button type="button" data-import-all>Importar una copia</button></div>'+
+        '<input id="local-import-file" type="file" accept=".json,application/json" hidden aria-label="Seleccionar una copia JSON">'+
+        '<p data-backup-feedback role="status"></p></div>'+
+        '<label class="local-search">Buscar solicitud<input type="search" id="local-request-search" placeholder="Servicio, municipio o calle"></label>')+
       '<div id="local-request-list">'+
       (rows.length?rows.map(requestListItem).join(''):'<p>'+(agenda?'No hay fechas preferidas registradas. Puedes elegir una desde los detalles de cualquier solicitud.':'Todavía no has guardado ninguna solicitud.')+'</p>')+'</div>'+
       (agenda && summary.withoutDate?'<p>'+summary.withoutDate+' solicitud(es) sin fecha elegida. <button type="button" data-view="requests">Ver todas las solicitudes</button></p>':'')+
       '<p class="notice">Estos datos se guardan solo en este dispositivo.</p></section>';
+    const backupFeedback=main.querySelector('[data-backup-feedback]');
+    main.querySelector('[data-export-all]')?.addEventListener('click',()=>{
+      const records=saved();
+      if(!records.length){backupFeedback.textContent='No tienes solicitudes que exportar.';return}
+      try{
+        const output=JSON.stringify(makeLocalCollection(records),null,2);
+        const url=URL.createObjectURL(new Blob([output],{type:'application/json'}));
+        const a=document.createElement('a');a.href=url;a.download='reparado-solicitudes-locales.json';
+        document.body.append(a);a.click();a.remove();
+        setTimeout(()=>URL.revokeObjectURL(url),60000);
+        backupFeedback.textContent='Copia preparada. Contiene datos personales: guárdala en un lugar privado.';
+      }catch(error){backupFeedback.textContent=error.message||'No se pudo preparar la copia.'}
+    });
+    const backupInput=main.querySelector('#local-import-file');
+    main.querySelector('[data-import-all]')?.addEventListener('click',()=>backupInput?.click());
+    backupInput?.addEventListener('change',async()=>{
+      const file=backupInput.files?.[0];
+      if(!file)return;
+      backupInput.value='';
+      if(file.size>localBackupLimit){backupFeedback.textContent='La copia supera el tamaño máximo permitido.';return}
+      try{
+        const restored=restoreLocalCollection(await file.text(),saved());
+        if(!restored.added){
+          backupFeedback.textContent=restored.duplicates?
+            'No se añadieron solicitudes: ya estaban guardadas en este dispositivo.':'La copia no contiene solicitudes nuevas.';
+          return;
+        }
+        if(!window.confirm('Se importarán '+restored.added+' solicitudes. Se conservarán las existentes. ¿Continuar?'))return;
+        if(!persist(restored.requests)){backupFeedback.textContent='No se pudo guardar la copia en este dispositivo.';return}
+        requests();
+        main.querySelector('[data-backup-feedback]').textContent=
+          'Importadas '+restored.added+' solicitudes locales. Duplicados omitidos: '+restored.duplicates+'. No se han enviado al equipo.';
+      }catch(error){backupFeedback.textContent=error.message||'No se pudo importar la copia.'}
+    });
     const search=main.querySelector('#local-request-search');
     search?.addEventListener('input',()=>{
       const text=search.value.trim().toLocaleLowerCase('es-ES');
