@@ -190,3 +190,18 @@ body,.shell,.customer-header,.customer-nav {background:#fff}
   -webkit-mask-image:linear-gradient(90deg,transparent 0%,transparent 58%,#000 76%)!important;
   mask-image:linear-gradient(90deg,transparent 0%,transparent 58%,#000 76%)!important;
 }
+
+/* Vista de categoría como en el segundo teléfono: volver y título arriba,
+   sin repetir el logotipo de la portada. */
+#app:has(.category-view) .customer-header{display:none}
+.category-view .screen-back{margin-top:calc(7px + env(safe-area-inset-top,0px));margin-bottom:8px}
+.category-view .category-hero .category-art svg:not(.reference-sprite){
+  overflow:visible;
+  max-width:100%;
+  width:100%;height:100%;
+  filter:saturate(1.34) brightness(1.07) drop-shadow(0 8px 10px rgba(0,120,240,.23));
+}
+.category-view.theme-plumbing .category-hero .category-art{overflow:visible}
+@media(prefers-reduced-motion:reduce){
+  .category-view .category-hero .category-art svg{animation:none!important}
+}

@@ -70,6 +70,11 @@ function atlasSprite(name,description=''){
 export function categoryArt(slug) {
   return '<div class="category-art art-'+esc(slug)+'">'+atlasSprite(slug,'Ilustración de '+catFor(categories.find(c=>c.slug===slug)?.id).title)+'</div>';
 }
+// En la cabecera grande, la imagen de baja resolución del atlas producía
+// artefactos. El vector original permite un grifo definido a cualquier tamaño.
+export function categoryHeroArt(slug){
+  return '<div class="category-art art-'+esc(slug)+'">'+(art[slug]||art.renovation)+'</div>';
+}
 export function logo() {
   return '<span class="brand-house" aria-hidden="true"><svg viewBox="0 0 48 48"><path d="M7 23 24 8l17 15v16H28V27h-9v12H7z" fill="#ff662a"/><path d="m7 23 17-15 17 15" fill="none" stroke="#ff662a" stroke-width="6" stroke-linecap="round"/></svg></span><span class="brand-word">Reparado</span>';
 }
@@ -145,7 +150,7 @@ export function renderCategory(services,id) {
   const relevant=services.map((s,i)=>({s,i})).filter(x=>x.s[0]===c.id);
   return '<div class="customer-page category-view theme-'+c.slug+'">'+
      '<button class="screen-back" type="button" data-back>'+ico('back')+' Volver</button>'+
-     '<section class="category-hero"><div class="category-hero-copy"><h1>'+esc(c.title)+'</h1><p>'+esc(c.description)+'</p></div>'+categoryArt(c.slug)+'</section>'+
+     '<section class="category-hero"><div class="category-hero-copy"><h1>'+esc(c.title)+'</h1><p>'+esc(c.description)+'</p></div>'+categoryHeroArt(c.slug)+'</section>'+
      '<div class="trust-badges"><span>'+ico('shield')+' Solicitud segura</span><span>'+ico('star')+' Atención personalizada</span><span>'+ico('wallet')+' Precios orientativos</span></div>'+
      '<div class="section-heading"><h2>Servicios más solicitados</h2></div>'+
      '<div class="category-services">'+relevant.sort((a,b)=>{const ranks=featuredServiceIndices[c.id]||[];const aa=ranks.indexOf(a.i),bb=ranks.indexOf(b.i);return (aa<0?99:aa)-(bb<0?99:bb)}).map(x=>serviceRow(x.s,x.i)).join('')+'</div>'+

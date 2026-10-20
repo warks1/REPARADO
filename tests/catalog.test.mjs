@@ -81,3 +81,11 @@ test('la autenticación conserva el servicio y la sección elegida',async()=>{
  assert.ok(code.includes("destination==='agenda'"));
  assert.ok(code.includes("destination==='chat'"));
 });
+
+test('el grifo de la cabecera es vectorial y no muestra otras partes del atlas',()=>{
+ const detail=renderCategory(services,'Fontanería');
+ const hero=detail.match(/<section class="category-hero">([\s\S]*?)<\/section>/)?.[1];
+ assert.ok(hero);
+ assert.ok(hero.includes('role="img" aria-label="Grifo azul"'));
+ assert.ok(!hero.includes('mirror-atlas.webp'));
+});
