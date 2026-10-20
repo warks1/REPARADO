@@ -62,3 +62,8 @@ El paquete **Integración v3** puede sustituir esta base cuando estén disponibl
 ### Ajustes de navegación y precios
 - El menú móvil distribuye los botones en una rejilla accesible, evitando que queden fuera de pantalla.
 - Los presupuestos con importe confirmado de 0 € se muestran como 0,00 € y no como «Por presupuesto»; los servicios que requieren valoración siguen indicándolo.
+
+#### Configuración obligatoria de Supabase
+1. Crea un proyecto en Supabase y ejecuta `schema.sql` (instalación nueva) o `supabase/migration-v4.sql` (actualización). Aplica `supabase/storage-photos.sql` para las fotos.
+2. Configura `VITE_SUPABASE_URL` y `VITE_SUPABASE_ANON_KEY` como **secrets** del repositorio para la compilación. No uses la clave `service_role` en el frontend.
+3. Los roles de personal deben asignarse desde el SQL Editor por el administrador. Una cuenta creada en la web siempre es cliente. Comprueba con tres cuentas separadas los permisos y avisos antes de atender solicitudes reales.

@@ -142,6 +142,19 @@ grant update (status, price, operator_id, operator_name, scheduled_at)
 
 -- REPARADO / seguridad, aceptación de presupuestos y avisos (v4)
 -- Idempotente. Ejecutar con privilegios de administración en Supabase SQL Editor.
+-- V4 re-applies baseline privileges when upgrading from older beta schemas.
+revoke update on public.profiles from anon, authenticated;
+grant update (full_name,phone) on public.profiles to authenticated;
+revoke insert, update on public.service_requests from anon, authenticated;
+grant insert (customer_id,service_name,category,street,address_number,postal_code,city,phone,preferred_date,description)
+  on public.service_requests to authenticated;
+grant update (status,price,operator_id,operator_name,scheduled_at)
+  on public.service_requests to authenticated;
+drop policy if exists "request customer create" on public.service_requests;
+create policy "request customer create" on public.service_requests for insert to authenticated
+with check (customer_id=auth.uid() and status='new' and price is null
+  and operator_id is null and operator_name is null and scheduled_at is null);
+
 create or replace function public.is_reparado_admin()
 returns boolean language sql stable security definer set search_path=public
 as $$ select exists(select 1 from public.profiles p where p.id=auth.uid() and p.role='admin') $$;
