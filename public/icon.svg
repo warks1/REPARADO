@@ -1,21 +1,9 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" role="img" aria-labelledby="title">
-<title>Reparado: paleta, metro y tubería</title>
-<defs>
-<linearGradient id="blue" x2="1" y2="1"><stop stop-color="#17c6bd"/><stop offset="1" stop-color="#1683ff"/></linearGradient>
-<linearGradient id="steel" x2="0" y2="1"><stop stop-color="#e0e8f1"/><stop offset="1" stop-color="#96adbf"/></linearGradient>
-</defs>
-<rect x="16" y="16" width="480" height="480" rx="118" fill="url(#blue)"/>
-<rect x="53" y="53" width="406" height="406" rx="87" fill="#ffffff" opacity=".15"/>
-<!-- Tubería acodada -->
-<path d="M108 155h119c38 0 64 25 64 63v70" fill="none" stroke="#ffffff" stroke-width="31" stroke-linecap="round" stroke-linejoin="round"/>
-<path d="M108 155h119c38 0 64 25 64 63v70" fill="none" stroke="#073e72" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" opacity=".5"/>
-<!-- Metro retráctil -->
-<rect x="300" y="267" width="108" height="91" rx="26" fill="#ffd85c" stroke="#a65d1a" stroke-width="9"/>
-<rect x="333" y="288" width="42" height="37" rx="12" fill="#ffffff"/>
-<path d="M326 359v33h-157" stroke="#ffda68" stroke-width="19" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
-<path d="M199 385v-10m26 10v-10m26 10v-10m26 10v-10" stroke="#664319" stroke-width="5"/>
-<!-- Paleta de albañil -->
-<path d="M111 305L211 273l37 46-78 78c-15 15-40 15-55 0s-18-32-4-47z" fill="url(#steel)" stroke="#315679" stroke-width="9" stroke-linejoin="round"/>
-<path d="M210 320l42 44" stroke="#5b361d" stroke-width="19" stroke-linecap="round"/>
-<rect x="246" y="350" width="64" height="26" rx="13" transform="rotate(43 246 350)" fill="#c98540"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title">
+<title id="title">Reparado</title>
+<defs><linearGradient id="house" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#ff9a3f"/><stop offset="1" stop-color="#ff5824"/></linearGradient></defs>
+<rect width="512" height="512" rx="112" fill="#fffaf6"/>
+<rect x="12" y="12" width="488" height="488" rx="104" fill="#fff9f5" stroke="#ffe7d8" stroke-width="8"/>
+<path d="M97 246 256 110 415 246v159H307V290H205v115H97z" fill="url(#house)"/>
+<path d="m77 248 179-154 179 154" fill="none" stroke="#ff6927" stroke-linecap="round" stroke-linejoin="round" stroke-width="34"/>
+<path d="M205 400V290h102v110" fill="#fff9f5"/>
 </svg>
