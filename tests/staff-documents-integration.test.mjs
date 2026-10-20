@@ -7,7 +7,7 @@ test('presupuestos internos solo disponibles para administración',()=>{
  assert.ok(js.includes("if(kind==='quote'&&!admin)return"));
  assert.ok(js.includes('data-doc-kind="quote"'));
  assert.ok(js.includes('data-doc-kind="order"'));
- assert.ok(js.includes('staffDocument(job,{kind,price})'));
+ assert.ok(js.includes('staffDocument(job,{kind,price,items})'));
  assert.ok(js.includes("if(currentView!=='admin'||!userIsStaff())return"));
 });
 test('documentos imprimibles no conceden permisos ni emiten facturas',()=>{
