@@ -111,7 +111,7 @@ export function mountLocal({app,services}){
     const custom=event.target.closest('[data-custom-request]');
     if(custom){lastCategory=custom.dataset.customRequest;return request([lastCategory,'Consulta personalizada',0])}
     if(event.target.closest('[data-show-all]')){main.querySelector('.category-grid')?.scrollIntoView({behavior:'smooth'});return}
-    if(event.target.closest('[data-back]'))return lastCategory?category(lastCategory):home();
+    if(event.target.closest('[data-back]'))return page==='new-request' && lastCategory ? category(lastCategory) : home();
     const tab=event.target.closest('[data-view]');
     if(tab){
       switch(tab.dataset.view){

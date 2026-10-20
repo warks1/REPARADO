@@ -46,11 +46,12 @@ const art={
 const atlasUrl=(import.meta.env?.BASE_URL || './')+'mirror-atlas.webp';
 const atlasRects={
   promo:[0,0,320,111],
-  plumbing:[0,113,155,79],
-  masonry:[164,113,155,79],
-  parquet:[0,196,155,78],
-  renovation:[164,196,155,78],
-  tap:[0,280,135,136],
+  // Solo arte: se recortan los rótulos impresos, el texto queda en HTML.
+  plumbing:[0,126,155,62],
+  masonry:[164,126,155,62],
+  parquet:[0,215,155,57],
+  renovation:[164,215,155,57],
+  tap:[6,281,128,120],
   leak:[150,280,75,66],
   drain:[235,280,75,66],
   heater:[150,349,75,66],
@@ -60,7 +61,8 @@ function atlasSprite(name,description=''){
   const rect=atlasRects[name];
   if(!rect)return '';
   const [x,y,w,h]=rect;
-  return '<svg class="reference-sprite" viewBox="'+[x,y,w,h].join(' ')+'" preserveAspectRatio="xMidYMid slice" role="img" aria-label="'+esc(description)+'">'+
+  const illustration=['plumbing','masonry','parquet','renovation'].includes(name);
+  return '<svg class="reference-sprite" viewBox="'+[x,y,w,h].join(' ')+'" preserveAspectRatio="'+(illustration?'xMidYMid meet':'xMidYMid slice')+'" role="img" aria-label="'+esc(description)+'">'+
     '<image href="'+esc(atlasUrl)+'" x="0" y="0" width="320" height="420"/></svg>';
 }
 

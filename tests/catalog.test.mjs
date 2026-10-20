@@ -37,3 +37,9 @@ test('el boceto integrado mantiene los controles interactivos',()=>{
  assert.ok(detail.includes('class="reference-sprite"'));
  assert.ok(detail.includes('data-service="0"'));
 });
+
+test('el atlas de categorías conserva el nombre accesible sin duplicar recortes',()=>{
+ const screen=renderLanding(services);
+ for(const slug of ['plumbing','masonry','parquet','renovation'])assert.ok(screen.includes('art-'+slug));
+ assert.ok(screen.includes('Ilustración de Fontanería'));
+});
