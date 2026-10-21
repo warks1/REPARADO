@@ -1,0 +1,67 @@
+name: Validar integridad de facturas V9
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'supabase/migration-v9.sql'
+      - 'invoice-math.js'
+      - 'invoices.js'
+      - 'tests/invoice-db-v9.py'
+      - 'tests/invoice-integrity-v9.test.mjs'
+      - '.github/workflows/qa-invoice-v9.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'supabase/migration-v9.sql'
+      - 'invoice-math.js'
+      - 'invoices.js'
+      - 'tests/invoice-db-v9.py'
+      - 'tests/invoice-integrity-v9.test.mjs'
+      - '.github/workflows/qa-invoice-v9.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  postgres:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: reparado_test
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres -d reparado_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+    env:
+      REPARADO_TEST_DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/reparado_test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.11'}
+      - run: python -m pip install --disable-pip-version-check 'psycopg[binary]>=3.2,<4'
+      - name: Comprobar V9, concurrencia, IVA y bloqueo de documentos
+        run: python -u tests/invoice-db-v9.py
+  web:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: {node-version: '22'}
+      - run: npm install --no-audit --no-fund
+      - run: npm test
+      - run: npm run build
+      - run: npx playwright install --with-deps chromium webkit
+      - run: npm run test:visual
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: reparado-v9-facturacion-visual
+          path: test-results
+          retention-days: 7
