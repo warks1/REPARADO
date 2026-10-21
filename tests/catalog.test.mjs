@@ -111,12 +111,27 @@ test('la vista de Fontanería presenta cuatro servicios y conserva el catálogo 
  assert.ok(html.includes('data-service="5"'));
 });
 
-test('las categorías usan imágenes propias, no recortes entremezclados del atlas',()=>{
+test('las cuatro categorías usan dibujos vectoriales transparentes sin recortes blancos',()=>{
  const html=renderLanding(services);
  for(const slug of ['plumbing','masonry','parquet','renovation']){
-   assert.ok(html.includes('categories/'+slug+'.webp'));
+   const card=html.match(new RegExp('<button[^>]*theme-'+slug+'[\\s\\S]*?<\\/button>'))?.[0];
+   assert.ok(card,'Falta tarjeta '+slug);
+   assert.ok(card.includes('class="clean-category-illustration"'),slug);
+   assert.ok(card.includes('<svg'),slug);
+   assert.ok(!card.includes('<img'),slug);
+   assert.ok(!card.includes('categories/'+slug+'.webp'),slug);
  }
- assert.equal((html.match(/class="category-photo"/g)||[]).length,5);
+ // Manitas conserva su ilustración aprobada y su archivo original.
+ assert.ok(html.includes('categories/handyman.svg'));
+ assert.equal((html.match(/class="category-photo"/g)||[]).length,1);
+});
+test('las cuatro animaciones son visibles y Manitas no se toca',async()=>{
+ const {readFileSync}=await import('node:fs');
+ const css=readFileSync(new URL('../vivid-theme.css',import.meta.url),'utf8');
+ assert.ok(css.includes('@keyframes reparado-category-float'));
+ assert.ok(css.includes('translateY(-8px)'));
+ assert.ok(css.includes('svg.clean-category-illustration'));
+ assert.ok(!css.includes('reparado-photo-contained'));
 });
 
 test('las fotografías destacadas son independientes del atlas',()=>{
