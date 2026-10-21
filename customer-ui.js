@@ -79,7 +79,9 @@ export function categoryArt(slug) {
   // cuyo fondo es verdaderamente transparente y cuyas partes pueden moverse.
   if(safe!=='handyman'){
     return '<div class="category-art art-'+esc(safe)+'">'+
-      (art[safe]||art.plumbing).replace('<svg ','<svg class="clean-category-illustration" ')+
+      (art[safe]||art.plumbing)
+        .replace('<svg ','<svg class="clean-category-illustration" ')
+        .replace(/aria-label="[^"]*"/,'aria-label="Ilustración de '+esc(category?.title||'reparación')+'"')+
       '</div>';
   }
   // Conservar exactamente la categoría Manitas aprobada.
