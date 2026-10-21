@@ -5,6 +5,7 @@ import {staffProgressMarkup,staffDocument} from './staff-documents.js'
 import {calculateQuoteLines} from './quote-calculator.js'
 import { renderInvoices } from './invoices.js'
 import { renderNotifications } from './notifications.js'
+import {publicRegistrationEnabled} from './auth-mode.js'
 import { Capacitor } from '@capacitor/core'
 import { PushNotifications } from '@capacitor/push-notifications'
 
@@ -26,6 +27,8 @@ export function mountConnected({app, services, supabase}) {
   const backButton = `<button type="button" class="back" data-back>← Volver</button>`;
   const safeTime = raw => raw ? new Date(raw).toLocaleString('es-ES') : 'Sin fecha';
   const userIsStaff = () => profile && ['admin','operator'].includes(profile.role);
+  // UI privada de forma predeterminada. No sustituye cerrar registros en Supabase Auth.
+  const openRegistration=publicRegistrationEnabled(import.meta.env?.VITE_REPARADO_ALLOW_PUBLIC_REGISTRATION);
   app.addEventListener('click', event => {
     const expand=event.target.closest('[data-expand-services]');
     if(expand){
@@ -73,7 +76,9 @@ export function mountConnected({app, services, supabase}) {
     currentView='login';setActiveNav(app,'profile');session=null;profile=null;
     app.querySelector('#logout').classList.add('hidden');
     const pendingNotice=pendingService?`<p class="auth-pending">Continuar con: <strong>${esc(pendingService[1])}</strong></p>`:'';
-    main.innerHTML=`<section class="auth card"><div class="heroicon"><img src="./icon.svg" width="44" height="44" alt=""></div><h1>Reparado</h1><p>Accede a tus servicios de reparación.</p>${pendingNotice}<form id="login"><input name="email" type="email" autocomplete="email" placeholder="Correo electrónico" required><input name="password" type="password" autocomplete="current-password" placeholder="Contraseña" required><button>Entrar</button></form><button id="register" class="link" type="button">Crear una cuenta</button><form id="register-form" class="hidden"><label>Nombre y apellidos<input name="full_name" autocomplete="name" maxlength="100" required></label><label>Correo electrónico<input name="email" type="email" autocomplete="email" required></label><label>Contraseña<input name="password" type="password" autocomplete="new-password" minlength="8" required></label><label>Repetir contraseña<input name="password_confirm" type="password" autocomplete="new-password" minlength="8" required></label><button type="submit">Crear cuenta de cliente</button></form><p data-feedback class="feedback" role="status"></p></section>`;
+    const registerMarkup=openRegistration?`<button id="register" class="link" type="button">Crear una cuenta</button><form id="register-form" class="hidden"><label>Nombre y apellidos<input name="full_name" autocomplete="name" maxlength="100" required></label><label>Correo electrónico<input name="email" type="email" autocomplete="email" required></label><label>Contraseña<input name="password" type="password" autocomplete="new-password" minlength="8" required></label><label>Repetir contraseña<input name="password_confirm" type="password" autocomplete="new-password" minlength="8" required></label><button type="submit">Crear cuenta de cliente</button></form>`
+      :'<p class="auth-invite-notice" role="note">Acceso privado: solicita una invitación al equipo de Reparado. Si ya tienes cuenta, inicia sesión.</p>';
+    main.innerHTML=`<section class="auth card"><div class="heroicon"><img src="./icon.svg" width="44" height="44" alt=""></div><h1>Reparado</h1><p>Accede a tus servicios de reparación.</p>${pendingNotice}<form id="login"><input name="email" type="email" autocomplete="email" placeholder="Correo electrónico" required><input name="password" type="password" autocomplete="current-password" placeholder="Contraseña" required><button>Entrar</button></form>${registerMarkup}<p data-feedback class="feedback" role="status"></p></section>`;
     main.querySelector('#login').addEventListener('submit',async event=>{
       event.preventDefault();
       const data=new FormData(event.currentTarget);
@@ -82,6 +87,7 @@ export function mountConnected({app, services, supabase}) {
       // Supabase emitirá SIGNED_IN y restaurará la solicitud escogida.
       message('Acceso correcto. Cargando tu solicitud…');
     });
+    if(!openRegistration)return;
     main.querySelector('#register').addEventListener('click',()=>{
       const registerForm=main.querySelector('#register-form');
       const creating=registerForm.classList.contains('hidden');
