@@ -13,7 +13,10 @@ export function authLinkIntentFromUrl(search='',hash=''){
   for(const value of [search,hash]){
     const params=new URLSearchParams(String(value||'').replace(/^[?#]/,''));
     const type=params.get('type');
-    if(type==='invite'||type==='recovery')return type;
+    // Un ?type=invite suelto no basta para interpretar una sesión
+    // normal como un enlace Auth. Exigir parámetros de verificación.
+    const hasAuthToken=['access_token','token_hash','token','code'].some(k=>params.has(k));
+    if((type==='invite'||type==='recovery')&&hasAuthToken)return type;
   }
   return null;
 }
