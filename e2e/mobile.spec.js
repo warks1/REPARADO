@@ -313,7 +313,7 @@ test('las cuatro ilustraciones originales se animan sin franjas blancas y Manita
     });
     expect(movement).toBeGreaterThan(10);
   }
-  await expect(page.locator('.theme-handyman img.category-photo')).toHaveAttribute('src',/handyman\\.svg/);
+  await expect(page.locator('.theme-handyman img.category-photo')).toHaveAttribute('src',/handyman[.]svg/);
   const dir=join(testInfo.outputDir,'evidencia-visual');
   mkdirSync(dir,{recursive:true});
   await page.screenshot({path:join(dir,'iconos-originales-animados-'+testInfo.project.name+'.png'),fullPage:true});
