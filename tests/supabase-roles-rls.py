@@ -6,6 +6,7 @@ de Supabase y las identidades customer, operator y admin. No se conecta
 nunca a la cuenta ni a la base real del usuario.
 """
 import os
+from uuid import UUID
 from pathlib import Path
 from contextlib import contextmanager
 import psycopg
@@ -120,13 +121,12 @@ with as_user(C1) as db:
     assert not db.execute("select has_table_privilege(current_user,'public.invoices','INSERT')").fetchone()[0]
     assert not db.execute("select has_table_privilege(current_user,'public.invoices','UPDATE')").fetchone()[0]
     rejected(db,"update public.profiles set role='admin' where id=%s",(C1,),"42501")
-    rejected(db,"update public.service_requests set price=1 where id=%s",(R1,), "42501") if False else None
     assert db.execute("update public.service_requests set price=1 where id=%s returning id",(R1,)).fetchall()==[]
     assert db.execute("select public.accept_reparado_quote(%s)",(R2,)).fetchone()[0] is False
     assert db.execute("select public.accept_reparado_quote(%s)",(R1,)).fetchone()[0] is True
     assert db.execute("select public.accept_reparado_quote(%s)",(R1,)).fetchone()[0] is False
     assert db.execute("update public.notifications set read=true returning id").rowcount==1
-    rejected(db,"update public.notifications set title='Aviso falsificado'","", "42501")
+    rejected(db,"update public.notifications set title='Aviso falsificado'",error_code="42501")
     print("Cliente 1: datos propios, borradores, roles, precios, presupuestos y avisos protegidos",flush=True)
 
 with as_user(C2) as db:
@@ -150,7 +150,7 @@ with as_user(ADM) as db:
     assert db.execute("""update public.service_requests
       set operator_id=%s,operator_name='Técnico de pruebas',
           status='scheduled',scheduled_at='2026-10-26 10:00Z'
-      where id=%s returning id""",(OP,R1)).fetchone()[0]==psycopg.types.uuid.UUID(R1)
+      where id=%s returning id""",(OP,R1)).fetchone()[0]==UUID(R1)
 
 with as_user(OP) as db:
     assert ids(db,"public.service_requests")=={R1}
@@ -160,7 +160,6 @@ with as_user(OP) as db:
     assert db.execute("update public.service_requests set status='completed' where id=%s returning id",(R1,)).rowcount==1
 
 with as_user(None,role="anon") as db:
-    assert ids(db,"public.service_requests")==set() if False else True
     # Sin permisos de SELECT, un visitante anon no accede a solicitudes.
     rejected(db,"select id from public.service_requests",error_code="42501")
     rejected(db,"select id from public.invoices",error_code="42501")
