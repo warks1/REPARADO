@@ -326,3 +326,25 @@ test('las cuatro ilustraciones tienen exactamente la oscilación suave de Manita
   mkdirSync(dir,{recursive:true});
   await page.screenshot({path:join(dir,'mismo-movimiento-manitas-'+testInfo.project.name+'.png'),fullPage:true});
 });
+
+test('Ver todos restaura cinco categorías después de una búsqueda vacía o con filtros',async({page})=>{
+ await page.goto('/');
+ const search=page.locator('#category-search');
+ const all=page.locator('.category-tile:visible');
+ await expect(all).toHaveCount(5);
+ await search.fill('albanileria');
+ await expect(all).toHaveCount(1);
+ await expect(page.locator('.category-tile.theme-masonry')).toBeVisible();
+ await search.fill('montaje mueble');
+ await expect(all).toHaveCount(1);
+ await expect(page.locator('.category-tile.theme-handyman')).toBeVisible();
+ await search.fill('xyzservicioirreconocible');
+ await expect(all).toHaveCount(0);
+ await expect(page.locator('.no-results')).toBeVisible();
+ await page.locator('[data-show-all]').click();
+ await expect(search).toHaveValue('');
+ await expect(all).toHaveCount(5);
+ await expect(page.locator('.no-results')).toBeHidden();
+ await expect(page.locator('.popular-list .catalog-service')).toHaveCount(5);
+ await expect.poll(()=>page.evaluate(()=>document.documentElement.scrollWidth-window.innerWidth)).toBeLessThanOrEqual(2);
+});
