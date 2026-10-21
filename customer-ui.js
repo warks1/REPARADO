@@ -73,8 +73,18 @@ function atlasSprite(name,description=''){
 export function categoryArt(slug) {
   const category=categories.find(c=>c.slug===slug);
   const safe=category?.slug || 'plumbing';
-  const src=imageBase()+'categories/'+(safe==='handyman'?'handyman.svg':safe+'.webp');
-  return '<div class="category-art art-'+esc(safe)+'"><img class="category-photo" src="'+esc(src)+'" width="215" height="87" loading="lazy" decoding="async" alt="Ilustración de '+esc(category?.title || 'reparación')+'"></div>';
+  // Los antiguos WebP eran recortes del boceto e incluían marcos blancos en
+  // los propios píxeles. Nunca deben animarse: mostrarían el recorte.
+  // Reutilizamos las ilustraciones vectoriales originales del proyecto,
+  // cuyo fondo es verdaderamente transparente y cuyas partes pueden moverse.
+  if(safe!=='handyman'){
+    return '<div class="category-art art-'+esc(safe)+'">'+
+      (art[safe]||art.plumbing).replace('<svg ','<svg class="clean-category-illustration" ')+
+      '</div>';
+  }
+  // Conservar exactamente la categoría Manitas aprobada.
+  const src=imageBase()+'categories/handyman.svg';
+  return '<div class="category-art art-handyman"><img class="category-photo" src="'+esc(src)+'" width="215" height="87" loading="lazy" decoding="async" alt="Ilustración de '+esc(category?.title || 'reparación')+'"></div>';
 }
 // En la cabecera grande, la imagen de baja resolución del atlas producía
 // artefactos. El vector original permite un grifo definido a cualquier tamaño.
