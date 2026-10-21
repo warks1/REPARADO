@@ -1,4 +1,4 @@
-import {appHeader,bottomNavigation,setActiveNav,renderLanding,renderCategory,serviceFormHeader,formPeriodPicker,serviceRow,matchServices,featuredServices} from './customer-ui.js'
+import {appHeader,bottomNavigation,setActiveNav,renderLanding,renderCategory,serviceFormHeader,formPeriodPicker,serviceRow,matchServices,featuredServices,showAllCategories} from './customer-ui.js'
 import { operatorMaySetStatus } from './rules.js'
 import {jobFilters,filterJobs,jobCounters,vatIncluded,sameOperatorSlot,validateAdminJobUpdate} from './staff-workflows.js'
 import {staffProgressMarkup,staffDocument} from './staff-documents.js'
@@ -46,7 +46,7 @@ export function mountConnected({app, services, supabase}) {
     if(categoryButton){renderCategoryPage(categoryButton.dataset.categoryOpen);return}
     const customButton=event.target.closest('[data-custom-request]');
     if(customButton){lastCategory=customButton.dataset.customRequest;requestForm([lastCategory,'Consulta personalizada',0]);return}
-    if(event.target.closest('[data-show-all]')){main.querySelector('.category-grid')?.scrollIntoView({behavior:'smooth'});return}
+    if(event.target.closest('[data-show-all]')){showAllCategories(main);return}
     if(event.target.closest('[data-logout]')){app.querySelector('#logout').click();return}
     const s=event.target.closest('[data-service]');
     if(s){requestForm(services[Number(s.dataset.service)]);return}

@@ -121,11 +121,32 @@ const overview=[
   ['Reformas integrales','Proyectos y reformas','Baños, cocinas y reformas completas'],
   ['Manitas','Pequeños arreglos','Montajes, ajustes y reparaciones de casa']
 ];
+// Una búsqueda sin acentos, mayúsculas o signos debe encontrar el mismo
+// servicio. También permite varias palabras aunque no sean consecutivas.
+function catalogText(value){
+ return String(value??'').normalize('NFD')
+   .replace(/[\u0300-\u036f]/g,'')
+   .toLocaleLowerCase('es-ES')
+   .replace(/[^a-z0-9]+/g,' ')
+   .trim();
+}
 export function matchServices(services,term){
- const query=String(term||'').trim().toLocaleLowerCase('es-ES');
- return services.map((s,i)=>({s,i})).filter(({s})=>!query
-   || s[0].toLocaleLowerCase('es-ES').includes(query)
-   || s[1].toLocaleLowerCase('es-ES').includes(query));
+ const words=catalogText(term).split(/\s+/).filter(Boolean);
+ return services.map((s,i)=>({s,i})).filter(({s})=>{
+   if(!words.length)return true;
+   const searchable=catalogText(s[0]+' '+s[1]);
+   return words.every(word=>searchable.includes(word));
+ });
+}
+// El enlace «Ver todos» vuelve a mostrar realmente las tarjetas escondidas
+// por el buscador, tanto en modo local como al conectar Supabase.
+export function showAllCategories(main){
+ const search=main.querySelector('#category-search');
+ if(search){
+   search.value='';
+   search.dispatchEvent(new Event('input',{bubbles:true}));
+ }
+ main.querySelector('.category-grid')?.scrollIntoView({behavior:'smooth',block:'start'});
 }
 // Selección estable por nombre/categoría: no depende de posiciones del catálogo.
 export function featuredServices(services) {
