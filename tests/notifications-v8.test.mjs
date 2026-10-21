@@ -13,7 +13,7 @@ test('V8 crea avisos para el operario sin habilitar envíos push',()=>{
  assert.ok(sql.includes('Visita programada'));
  assert.ok(sql.includes('Nuevo trabajo asignado'));
  assert.ok(sql.includes('Trabajo en curso'));
- assert.ok(sql.includes("new.status::text in ('accepted','scheduled','in_progress')"));
+ assert.ok(sql.includes("new.status::text not in ('accepted','scheduled','in_progress')"));
  assert.ok(sql.includes("to_char(new.scheduled_at at time zone 'Europe/Madrid'"));
  assert.ok(sql.includes('revoke all on function public.reparado_notify_operator_assignment_v8()'));
  assert.ok(!sql.includes('device_tokens'));
