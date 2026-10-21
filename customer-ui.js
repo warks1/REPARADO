@@ -5,7 +5,8 @@ export const categories = [
   {id:'Fontanería',slug:'plumbing',title:'Fontanería',short:'Fugas, atascos, instalaciones...',description:'Soluciones para el agua de tu hogar.'},
   {id:'Albañilería',slug:'masonry',title:'Albañilería y Pladur',short:'Paredes, tabiques, techos...',description:'Reparaciones, paredes, suelos y pladur.'},
   {id:'Parquet',slug:'parquet',title:'Parquet',short:'Instalación, reparación y restauración...',description:'Cuidado e instalación de suelos de madera.'},
-  {id:'Reformas integrales',slug:'renovation',title:'Reformas',short:'Reformas parciales o integrales...',description:'Renovaciones parciales e integrales.'}
+  {id:'Reformas integrales',slug:'renovation',title:'Reformas',short:'Reformas parciales o integrales...',description:'Renovaciones parciales e integrales.'},
+  {id:'Manitas',slug:'handyman',title:'Manitas',short:'Montaje, ajustes y pequeñas reparaciones...',description:'Soluciones prácticas para pequeños trabajos del hogar.'}
 ];
 
 export function esc(value) {
@@ -41,6 +42,7 @@ const art={
  plumbing:'<svg viewBox="0 0 160 138" role="img" aria-label="Grifo azul"><defs><linearGradient id="tap" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#9ad9ff"/><stop offset=".43" stop-color="#167beb"/><stop offset="1" stop-color="#003aab"/></linearGradient><filter id="sh"><feDropShadow dx="0" dy="6" stdDeviation="4" flood-color="#2b75cf" flood-opacity=".29"/></filter></defs><g filter="url(#sh)"><path d="M49 49h52a19 19 0 0 1 19 19v19" fill="none" stroke="#063d94" stroke-width="27" stroke-linecap="round"/><path d="M49 49h52a19 19 0 0 1 19 19v19" fill="none" stroke="url(#tap)" stroke-width="21" stroke-linecap="round"/><rect x="20" y="36" width="41" height="27" rx="9" fill="url(#tap)" stroke="#1857bc" stroke-width="3"/><path d="M72 36V20M52 21h40" stroke="#134ead" stroke-width="12" stroke-linecap="round"/><path d="M72 36V20M52 21h40" stroke="#9bddff" stroke-width="6" stroke-linecap="round"/><rect x="107" y="81" width="28" height="13" rx="6" fill="url(#tap)"/></g><g class="drip"><path d="M120 103c-13 20-9 26 0 26s13-8 0-26z" fill="#36bbff"/></g><circle cx="145" cy="35" r="5" fill="#b4edff"/></svg>',
  masonry:'<svg viewBox="0 0 160 138" role="img" aria-label="Ladrillos y paleta"><defs><linearGradient id="br" x2="0" y2="1"><stop stop-color="#ffb259"/><stop offset="1" stop-color="#f06c26"/></linearGradient><linearGradient id="tr"><stop stop-color="#f7f8fb"/><stop offset="1" stop-color="#98a8bf"/></linearGradient></defs><g class="float-slow" stroke="#d96826" stroke-width="2"><rect x="50" y="72" width="53" height="26" rx="3" fill="url(#br)"/><rect x="106" y="72" width="43" height="26" rx="3" fill="url(#br)"/><rect x="75" y="100" width="55" height="26" rx="3" fill="#ffa453"/><rect x="21" y="100" width="51" height="26" rx="3" fill="#f88534"/><rect x="77" y="43" width="52" height="26" rx="3" fill="#ffa65a"/></g><g transform="rotate(-25 55 60)"><path d="M22 22 52 68 76 33z" fill="url(#tr)" stroke="#576879" stroke-width="3"/><path d="M51 57v37" stroke="#975a2e" stroke-width="13" stroke-linecap="round"/><path d="M51 65v30" stroke="#d59b63" stroke-width="6" stroke-linecap="round"/></g></svg>',
  parquet:'<svg viewBox="0 0 160 138" role="img" aria-label="Suelo de parquet"><defs><linearGradient id="wood" x2="1" y2="1"><stop stop-color="#eab978"/><stop offset="1" stop-color="#9a551b"/></linearGradient></defs><g class="float-slow" transform="translate(4 9) rotate(-13 80 70)"><path d="M7 52 118 25l31 54-111 28z" fill="#99531f" opacity=".35" transform="translate(0 8)"/><path d="M7 52 118 25l31 54-111 28z" fill="url(#wood)" stroke="#95531c" stroke-width="3"/><path d="M30 48 61 101M60 40l31 53M91 33l31 52" stroke="#f8dfa9" stroke-width="3"/><path d="M9 66 125 38M20 84l117-29M39 106l110-27" stroke="#92511d" stroke-width="2"/><path d="M19 56 120 31M45 96l89-22" stroke="#ffe2a4" stroke-width="2" opacity=".7"/></g></svg>',
+ handyman:'<svg viewBox="0 0 160 138" role="img" aria-label="Herramientas de manitas"><defs><linearGradient id="hg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#ffeec1"/><stop offset="1" stop-color="#ffb434"/></linearGradient></defs><g class="float-slow"><circle cx="80" cy="72" r="57" fill="url(#hg)" opacity=".85"/><path d="M37 108 98 44" stroke="#1e679d" stroke-width="15" stroke-linecap="round"/><path d="M26 32a23 23 0 0 0 27 30l35 35a12 12 0 0 0 17-17L70 45A23 23 0 0 0 41 17L54 31 42 43z" fill="#a6b9d2" stroke="#425f85" stroke-width="4"/><path d="M111 29 68 76" stroke="#ec7135" stroke-width="12" stroke-linecap="round"/><path d="m102 21 16 16" stroke="#ffcf70" stroke-width="15" stroke-linecap="round"/></g></svg>',
  renovation:'<svg viewBox="0 0 160 138" role="img" aria-label="Casa de reformas"><defs><linearGradient id="roof" x2="1" y2="1"><stop stop-color="#ffcb91"/><stop offset="1" stop-color="#f46e31"/></linearGradient></defs><g class="float-slow"><path d="M23 63 80 19l58 44v61H23z" fill="#fff1d9" stroke="#b47bcb" stroke-width="3"/><path d="M14 65 80 12l66 53-10 12-56-44-56 44z" fill="url(#roof)" stroke="#e57a35" stroke-width="2"/><rect x="41" y="78" width="28" height="25" rx="4" fill="#67c6e8"/><rect x="88" y="78" width="29" height="46" rx="5" fill="#c68cfa"/><path d="M101 32V18h16v29" stroke="#a269c9" stroke-width="9"/><path d="m73 106 11 11 28-29" stroke="#30b989" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/></g></svg>'
 };
 
@@ -71,7 +73,7 @@ function atlasSprite(name,description=''){
 export function categoryArt(slug) {
   const category=categories.find(c=>c.slug===slug);
   const safe=category?.slug || 'plumbing';
-  const src=imageBase()+'categories/'+safe+'.webp';
+  const src=imageBase()+'categories/'+(safe==='handyman'?'handyman.svg':safe+'.webp');
   return '<div class="category-art art-'+esc(safe)+'"><img class="category-photo" src="'+esc(src)+'" width="215" height="87" loading="lazy" decoding="async" alt="Ilustración de '+esc(category?.title || 'reparación')+'"></div>';
 }
 // En la cabecera grande, la imagen de baja resolución del atlas producía
@@ -106,13 +108,29 @@ const overview=[
   ['Fontanería','Agua y sanitarios','Fugas, atascos, grifos y cisternas'],
   ['Albañilería','Paredes y pladur','Alicatados, tabiques, techos y suelos'],
   ['Parquet','Suelos de madera','Montaje, reparación, lijado y barnizado'],
-  ['Reformas integrales','Proyectos y reformas','Baños, cocinas y reformas completas']
+  ['Reformas integrales','Proyectos y reformas','Baños, cocinas y reformas completas'],
+  ['Manitas','Pequeños arreglos','Montajes, ajustes y reparaciones de casa']
 ];
 export function matchServices(services,term){
  const query=String(term||'').trim().toLocaleLowerCase('es-ES');
  return services.map((s,i)=>({s,i})).filter(({s})=>!query
    || s[0].toLocaleLowerCase('es-ES').includes(query)
    || s[1].toLocaleLowerCase('es-ES').includes(query));
+}
+// Selección estable por nombre/categoría: no depende de posiciones del catálogo.
+export function featuredServices(services) {
+  const preferred={
+    'Fontanería':'Reparación de fuga',
+    'Albañilería':'Tabique de Pladur',
+    'Parquet':'Instalación de parquet/laminado',
+    'Reformas integrales':'Reforma integral de baño',
+    'Manitas':'Montaje de mueble en kit (mediano)'
+  };
+  return categories.map(c=>{
+    let i=services.findIndex(s=>s[0]===c.id && s[1]===preferred[c.id]);
+    if(i<0)i=services.findIndex(s=>s[0]===c.id);
+    return i<0?null:{s:services[i],i};
+  }).filter(Boolean);
 }
 export function renderLanding(services,{notice=''}={}) {
   return '<div class="customer-page">'+
@@ -126,7 +144,7 @@ export function renderLanding(services,{notice=''}={}) {
       categoryArt(c.slug)+'<strong>'+esc(c.title)+'</strong><span>'+esc(c.short)+'</span><span class="tile-arrow">'+ico('arrow')+'</span></button>'
     ).join('')+'</section>'+
     '<div class="section-heading service-heading"><h2>Servicios destacados</h2></div>'+
-    '<div class="popular-list">'+[0,2,3,7].map(i=>serviceRow(services[i],i)).join('')+'</div>'+
+    '<div class="popular-list">'+featuredServices(services).map(({s,i})=>serviceRow(s,i)).join('')+'</div>'+
     (notice?'<p class="subtle-notice">'+esc(notice)+'</p>':'')+
     '<div class="no-results" hidden>No hemos encontrado ese servicio. Puedes consultar todas las categorías.</div>'+
    '</div>';
@@ -143,7 +161,8 @@ const featuredServiceIndices={
  'Fontanería':[2,0,6,3],
  'Albañilería':[12,9,10,11],
  'Parquet':[16,21,17,18],
- 'Reformas integrales':[22,23,24]
+ 'Reformas integrales':[22,23,24],
+ 'Manitas':[25,29,31,27]
 };
 const serviceViewLabels={
  'Reparación de fuga':'Reparación de fugas',
@@ -155,12 +174,27 @@ const catExamples={
  plumbing:['Fontanería','Fugas, grifería y sanitarios'],
  masonry:['Albañilería y Pladur','Paredes y techos'],
  parquet:['Parquet','Instalación y mantenimiento'],
- renovation:['Reformas','Baños, cocinas y viviendas']
+ renovation:['Reformas','Baños, cocinas y viviendas'],
+ handyman:['Manitas','Montaje y pequeñas reparaciones']
+};
+const handymanSymbols={
+ 'Montaje de mueble en kit (mediano)':'🪑',
+ 'Colocación de estantería':'📚',
+ 'Colgar cuadros o espejos (hasta 3)':'🖼️',
+ 'Instalación de barras de cortina o estores':'🪟',
+ 'Instalación de soporte de TV en pared':'📺',
+ 'Ajuste de puertas y bisagras':'🚪',
+ 'Cambio de cinta de persiana':'🪟',
+ 'Renovación de silicona de bañera o ducha':'🛁',
+ 'Instalación de lámpara sencilla':'💡',
+ 'Colocación de accesorios de baño':'🧴',
+ 'Reparación menor de muebles':'🔧',
+ 'Cambio de manilla de puerta':'🚪'
 };
 export function serviceRow(s,i) {
   if(!s)return '';
   const cat=catFor(s[0]);
-  const symbol=(/grifo/i.test(s[1])?'🚰':/fuga/i.test(s[1])?'💧':/desatasco|sifón/i.test(s[1])?'🛁':/cisterna/i.test(s[1])?'🚽':/pladur/i.test(s[1])?'🧱':/alicatado/i.test(s[1])?'▦':/parquet|tabla|barniz/i.test(s[1])?'🪵':cat.slug==='renovation'?'🏡':'🛠️');
+  const symbol=handymanSymbols[s[1]] || (/grifo/i.test(s[1])?'🚰':/fuga/i.test(s[1])?'💧':/desatasco|sifón/i.test(s[1])?'🛁':/cisterna/i.test(s[1])?'🚽':/pladur/i.test(s[1])?'🧱':/alicatado/i.test(s[1])?'▦':/parquet|tabla|barniz/i.test(s[1])?'🪵':cat.slug==='renovation'?'🏡':'🛠️');
   const photo=cat.slug==='plumbing'?(/fuga/i.test(s[1])?'leak':/desatasco/i.test(s[1])?'drain':/termo/i.test(s[1])?'heater':/grifo/i.test(s[1])?'faucet':null):null;
   const photoUrl=photo?imageBase()+'services/'+photo+'.webp':null;
   return '<button type="button" class="catalog-service" data-service="'+i+'"><span class="service-thumb thumb-'+cat.slug+'">'+(photo?'<img class="service-photo" src="'+esc(photoUrl)+'" width="105" height="91" loading="lazy" decoding="async" alt="Foto de '+esc(s[1])+'">':symbol)+'</span>'+
