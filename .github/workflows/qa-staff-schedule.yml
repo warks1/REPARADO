@@ -1,0 +1,31 @@
+name: Validar agenda y operarios beta
+on:
+  push:
+    branches: [fix/agenda-operarios-conflictos-20261021]
+permissions:
+  contents: read
+jobs:
+  validar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm install --no-audit --no-fund
+      - name: Tests de agenda roles y presupuestos
+        run: npm test
+      - name: Compilar cliente
+        run: npm run build
+      - name: Instalar navegadores
+        run: npx playwright install --with-deps chromium webkit
+      - name: Regresión móvil
+        run: npm run test:visual
+      - name: Conservar resultados
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: reparado-agenda-conflictos-test
+          path: test-results
+          retention-days: 7
