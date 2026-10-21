@@ -6,7 +6,7 @@ La web de GitHub Pages puede funcionar en **modo demostración local**. Para ate
 
 Abre el panel de Supabase y confirma que el proyecto que vas a usar pertenece a REPARADO. Si quieres que ChatGPT lo compruebe directamente, conéctalo mediante la integración de Supabase y autoriza el espacio de trabajo adecuado. No compartas contraseñas, `service_role`, tokens privados ni claves de administración en el chat.
 
-**Estado comprobado el 21/10/2026:** creado el proyecto independiente **REPARADO Test**, en París (UE), con PostgreSQL 17. El esquema, migraciones V4–V10 y almacenamiento privado están instalados. La auditoría de 19 controles ha resultado correcta. Todavía no está enlazado a la web pública ni se han probado cuatro cuentas reales de Auth. No se ha instalado nada en producción.
+**Estado comprobado el 21/10/2026:** creado el proyecto independiente **REPARADO Test**, en París (UE), con PostgreSQL 17. El esquema, migraciones V4–V11 y almacenamiento privado están instalados. La auditoría de 20 controles ha resultado correcta. Todavía no está enlazado a la web pública ni se han probado cuatro cuentas reales de Auth. No se ha instalado nada en producción.
 
 ## 2. Base aislada de pruebas
 
@@ -14,10 +14,10 @@ Antes de intentar producción:
 
 1. Crea un proyecto Supabase **de pruebas**, preferentemente en región UE, con datos totalmente ficticios y una copia/backup seguro de cualquier proyecto antiguo antes de migrar.
 2. En una instalación nueva, ejecuta `schema.sql` en el SQL Editor. En instalaciones antiguas, compara primero el esquema y evita repetir bloques que puedan sustituir políticas adaptadas sin revisión.
-3. Aplica **en orden** `supabase/migration-v4.sql`, `supabase/migration-v5.sql`, `supabase/migration-v6.sql`, `supabase/migration-v7.sql`, `supabase/migration-v8.sql`, `supabase/migration-v9.sql` y `supabase/migration-v10.sql`. El esquema base ya contiene parte de V4–V6, por eso conviene revisar las diferencias y confirmar la compatibilidad.
+3. Aplica **en orden** `supabase/migration-v4.sql`, `supabase/migration-v5.sql`, `supabase/migration-v6.sql`, `supabase/migration-v7.sql`, `supabase/migration-v8.sql`, `supabase/migration-v9.sql`, `supabase/migration-v10.sql` y `supabase/migration-v11.sql`. El esquema base ya contiene parte de V4–V6, por eso conviene revisar las diferencias y confirmar la compatibilidad.
 4. Si V7 o V9 rechazan la instalación por registros históricos incompatibles, **no fuerces la migración** ni elimines datos. Revisa en privado los duplicados de agenda o de numeración y sus propietarios.
 5. Aplica `supabase/storage-photos.sql` y confirma que el bucket `request-photos` es **privado**. Prueba la subida/lectura con clientes diferentes y con operarios asignados y no asignados.
-6. Ejecuta **`supabase/auditoria-readonly-v9.sql`** desde SQL Editor. Devuelve diecinueve filas con columnas `control`, `resultado` y `detalle`. Deben indicar **OK**; los resultados PENDIENTE deben revisarse antes de pasar a datos reales. El archivo es solo lectura y devuelve información agregada, no nombres ni direcciones.
+6. Ejecuta **`supabase/auditoria-readonly-v9.sql`** desde SQL Editor. Devuelve veinte filas con columnas `control`, `resultado` y `detalle`. Deben indicar **OK**; los resultados PENDIENTE deben revisarse antes de pasar a datos reales. El archivo es solo lectura y devuelve información agregada, no nombres ni direcciones.
 
 ## 3. Verificación de cuatro usuarios ficticios
 
@@ -56,4 +56,11 @@ El flujo `.github/workflows/deploy.yml` incorpora estas variables al compilar. D
 
 - La auditoría de Supabase detectó funciones `SECURITY DEFINER` con ejecución permitida al rol anónimo. La migración `supabase/migration-v10.sql` revoca ese permiso, restringe las funciones internas que solo deben ejecutar disparadores y añade índices para consultas por cliente y operario.
 - El cliente autenticado conserva las tres funciones imprescindibles: `accept_reparado_quote`, `is_reparado_admin` e `is_reparado_staff`. Estas pueden aparecer en advertencias informativas de Supabase por ser funciones con permisos elevados, pero su acceso debe limitarse a `authenticated`.
-- Repite `supabase/auditoria-readonly-v9.sql` después de V10. Pese al nombre histórico del fichero, ahora devuelve **19 verificaciones**. Ninguna de ellas modifica datos.
+- Repite `supabase/auditoria-readonly-v9.sql` después de V10. Pese al nombre histórico del fichero, ahora devuelve **20 verificaciones**. Ninguna de ellas modifica datos.
+
+
+## 7. Acceso privado a datos (V11)
+
+REPARADO Test tiene aplicada la migración `supabase/migration-v11.sql`. Se ha confirmado directamente en Supabase que `anon` no puede leer, insertar, actualizar ni borrar filas de ninguna de las seis tablas de la aplicación. Las políticas RLS continúan activas para usuarios autenticados, y el bucket `request-photos` sigue siendo **privado**. La auditoría contiene **20 comprobaciones, todas OK**.
+
+**Límites:** los endpoints de Auth y la API Supabase continúan técnicamente accesibles por Internet, protegidos mediante permisos y autenticación; esto no es aislamiento de red ni significa que se haya desactivado el registro de nuevos usuarios. Si el objetivo es impedir nuevos registros, configúralo desde los ajustes de Authentication del Dashboard antes de ofrecer invitaciones a cuentas de prueba. No se puede asegurar desde esta migración SQL. Mantener la web publicada en modo demostración sin enlazarla al proyecto Test.
