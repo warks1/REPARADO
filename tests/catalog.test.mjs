@@ -196,8 +196,8 @@ test('Manitas presenta doce trabajos y precios orientativos con IVA',async()=>{
  const html=renderCategory(catalog,'Manitas');
  assert.ok(html.includes('Montaje de mueble en kit (mediano)'));
  assert.ok(html.includes('Instalación de soporte de TV en pared'));
- assert.ok(html.includes('categories/handyman.svg'));
- assert.ok(html.includes('IVA incluido')===false); // En el detalle se muestran tarifas orientativas.
+ assert.ok(html.includes('Herramientas de manitas'));
+ assert.ok(html.includes('data-expand-services'));
 });
 test('los destacados cubren varias categorías y no solo Fontanería',async()=>{
  const {services:catalog}=await import('../catalog-data.js');
