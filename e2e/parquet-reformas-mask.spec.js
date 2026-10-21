@@ -30,7 +30,8 @@ test('Parquet y Reformas: borde difuminado, PNG existente y oscilación limitada
     expect(visual.src).toContain(photo);
     expect(visual.loaded).toBe(true);
     expect(visual.mask).toContain('radial-gradient');
-    expect(visual.mask).toContain('transparent');
+    // Los navegadores serializan 'transparent' como rgba(0,0,0,0).
+    expect(visual.mask).toMatch(/rgba\(0,\s*0,\s*0,\s*0\)/);
     expect(visual.maskRepeats).toContain('no-repeat');
     expect(visual.animation).toBe('illustration-bob');
     expect(visual.duration).toBe('3.6s');
