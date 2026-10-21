@@ -444,17 +444,8 @@ body,.shell,.customer-header,.customer-nav {background:#fff}
   .category-view.theme-handyman .category-hero{padding-right:108px}
 }
 
-/* Ilustraciones vectoriales sin recortes raster y con movimiento perceptible.
-   No se modifican los estilos ni la animación de Manitas. */
-@keyframes reparado-category-float {
-  /* Movimiento vertical claramente perceptible sin alterar el marco */
-  0%,100% { transform:translateY(5px) }
-  50% { transform:translateY(-11px) }
-}
-@keyframes reparado-category-detail {
-  0%,100% { transform:translateY(0) }
-  50% { transform:translateY(-5px) }
-}
+/* Cuatro ilustraciones 3D originales: misma oscilación de 6 px y 3,6 s que Manitas.
+   Sin alterar la animación propia de Manitas. */
 .category-tile:is(.theme-plumbing,.theme-masonry,.theme-parquet,.theme-renovation) .category-art{
   overflow:hidden;
   isolation:isolate;
@@ -472,28 +463,13 @@ body,.shell,.customer-header,.customer-nav {background:#fff}
   max-width:185px;
   height:100%;
   flex:0 0 auto;
-  transform:translateY(5px);
-  animation:reparado-category-float 3.4s ease-in-out infinite;
+  transform:translateY(0);
+  animation:illustration-bob 3.6s ease-in-out infinite;
   will-change:transform;
-}
-.category-tile:is(.theme-plumbing,.theme-masonry,.theme-parquet,.theme-renovation) svg.clean-category-illustration{
-  width:100%;
-  max-width:185px;
-  height:100%;
-  display:block;
-  overflow:visible;
-  filter:drop-shadow(0 7px 7px rgba(25,66,118,.2));
-  animation:none;
-}
-.category-tile:is(.theme-plumbing,.theme-masonry,.theme-parquet,.theme-renovation)
-  svg.clean-category-illustration .float-slow{
-  animation:reparado-category-detail 2.7s ease-in-out infinite;
 }
 @media(prefers-reduced-motion:reduce){
   .category-tile:is(.theme-plumbing,.theme-masonry,.theme-parquet,.theme-renovation)
-    .category-motion,
-  .category-tile:is(.theme-plumbing,.theme-masonry,.theme-parquet,.theme-renovation)
-    svg.clean-category-illustration .float-slow{
+    .category-motion{
     animation:none!important;
     will-change:auto;
     transform:none;
@@ -506,4 +482,11 @@ body,.shell,.customer-header,.customer-nav {background:#fff}
  object-fit:cover;object-position:center 40%;border-radius:0;
  animation:none!important;
  filter:saturate(1.22) contrast(1.08) brightness(1.03);
+}
+
+/* Atenuación de los restos del borde superior del recorte original.
+   La imagen mantiene sus colores vivos y no deja ver texto al oscilar. */
+.category-tile:is(.theme-plumbing,.theme-masonry,.theme-parquet,.theme-renovation) img.category-restored{
+ -webkit-mask-image:linear-gradient(to bottom,transparent 0%,#000 11%,#000 81%,transparent 100%);
+ mask-image:linear-gradient(to bottom,transparent 0%,#000 11%,#000 81%,transparent 100%);
 }
