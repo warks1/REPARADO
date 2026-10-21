@@ -258,3 +258,25 @@ test('el botón Ver todos comparte una acción funcional entre clientes locales 
  assert.ok(local.includes("showAllCategories(main)"));
  assert.ok(connected.includes("showAllCategories(main)"));
 });
+
+test('los doce trabajos de Manitas muestran su propia fotografía y créditos',async()=>{
+ const {services:catalog}=await import('../catalog-data.js');
+ const {serviceRow}=await import('../customer-ui.js');
+ const {statSync,existsSync}=await import('node:fs');
+ const manitas=catalog.map((s,i)=>({s,i})).filter(x=>x.s[0]==='Manitas');
+ const assets=new Set();
+ for(const {s,i} of manitas){
+   const html=serviceRow(s,i);
+   const found=html.match(/services\/(handyman-[a-z-]+[.]webp)/);
+   assert.ok(found,'Falta foto propia de '+s[1]);
+   assert.ok(html.includes('Fotografía ilustrativa de '+s[1]));
+   assets.add(found[1]);
+   const url=new URL('../public/services/'+found[1],import.meta.url);
+   assert.ok(existsSync(url),'No existe '+found[1]);
+   assert.ok(statSync(url).size>1000,'Imagen demasiado pequeña '+found[1]);
+ }
+ assert.equal(assets.size,12);
+ const page=renderCategory(catalog,'Manitas');
+ assert.ok(page.includes('creditos-fotos-manitas.html'));
+ assert.ok(existsSync(new URL('../public/creditos-fotos-manitas.html',import.meta.url)));
+});
