@@ -6,11 +6,11 @@ test('portada real por categorías, imágenes y navegación sin desbordamiento',
   await page.goto('/');
   await expect(page.locator('.customer-header .brand-word')).toHaveText('Reparado');
   await expect(page.getByRole('heading',{name:/Tu hogar/})).toBeVisible();
-  await expect(page.locator('.category-tile')).toHaveCount(4);
+  await expect(page.locator('.category-tile')).toHaveCount(5);
   await expect(page.locator('.customer-nav button')).toHaveCount(5);
   await expect(page.locator('.promo-banner')).toBeVisible();
   const photos=page.locator('.category-tile img.category-photo');
-  await expect(photos).toHaveCount(4);
+  await expect(photos).toHaveCount(5);
   // Safari pospone las imágenes loading=lazy hasta que se desplazan a pantalla.
   // Comprobamos que cada imagen carga de verdad, no su estado prematuro.
   for (const photo of await photos.all()) {
@@ -257,4 +257,18 @@ test('mis solicitudes: exportar todas y restaurar una copia local sin perder dat
    mimeType:'application/json',buffer:original});
  await expect(page.locator('[data-backup-feedback]')).toContainText('ya estaban guardadas');
  await expect(page.locator('[data-local-item]')).toHaveCount(1);
+});
+
+test('Manitas navega, abre servicios y mantiene el ancho en móvil',async({page},testInfo)=>{
+ await page.goto('/');
+ await page.locator('.category-tile[data-category-open="Manitas"]').click();
+ await expect(page.locator('.category-view h1')).toHaveText('Manitas');
+ await expect(page.locator('.category-services .catalog-service:visible')).toHaveCount(4);
+ await page.locator('[data-expand-services]').click();
+ await expect(page.locator('.category-services .catalog-service:visible')).toHaveCount(12);
+ await expect.poll(()=>page.evaluate(()=>document.documentElement.scrollWidth-window.innerWidth)).toBeLessThanOrEqual(2);
+ await page.locator('.category-services .catalog-service:visible').first().click();
+ await expect(page.locator('.form-service-summary')).toContainText('Montaje de mueble');
+ await page.locator('.request-screen [data-back]').click();
+ await expect(page.locator('.category-view h1')).toHaveText('Manitas');
 });
