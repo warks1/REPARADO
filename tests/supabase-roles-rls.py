@@ -125,7 +125,8 @@ with as_user(C1) as db:
     assert db.execute("select public.accept_reparado_quote(%s)",(R2,)).fetchone()[0] is False
     assert db.execute("select public.accept_reparado_quote(%s)",(R1,)).fetchone()[0] is True
     assert db.execute("select public.accept_reparado_quote(%s)",(R1,)).fetchone()[0] is False
-    assert db.execute("update public.notifications set read=true returning id").rowcount==1
+    own_alerts=db.execute("select count(*) from public.notifications").fetchone()[0]
+    assert db.execute("update public.notifications set read=true returning id").rowcount==own_alerts
     rejected(db,"update public.notifications set title='Aviso falsificado'",error_code="42501")
     print("Cliente 1: datos propios, borradores, roles, precios, presupuestos y avisos protegidos",flush=True)
 
