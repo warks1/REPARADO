@@ -1,12 +1,12 @@
 # Reparado · Puesta en producción
 
-Estado: web y APK de pruebas generadas. **REPARADO Test** creado en Supabase (París, UE), esquema y migraciones V4–V10 instaladas, bucket privado disponible y auditoría SQL 19/19 correcta el 21/10/2026. **No desplegar a clientes reales** hasta completar autenticación con cuentas de prueba, políticas de datos y demás verificaciones.
+Estado: web y APK de pruebas generadas. **REPARADO Test** creado en Supabase (París, UE), esquema y migraciones V4–V11 instaladas, bucket privado disponible y auditoría SQL 20/20 correcta el 21/10/2026. **No desplegar a clientes reales** hasta completar autenticación con cuentas de prueba, políticas de datos y demás verificaciones.
 
 ## Base de datos y seguridad
 1. Crear un proyecto propio de Supabase en una región adecuada para operar en España/UE.
-2. Aplicar, en una base de pruebas, `schema.sql` y después `supabase/migration-v4.sql`, `supabase/migration-v5.sql`, `supabase/migration-v6.sql`, **`supabase/migration-v7.sql`, `supabase/migration-v8.sql`, `supabase/migration-v9.sql` y `supabase/migration-v10.sql`** en ese orden. El esquema incorpora parte de v4; comprobar que las migraciones son repetibles antes de aplicarlas al entorno definitivo. La V7 instala la protección de reservas simultáneas en PostgreSQL y comprueba antes que no existan conflictos.
+2. Aplicar, en una base de pruebas, `schema.sql` y después `supabase/migration-v4.sql`, `supabase/migration-v5.sql`, `supabase/migration-v6.sql`, **`supabase/migration-v7.sql`, `supabase/migration-v8.sql`, `supabase/migration-v9.sql`, `supabase/migration-v10.sql` y `supabase/migration-v11.sql`** en ese orden. El esquema incorpora parte de v4; comprobar que las migraciones son repetibles antes de aplicarlas al entorno definitivo. La V7 instala la protección de reservas simultáneas en PostgreSQL y comprueba antes que no existan conflictos.
 3. Ejecutar `supabase/storage-photos.sql` para crear un bucket **privado** para imágenes.
-4. Ejecutar `supabase/auditoria-readonly-v9.sql` y revisar sus diecinueve controles de solo lectura; todos deben estar en **OK** antes de recibir solicitudes reales. Instrucciones detalladas: `docs/activar-supabase.md`.
+4. Ejecutar `supabase/auditoria-readonly-v9.sql` y revisar sus veinte controles de solo lectura; todos deben estar en **OK** antes de recibir solicitudes reales. Instrucciones detalladas: `docs/activar-supabase.md`.
 5. Probar por separado **dos clientes**, `operator` y `admin`, así como las restricciones RLS: un cliente no puede ver solicitudes, avisos o facturas de otro; un operario únicamente ve los trabajos asignados y solo administración puede asignar personal y modificar precios. El test automático `tests/supabase-roles-rls.py` prueba este aislamiento en un PostgreSQL temporal, pero no equivale a haber probado tu Supabase real.
 6. Verificar el registro, inicio de sesión, confirmación de email, recuperación de contraseña y las acciones de aceptación de presupuesto.
 7. Crear o asignar el rol administrador exclusivamente desde el backend con privilegios de administración. Nunca habilitar la elección de rol desde un formulario de cliente.
@@ -41,9 +41,15 @@ Estado: web y APK de pruebas generadas. **REPARADO Test** creado en Supabase (Pa
 - Aplicar V9 primero en Supabase de **pruebas**, después de V8, resolviendo previamente los errores que señale. No se ha ejecutado en la base real, porque no hay un proyecto Supabase conectado.
 - Antes de emitir legalmente: identificar emisor (NIF, domicilio fiscal), destinatario, serie y numeración correlativa, fecha de operación y expedición, concepto y bases por tipo, rectificaciones, archivo/integridad y requisitos fiscales españoles vigentes. Validarlo con asesoría fiscal.
 
+## Acceso privado a los datos (migración V11)
+- **REPARADO Test** tiene instalada `supabase/migration-v11.sql` desde el 21/10/2026: elimina los permisos `SELECT`, `INSERT`, `UPDATE` y `DELETE` para el rol `anon` sobre las seis tablas de la app y la ejecución anónima de funciones del esquema `public`.
+- Con RLS activada, el rol `authenticated` sigue pudiendo usar las operaciones y las tres RPC autorizadas. La auditoría de solo lectura ahora tiene **20 controles** y ha resultado correcta en el proyecto de pruebas.
+- **Importante:** Supabase continúa sirviendo sus endpoints por Internet; esta protección no equivale a aislamiento de red, no deshabilita registro en Auth y no elimina el acceso de administradores autorizados. Para prohibir nuevos registros, revisar los ajustes de Authentication del proyecto desde el Dashboard antes de activar usuarios reales.
+- El bucket `request-photos` es privado. No incluir claves `service_role` en la web ni conectar el entorno Test a GitHub Pages público.
+
 ## Seguridad y rendimiento (migración V10)
 - Supabase detectó ejecución anónima en funciones internas `SECURITY DEFINER`. La migración `supabase/migration-v10.sql` revoca explícitamente `EXECUTE` de `anon` y de cuentas autenticadas a funciones exclusivas de disparadores, conservando las tres funciones de acceso necesarias para roles y presupuestos solo en `authenticated`.
-- Añade siete índices sobre claves externas y consultas por cliente. Se debe volver a ejecutar la auditoría SQL de **19 controles** tras instalarla en el proyecto de pruebas.
+- Añade siete índices sobre claves externas y consultas por cliente. Se debe volver a ejecutar la auditoría SQL de **20 controles** tras instalarla en el proyecto de pruebas.
 - Tras V10, revisar nuevamente el analizador de seguridad y rendimiento de Supabase. Algunas sugerencias sobre optimización RLS pueden seguir pendientes; no relajar las políticas para ganar velocidad.
 
 ## Notificaciones, facturación y privacidad
