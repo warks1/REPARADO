@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Pruebas de permisos REPARADO sobre un PostgreSQL 16 TEMPORAL.
 
-Ejecuta el esquema original más V4–V11; simula auth.uid() / auth.role()
+Ejecuta el esquema original más V4–V12; simula auth.uid() / auth.role()
 de Supabase y las identidades customer, operator y admin. No se conecta
 nunca a la cuenta ni a la base real del usuario.
 """
@@ -71,8 +71,28 @@ with connect() as db:
     db.execute("grant usage on schema auth to anon,authenticated")
     db.execute("grant execute on function auth.uid() to anon,authenticated")
     db.execute("grant execute on function auth.role() to anon,authenticated")
+    # Storage simplificado, sin credenciales ni acceso al proyecto real.
+    db.execute("create schema if not exists storage")
+    db.execute("""create table storage.buckets(
+      id text primary key,name text not null,public boolean not null,
+      file_size_limit bigint,allowed_mime_types text[])""")
+    db.execute("""create table storage.objects(
+      id uuid primary key default gen_random_uuid(),
+      bucket_id text not null references storage.buckets(id),
+      name text not null unique)""")
+    db.execute("""create function storage.foldername(path text) returns text[]
+      language sql immutable as $f$
+      select case when array_length(string_to_array(path,'/'),1)>1
+        then (string_to_array(path,'/'))[1:array_length(string_to_array(path,'/'),1)-1]
+        else array[]::text[] end $f$""")
+    db.execute("alter table storage.objects enable row level security")
+    db.execute("grant usage on schema storage to anon,authenticated")
+    db.execute("grant execute on function storage.foldername(text) to anon,authenticated")
+    db.execute("grant select,insert on storage.objects to authenticated")
     db.execute((ROOT/"schema.sql").read_text(encoding="utf8"))
-    for version in range(4,12):
+    for version in range(4,13):
+        if version==12:
+            db.execute((ROOT/"supabase/storage-photos.sql").read_text(encoding="utf8"))
         if version==11:
             # PostgreSQL local no proporciona los GRANT iniciales de Supabase
             # hospedado. Simular las concesiones amplias reales de su rol anon.
@@ -106,6 +126,15 @@ with connect() as db:
       postal_code,city,phone,status)
       values(%s,%s,'Cambio de sifón','Fontanería',60,
              'Calle de prueba','14','08002','Barcelona','000000000','quoted')""",(R2,C2))
+    db.execute("""insert into storage.objects(bucket_id,name)
+      values ('request-photos',%s),('request-photos',%s),('request-photos',%s),
+             ('request-photos',%s),('request-photos',%s)""",(
+          f"{C1}/{R1}/grifo.webp",
+          f"{C2}/{R2}/sifon.webp",
+          f"{C1}/{R2}/propietario-incoherente.webp",
+          f"{C1}/{R1}/extra/carpeta.webp",
+          f"{C1}/30000000-0000-4000-8000-000000000003/inexistente.webp"
+        ))
     db.execute("""insert into public.invoices(
       request_id,customer_id,number,subtotal,vat,total,status)
       values (%s,%s,'TEST-2026-001',100,21,121,'issued'),
@@ -145,6 +174,15 @@ with connect() as db:
     print(f"Auditoría Supabase: {len(audit_result)} comprobaciones correctas y ninguna escritura",flush=True)
 
 with as_user(C1) as db:
+    assert {x[0] for x in db.execute("select name from storage.objects")}=={f"{C1}/{R1}/grifo.webp"}
+    rejected(db,"insert into storage.objects(bucket_id,name) values('request-photos',%s)",
+             (f"{C1}/{R2}/cross-request.webp",),"42501")
+    rejected(db,"insert into storage.objects(bucket_id,name) values('request-photos',%s)",
+             (f"{C1}/{R1}/extra/nested.webp",),"42501")
+    rejected(db,"insert into storage.objects(bucket_id,name) values('request-photos',%s)",
+             (f"{C2}/{R2}/other-owner.webp",),"42501")
+    db.execute("insert into storage.objects(bucket_id,name) values('request-photos',%s)",
+               (f"{C1}/{R1}/otra-foto.webp",))
     assert ids(db,"public.service_requests")=={R1}
     assert len(ids(db,"public.invoices"))==1 # El borrador no se muestra.
     assert len(ids(db,"public.notifications"))==1
@@ -162,6 +200,7 @@ with as_user(C1) as db:
     print("Cliente 1: datos propios, borradores, roles, precios, presupuestos y avisos protegidos",flush=True)
 
 with as_user(C2) as db:
+    assert {x[0] for x in db.execute("select name from storage.objects")}=={f"{C2}/{R2}/sifon.webp"}
     assert ids(db,"public.service_requests")=={R2}
     assert len(ids(db,"public.invoices"))==1
     assert len(ids(db,"public.notifications"))==1
@@ -169,12 +208,15 @@ with as_user(C2) as db:
     assert db.execute("select public.accept_reparado_quote(%s)",(R1,)).fetchone()[0] is False
 
 with as_user(OP) as db:
+    assert db.execute("select count(*) from storage.objects").fetchone()[0]==0
     assert ids(db,"public.service_requests")==set()
     assert ids(db,"public.invoices")==set()
     assert len(ids(db,"public.notifications"))==1
     assert ids(db,"public.profiles")=={OP}
 
 with as_user(ADM) as db:
+    assert {x[0] for x in db.execute("select name from storage.objects")}=={
+      f"{C1}/{R1}/grifo.webp",f"{C1}/{R1}/otra-foto.webp",f"{C2}/{R2}/sifon.webp"}
     assert ids(db,"public.service_requests")=={R1,R2}
     assert len(ids(db,"public.invoices"))==3  # El admin ve borradores.
     assert len(ids(db,"public.profiles"))==4
@@ -189,6 +231,8 @@ with as_user(ADM) as db:
       where id=%s returning id""",(OP,R1)).fetchone()[0]==UUID(R1)
 
 with as_user(OP) as db:
+    assert {x[0] for x in db.execute("select name from storage.objects")}=={
+      f"{C1}/{R1}/grifo.webp",f"{C1}/{R1}/otra-foto.webp"}
     assert ids(db,"public.service_requests")=={R1}
     assert ids(db,"public.invoices")==set()
     assert db.execute("update public.service_requests set status='in_progress' where id=%s returning id",(R1,)).rowcount==1
@@ -196,6 +240,7 @@ with as_user(OP) as db:
     assert db.execute("update public.service_requests set status='completed' where id=%s returning id",(R1,)).rowcount==1
 
 with as_user(None,role="anon") as db:
+    rejected(db,"select name from storage.objects",error_code="42501")
     for tab in ('profiles','service_requests','messages','notifications','device_tokens','invoices'):
         rejected(db,f"select id from public.{tab}",error_code="42501")
         assert not db.execute("select has_table_privilege('anon',%s,'INSERT')",(f"public.{tab}",)).fetchone()[0]
@@ -205,4 +250,4 @@ with as_user(None,role="anon") as db:
     rejected(db,"select public.accept_reparado_quote(%s)",(R1,),error_code="42501")
     print("REPARADO Test privado: anon sin permisos sobre seis tablas ni RPC",flush=True)
 
-print("Integración RLS V4–V11: cliente, segundo cliente, operario, admin, anon, notas e invoices OK",flush=True)
+print("Integración RLS V4–V12: cliente, segundo cliente, operario, admin, anon, notas e invoices OK",flush=True)

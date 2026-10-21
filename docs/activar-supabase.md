@@ -14,7 +14,7 @@ Antes de intentar producción:
 
 1. Crea un proyecto Supabase **de pruebas**, preferentemente en región UE, con datos totalmente ficticios y una copia/backup seguro de cualquier proyecto antiguo antes de migrar.
 2. En una instalación nueva, ejecuta `schema.sql` en el SQL Editor. En instalaciones antiguas, compara primero el esquema y evita repetir bloques que puedan sustituir políticas adaptadas sin revisión.
-3. Aplica **en orden** `supabase/migration-v4.sql`, `supabase/migration-v5.sql`, `supabase/migration-v6.sql`, `supabase/migration-v7.sql`, `supabase/migration-v8.sql`, `supabase/migration-v9.sql`, `supabase/migration-v10.sql` y `supabase/migration-v11.sql`. El esquema base ya contiene parte de V4–V6, por eso conviene revisar las diferencias y confirmar la compatibilidad.
+3. Aplica **en orden** `supabase/migration-v4.sql`, `supabase/migration-v5.sql`, `supabase/migration-v6.sql`, `supabase/migration-v7.sql`, `supabase/migration-v8.sql`, `supabase/migration-v9.sql`, `supabase/migration-v10.sql`, `supabase/migration-v11.sql` y `supabase/migration-v12.sql`. El esquema base ya contiene parte de V4–V6, por eso conviene revisar las diferencias y confirmar la compatibilidad.
 4. Si V7 o V9 rechazan la instalación por registros históricos incompatibles, **no fuerces la migración** ni elimines datos. Revisa en privado los duplicados de agenda o de numeración y sus propietarios.
 5. Aplica `supabase/storage-photos.sql` y confirma que el bucket `request-photos` es **privado**. Prueba la subida/lectura con clientes diferentes y con operarios asignados y no asignados.
 6. Ejecuta **`supabase/auditoria-readonly-v9.sql`** desde SQL Editor. Devuelve veinte filas con columnas `control`, `resultado` y `detalle`. Deben indicar **OK**; los resultados PENDIENTE deben revisarse antes de pasar a datos reales. El archivo es solo lectura y devuelve información agregada, no nombres ni direcciones.
@@ -90,3 +90,17 @@ Antes de probar con correos de prueba controlados:
 5. Con dos clientes, operario y administrador, comprueba que las políticas RLS impiden ver solicitudes, avisos o facturas ajenas. Las elevaciones de rol solo se realizan desde administración autorizada, nunca con el formulario web.
 
 **Límite confirmado:** la conexión de ChatGPT a Supabase no permite cambiar los ajustes del servicio Auth ni crear/invitar usuarios por el flujo administrativo. La prueba de login real debe realizarse tras autorizar las invitaciones desde Supabase. Los tests de navegador de este repositorio usan exclusivamente credenciales ficticias y no envían correos.
+
+
+## 9. Fotografías privadas: validación de rutas (V12)
+
+La migración `supabase/migration-v12.sql` refuerza la lectura y subida de imágenes en el bucket `request-photos`. Una fotografía solo es accesible si la ruta consta de exactamente dos carpetas, la primera identifica al **cliente real de la solicitud** y la segunda el identificador de dicha solicitud. No basta con conocer o falsificar un prefijo de carpeta.
+
+- Clientes: pueden subir y leer únicamente sus fotos asociadas a solicitudes propias.
+- Operarios: pueden leer fotos únicamente de los servicios asignados, sin poder subir fotografías en nombre del cliente.
+- Administradores: pueden leer fotografías vinculadas correctamente a solicitudes existentes, no rutas falsas ni documentos huérfanos.
+- Visitantes sin sesión: no pueden leer ni subir fotos. El bucket continúa **privado**, con límite de 8 MB por imagen.
+
+**Orden en instalaciones existentes:** tras V11 y `supabase/storage-photos.sql`, aplicar V12; en instalaciones limpias el archivo `storage-photos.sql` ya incorpora las mismas políticas reforzadas. No ejecutar políticas antiguas después de V12. Si existen fotos heredadas con rutas incorrectas, la migración dejará de mostrarlas: revisar previamente sus rutas sin convertirlas en públicas. No se han movido ni borrado objetos.
+
+Las pruebas automáticas de `tests/supabase-roles-rls.py` incluyen rutas incoherentes, carpetas extra, clientes cruzados, operario asignado/no asignado y administrador en PostgreSQL efímero. La validación de Storage real mediante sesiones Auth y enlaces firmados sigue pendiente de realizar con las cuentas autorizadas.

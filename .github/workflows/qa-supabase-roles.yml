@@ -5,6 +5,7 @@ on:
     paths:
       - 'schema.sql'
       - 'supabase/migration-v*.sql'
+      - 'supabase/storage-photos.sql'
       - 'supabase/auditoria-readonly-v9.sql'
       - 'tests/supabase-roles-rls.py'
       - '.github/workflows/qa-supabase-roles.yml'
@@ -13,6 +14,7 @@ on:
     paths:
       - 'schema.sql'
       - 'supabase/migration-v*.sql'
+      - 'supabase/storage-photos.sql'
       - 'supabase/auditoria-readonly-v9.sql'
       - 'tests/supabase-roles-rls.py'
       - '.github/workflows/qa-supabase-roles.yml'
@@ -45,7 +47,7 @@ jobs:
         with:
           python-version: '3.11'
       - run: python -m pip install --disable-pip-version-check 'psycopg[binary]>=3.2,<4'
-      - name: Probar migraciones V4–V9 y permisos de cuatro roles
+      - name: Probar migraciones V4–V12 y fotografías privadas de cuatro roles
         run: python -u tests/supabase-roles-rls.py
   build:
     runs-on: ubuntu-latest
