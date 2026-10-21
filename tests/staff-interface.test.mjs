@@ -18,6 +18,11 @@ test('el IVA incluido se muestra sin simular facturación oficial',()=>{
  const code=readFileSync(new URL('../connected.js',import.meta.url),'utf8');
  assert.ok(code.includes('vatIncluded(job.price)'));
  assert.ok(code.includes('No se permiten asignaciones'));
- assert.ok(code.includes('sameOperatorSlot(all'));
+ assert.ok(code.includes("sameOperatorSlot(appointments.data"));
+ assert.ok(code.includes(".eq('operator_id',operator_id)"));
+ assert.ok(code.includes(".in('status',['scheduled','in_progress'])"));
+ assert.ok(code.includes(".gte('scheduled_at',start)"));
+ assert.ok(code.includes(".lt('scheduled_at',end)"));
+ assert.ok(code.includes('No se pudo comprobar la agenda del operario'));
  assert.ok(code.includes('Fecha y hora no válidas.'));
 });
