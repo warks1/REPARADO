@@ -30,7 +30,10 @@ def connect():
 def check_raises_code(connection, query, values, expected):
     try:
         with connection.transaction():
-            connection.execute(query,values)
+            if values:
+                connection.execute(query,values)
+            else:
+                connection.execute(query)
     except psycopg.Error as error:
         assert error.sqlstate==expected,(error.sqlstate,expected,str(error))
     else:
