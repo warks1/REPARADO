@@ -6,9 +6,10 @@ Estado: interfaz web y APK Android de pruebas generadas. **No desplegar a client
 1. Crear un proyecto propio de Supabase en una región adecuada para operar en España/UE.
 2. Aplicar, en una base de pruebas, `schema.sql` y después `supabase/migration-v4.sql`, `supabase/migration-v5.sql`, `supabase/migration-v6.sql`, **`supabase/migration-v7.sql`, `supabase/migration-v8.sql` y `supabase/migration-v9.sql`** en ese orden. El esquema incorpora parte de v4; comprobar que las migraciones son repetibles antes de aplicarlas al entorno definitivo. La V7 instala la protección de reservas simultáneas en PostgreSQL y comprueba antes que no existan conflictos.
 3. Ejecutar `supabase/storage-photos.sql` para crear un bucket **privado** para imágenes.
-4. Probar por separado las cuentas `customer`, `operator` y `admin`, así como las restricciones de RLS: un cliente no puede ver solicitudes o fotos de otro, un operario únicamente ve los trabajos asignados y solo administración puede asignar personal y modificar precios.
-5. Verificar el registro, inicio de sesión, confirmación de email, recuperación de contraseña y las acciones de aceptación de presupuesto.
-6. Crear o asignar el rol administrador exclusivamente desde el backend con privilegios de administración. Nunca habilitar la elección de rol desde un formulario de cliente.
+4. Ejecutar `supabase/auditoria-readonly-v9.sql` y revisar sus quince controles de solo lectura; todos deben estar en **OK** antes de recibir solicitudes reales. Instrucciones detalladas: `docs/activar-supabase.md`.
+5. Probar por separado **dos clientes**, `operator` y `admin`, así como las restricciones RLS: un cliente no puede ver solicitudes, avisos o facturas de otro; un operario únicamente ve los trabajos asignados y solo administración puede asignar personal y modificar precios. El test automático `tests/supabase-roles-rls.py` prueba este aislamiento en un PostgreSQL temporal, pero no equivale a haber probado tu Supabase real.
+6. Verificar el registro, inicio de sesión, confirmación de email, recuperación de contraseña y las acciones de aceptación de presupuesto.
+7. Crear o asignar el rol administrador exclusivamente desde el backend con privilegios de administración. Nunca habilitar la elección de rol desde un formulario de cliente.
 
 ## Conectar la app y el despliegue
 1. Configurar en GitHub Actions las variables `VITE_SUPABASE_URL` y `VITE_SUPABASE_ANON_KEY` como secretos de repositorio. La clave anónima/publicable puede exponerse en el cliente, pero **nunca** incluir la clave `service_role`, claves de administración o contraseñas en Vite ni en GitHub Pages.
