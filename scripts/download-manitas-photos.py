@@ -83,9 +83,35 @@ def main():
     for slug,title in FILES.items():
         known=next((p for p in targeted.get(slug,[])+basic.get(slug,[])
                if p["title"]=="File:"+title),None)
-        data=dict(known) if known else info_for(title)
+        # Las licencias y URLs de las primeras once fotos ya están
+        # verificadas y guardadas; no repetir la consulta (límites 429).
         if known:
-            data["license_url"]=info_for(title).get("license_url") if not known.get("license_url") else known["license_url"]
+            data=dict(known)
+        elif slug=="door-handle":
+            # Ficha revisada manualmente en Commons, CC BY-SA 4.0,
+            # autor Vicrubini. Imagen original de 960x1280, 51 KB.
+            from hashlib import md5
+            from urllib.parse import quote
+            filename=title.replace(" ","_")
+            digest=md5(filename.encode("utf8")).hexdigest()
+            data={
+              "title":title,
+              "url":"https://upload.wikimedia.org/wikipedia/commons/"+digest[0]+"/"+digest[:2]+"/"+quote(filename),
+              "source":"https://commons.wikimedia.org/wiki/File:Modern_door_handle.jpg",
+              "author":"Vicrubini","license":"CC BY-SA 4.0"
+            }
+        else:
+            raise RuntimeError(f"Falta fuente verificada: {title}")
+        lic=data.get("license","").lower().split()
+        if lic[:2]==["cc","by-sa"]:
+            data["license_url"]="https://creativecommons.org/licenses/by-sa/"+lic[2]+"/"
+        elif lic[:2]==["cc","by"]:
+            suffix="/"+lic[3] if len(lic)>3 else ""
+            data["license_url"]="https://creativecommons.org/licenses/by/"+lic[2]+suffix+"/"
+        elif "cc0" in lic:
+            data["license_url"]="https://creativecommons.org/publicdomain/zero/1.0/"
+        else:
+            data["license_url"]="https://creativecommons.org/publicdomain/mark/1.0/"
         license=(data.get("license") or "").lower()
         if not any(x in license for x in ("cc by","cc-by","cc0","public domain","pdm")):
             raise RuntimeError(f"Licencia no verificada para {title}: {license}")
