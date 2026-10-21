@@ -499,3 +499,11 @@ body,.shell,.customer-header,.customer-nav {background:#fff}
     transform:none;
   }
 }
+
+/* Restauradas las ilustraciones 3D originales con transparencia auténtica. */
+.category-tile:is(.theme-plumbing,.theme-masonry,.theme-parquet,.theme-renovation) img.category-restored{
+ display:block;width:100%;height:100%;max-width:100%;
+ object-fit:cover;object-position:center 40%;border-radius:0;
+ animation:none!important;
+ filter:saturate(1.22) contrast(1.08) brightness(1.03);
+}
