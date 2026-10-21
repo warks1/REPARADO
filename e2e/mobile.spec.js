@@ -315,7 +315,7 @@ test('las cuatro ilustraciones tienen exactamente la oscilación suave de Manita
               mask:getComputedStyle(img).maskImage||getComputedStyle(img).webkitMaskImage};
     });
     expect(stats.ratio).toBeGreaterThan(.07);
-    expect(stats.mask).toContain('linear-gradient');
+    expect(stats.mask).toContain(['parquet','renovation'].includes(slug)?'radial-gradient':'linear-gradient');
     const current=await readMotion(card.locator('.category-motion'));
     expect(current.name).toContain('illustration-bob');
     expect(current.duration).toBe(reference.duration);
