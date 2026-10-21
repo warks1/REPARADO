@@ -8,9 +8,9 @@ const services=[
  ['Parquet','Instalación de parquet/laminado',34,'m²'],
  ['Reformas integrales','Reforma integral de baño',0]
 ];
-test('las cuatro categorías principales son distintas',()=>{
+test('las cinco categorías principales son distintas',()=>{
  assert.deepEqual(categories.map(c=>c.id),
-  ['Fontanería','Albañilería','Parquet','Reformas integrales']);
+  ['Fontanería','Albañilería','Parquet','Reformas integrales','Manitas']);
 });
 test('la portada contiene categorías y accesos de navegación',()=>{
  const screen=renderLanding(services);
@@ -116,7 +116,7 @@ test('las categorías usan imágenes propias, no recortes entremezclados del atl
  for(const slug of ['plumbing','masonry','parquet','renovation']){
    assert.ok(html.includes('categories/'+slug+'.webp'));
  }
- assert.equal((html.match(/class="category-photo"/g)||[]).length,4);
+ assert.equal((html.match(/class="category-photo"/g)||[]).length,5);
 });
 
 test('las fotografías destacadas son independientes del atlas',()=>{
@@ -186,4 +186,34 @@ test('la ruta alternativa publica los recursos del directorio public',async()=>{
  const loader=readFileSync(new URL('../index.html',import.meta.url),'utf8');
  assert.ok(code.includes("globalThis.__reparadoRawPages ? './public/'"));
  assert.ok(loader.includes("window.__reparadoRawPages = true"));
+});
+
+test('Manitas presenta doce trabajos y precios orientativos con IVA',async()=>{
+ const {services:catalog}=await import('../catalog-data.js');
+ const manitas=catalog.filter(s=>s[0]==='Manitas');
+ assert.equal(manitas.length,12);
+ assert.ok(manitas.every(s=>Number.isFinite(s[2])&&s[2]>0));
+ const html=renderCategory(catalog,'Manitas');
+ assert.ok(html.includes('Montaje de mueble en kit (mediano)'));
+ assert.ok(html.includes('Instalación de soporte de TV en pared'));
+ assert.ok(html.includes('Herramientas de manitas'));
+ assert.ok(html.includes('data-expand-services'));
+});
+test('los destacados cubren varias categorías y no solo Fontanería',async()=>{
+ const {services:catalog}=await import('../catalog-data.js');
+ const {featuredServices}=await import('../customer-ui.js');
+ const selected=featuredServices(catalog);
+ assert.deepEqual(selected.map(({s})=>s[0]),categories.map(c=>c.id));
+ const html=renderLanding(catalog);
+ for(const {i} of selected) assert.ok(html.includes('data-service="'+i+'"'));
+ assert.equal((html.match(/class="catalog-service"/g)||[]).length,categories.length);
+});
+test('la categoría Manitas tiene dibujo propio y diseño adaptable',async()=>{
+ const {readFileSync,existsSync}=await import('node:fs');
+ const url=new URL('../public/categories/handyman.svg',import.meta.url);
+ assert.ok(existsSync(url));
+ assert.ok(readFileSync(url,'utf8').includes('<svg'));
+ const css=readFileSync(new URL('../vivid-theme.css',import.meta.url),'utf8');
+ assert.ok(css.includes('.category-tile.theme-handyman'));
+ assert.ok(css.includes('.category-view.theme-handyman'));
 });

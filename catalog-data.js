@@ -23,5 +23,20 @@ export const services=[
  ['Parquet','Colocación de rodapié',0],
  ['Reformas integrales','Reforma integral de baño',0],
  ['Reformas integrales','Reforma integral de cocina',0],
- ['Reformas integrales','Reforma de vivienda',0]
+ ['Reformas integrales','Reforma de vivienda',0],
+ // Tarifas orientativas para Cataluña, IVA del 21 % incluido.
+ // Los materiales especiales, trabajos complejos y desplazamientos fuera de zona
+ // se confirman siempre mediante presupuesto antes de aceptar la solicitud.
+ ['Manitas','Montaje de mueble en kit (mediano)',89],
+ ['Manitas','Colocación de estantería',69],
+ ['Manitas','Colgar cuadros o espejos (hasta 3)',59],
+ ['Manitas','Instalación de barras de cortina o estores',69],
+ ['Manitas','Instalación de soporte de TV en pared',95],
+ ['Manitas','Ajuste de puertas y bisagras',65],
+ ['Manitas','Cambio de cinta de persiana',69],
+ ['Manitas','Renovación de silicona de bañera o ducha',79],
+ ['Manitas','Instalación de lámpara sencilla',59],
+ ['Manitas','Colocación de accesorios de baño',65],
+ ['Manitas','Reparación menor de muebles',75],
+ ['Manitas','Cambio de manilla de puerta',59]
 ];

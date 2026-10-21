@@ -313,3 +313,7 @@ background-image:linear-gradient(90deg,#0d2d52 0%,rgba(13,45,82,.98) 20%,rgba(15
  .promo-copy{position:relative;z-index:2}
  .promo-cta{z-index:3}
 }
+
+/* Paleta auxiliar para Manitas, disponible también sin la capa vivid. */
+.theme-handyman{background:linear-gradient(145deg,#ffe4aa,#ffbc59)}
+.category-view.theme-handyman .category-hero{background:linear-gradient(115deg,#fffbec,#ffe1a1)}

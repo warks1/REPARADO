@@ -1,4 +1,4 @@
-import {appHeader,bottomNavigation,setActiveNav,renderLanding,renderCategory,serviceFormHeader,formPeriodPicker,serviceRow,matchServices} from './customer-ui.js'
+import {appHeader,bottomNavigation,setActiveNav,renderLanding,renderCategory,serviceFormHeader,formPeriodPicker,serviceRow,matchServices,featuredServices} from './customer-ui.js'
 import { operatorMaySetStatus } from './rules.js'
 import {jobFilters,filterJobs,jobCounters,vatIncluded,sameOperatorSlot,validateAdminJobUpdate} from './staff-workflows.js'
 import {staffProgressMarkup,staffDocument} from './staff-documents.js'
@@ -146,7 +146,7 @@ export function mountConnected({app, services, supabase}) {
     search?.addEventListener('input',()=>{
       const term=search.value.trim().toLocaleLowerCase('es-ES');
       const matches=matchServices(services,term);
-      main.querySelector('.popular-list').innerHTML=(!term?matches.slice(0,4):matches)
+      main.querySelector('.popular-list').innerHTML=(!term?featuredServices(services):matches)
         .map(({s,i})=>serviceRow(s,i)).join('');
       let visible=0;
       main.querySelectorAll('.category-tile').forEach(tile=>{
