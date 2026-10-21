@@ -288,7 +288,7 @@ export function mountConnected({app, services, supabase}) {
   async function loadNotifications(){
     setActiveNav(app,'profile');
     currentView='notifications';
-    await renderNotifications({main,supabase,session,backButton,onRefresh:()=>currentView==='notifications'});
+    await renderNotifications({main,supabase,session,backButton,onRefresh:()=>currentView==='notifications',isStaff:userIsStaff()});
   }
   async function loadInvoices(){
     setActiveNav(app,'profile');
