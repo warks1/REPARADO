@@ -4,7 +4,7 @@ Estado: interfaz web y APK Android de pruebas generadas. **No desplegar a client
 
 ## Base de datos y seguridad
 1. Crear un proyecto propio de Supabase en una región adecuada para operar en España/UE.
-2. Aplicar, en una base de pruebas, `schema.sql` y después `supabase/migration-v4.sql`, `supabase/migration-v5.sql`, `supabase/migration-v6.sql`, **`supabase/migration-v7.sql` y `supabase/migration-v8.sql`** en ese orden. El esquema incorpora parte de v4; comprobar que las migraciones son repetibles antes de aplicarlas al entorno definitivo. La V7 instala la protección de reservas simultáneas en PostgreSQL y comprueba antes que no existan conflictos.
+2. Aplicar, en una base de pruebas, `schema.sql` y después `supabase/migration-v4.sql`, `supabase/migration-v5.sql`, `supabase/migration-v6.sql`, **`supabase/migration-v7.sql`, `supabase/migration-v8.sql` y `supabase/migration-v9.sql`** en ese orden. El esquema incorpora parte de v4; comprobar que las migraciones son repetibles antes de aplicarlas al entorno definitivo. La V7 instala la protección de reservas simultáneas en PostgreSQL y comprueba antes que no existan conflictos.
 3. Ejecutar `supabase/storage-photos.sql` para crear un bucket **privado** para imágenes.
 4. Probar por separado las cuentas `customer`, `operator` y `admin`, así como las restricciones de RLS: un cliente no puede ver solicitudes o fotos de otro, un operario únicamente ve los trabajos asignados y solo administración puede asignar personal y modificar precios.
 5. Verificar el registro, inicio de sesión, confirmación de email, recuperación de contraseña y las acciones de aceptación de presupuesto.
@@ -30,6 +30,15 @@ Estado: interfaz web y APK Android de pruebas generadas. **No desplegar a client
 - Los avisos se insertan en la misma transacción que el cambio de solicitud. Si V7 rechaza una reserva incompatible, V8 no creará un aviso engañoso. El SQL es repetible y se verifica contra PostgreSQL de pruebas.
 - Para activarlo hay que ejecutar V8 **después de V7** en un proyecto Supabase asociado, con las políticas de seguridad vigentes, y probar con cuentas reales de cliente, operario y administración.
 - No se trata de push remoto: `device_tokens` y el registro de tokens Capacitor no envían automáticamente notificaciones. El envío a dispositivos requiere FCM/APNs, un backend seguro, consentimiento y ensayos en dispositivos.
+
+## Facturación (migración V9, pendiente de instalar)
+- `supabase/migration-v9.sql` protege los registros **no borrador** con número único, incluso ante dos inserciones simultáneas. El preflight detecta números históricos duplicados y se detiene sin alterarlos.
+- Los documentos finales requieren referencia a solicitud y cliente coherentes, base imponible, IVA único del 21 % y total consistente (redondeo de céntimos); no se admiten otros tipos de IVA sin ampliar el diseño fiscal.
+- Los registros ya emitidos quedan bloqueados para edición o borrado en la base de datos. Las rectificativas, anulaciones fiscales y pagos necesitarán un flujo regulado propio; no se simula su emisión desde el navegador.
+- Se revocan permisos de `INSERT`, `UPDATE` y `DELETE` de facturas a cuentas públicas. Sólo un backend confiable y auditado podrá crear documentos finales; se conserva la lectura RLS de V6.
+- La vista «Mis facturas» sigue siendo informativa y señala discrepancias del desglose, sin generar un PDF ni afirmar validez fiscal.
+- Aplicar V9 primero en Supabase de **pruebas**, después de V8, resolviendo previamente los errores que señale. No se ha ejecutado en la base real, porque no hay un proyecto Supabase conectado.
+- Antes de emitir legalmente: identificar emisor (NIF, domicilio fiscal), destinatario, serie y numeración correlativa, fecha de operación y expedición, concepto y bases por tipo, rectificaciones, archivo/integridad y requisitos fiscales españoles vigentes. Validarlo con asesoría fiscal.
 
 ## Notificaciones, facturación y privacidad
 - Los avisos internos registrados en la base de datos no implican **push remoto**. Para enviar push reales deben configurarse FCM y APNs y un backend que mande los avisos de forma autenticada.
