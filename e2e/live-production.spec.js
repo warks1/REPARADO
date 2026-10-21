@@ -22,10 +22,12 @@ for (const query of ['', '?reparado_version=' + (process.env.REPARADO_SHA || 'ac
 test('las imágenes del repositorio publicado no devuelven error',async({page})=>{
  await page.goto('./');
  await expect(page.locator('.category-tile')).toHaveCount(5,{timeout:20000});
- // Los cuatro SVG son objetos locales sin recortes blancos ni descargas remotas.
- await expect(page.locator('.category-tile svg.clean-category-illustration')).toHaveCount(4);
- const photo=page.locator('.theme-handyman img.category-photo');
- await expect(photo).toHaveCount(1);
- await photo.scrollIntoViewIfNeeded();
- await expect.poll(()=>photo.evaluate(img=>img.complete && img.naturalWidth>0),{timeout:12000}).toBeTruthy();
+ // Los iconos originales recuperados cargan como PNG con transparencia.
+ await expect(page.locator('.category-tile img.category-restored')).toHaveCount(4);
+ const photos=page.locator('.category-tile img.category-photo');
+ await expect(photos).toHaveCount(5);
+ for(const photo of await photos.all()){
+   await photo.scrollIntoViewIfNeeded();
+   await expect.poll(()=>photo.evaluate(img=>img.complete && img.naturalWidth>0),{timeout:12000}).toBeTruthy();
+ }
 });
