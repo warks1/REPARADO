@@ -1,7 +1,24 @@
 name: Validar integridad de facturas V9
 on:
   push:
-    branches: [feat/facturacion-guardas-v9-20261021]
+    branches: [main]
+    paths:
+      - 'supabase/migration-v9.sql'
+      - 'invoice-math.js'
+      - 'invoices.js'
+      - 'tests/invoice-db-v9.py'
+      - 'tests/invoice-integrity-v9.test.mjs'
+      - '.github/workflows/qa-invoice-v9.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'supabase/migration-v9.sql'
+      - 'invoice-math.js'
+      - 'invoices.js'
+      - 'tests/invoice-db-v9.py'
+      - 'tests/invoice-integrity-v9.test.mjs'
+      - '.github/workflows/qa-invoice-v9.yml'
+  workflow_dispatch:
 permissions:
   contents: read
 jobs:
