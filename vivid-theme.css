@@ -444,32 +444,58 @@ body,.shell,.customer-header,.customer-nav {background:#fff}
   .category-view.theme-handyman .category-hero{padding-right:108px}
 }
 
-/* Corrección 21/10/2026: las cuatro fotografías proceden de recortes
-   rectangulares. El movimiento vertical anterior sacaba a la vista los
-   bordes blancos originales. El zoom permanece SIEMPRE dentro del recorte.
-   Manitas conserva su animación propia sin modificaciones. */
-@keyframes reparado-photo-contained {
-  0%,100% {transform:scale(1.26)}
-  50% {transform:scale(1.29)}
+/* Ilustraciones vectoriales sin recortes raster y con movimiento perceptible.
+   No se modifican los estilos ni la animación de Manitas. */
+@keyframes reparado-category-float {
+  /* Movimiento vertical claramente perceptible sin alterar el marco */
+  0%,100% { transform:translateY(5px) }
+  50% { transform:translateY(-11px) }
 }
-.category-tile:is(.theme-plumbing,.theme-masonry,.theme-parquet,.theme-renovation)
-  .category-art {
+@keyframes reparado-category-detail {
+  0%,100% { transform:translateY(0) }
+  50% { transform:translateY(-5px) }
+}
+.category-tile:is(.theme-plumbing,.theme-masonry,.theme-parquet,.theme-renovation) .category-art{
   overflow:hidden;
   isolation:isolate;
   border-radius:15px;
+  background:transparent;
+}
+/* El movimiento se aplica a un SPAN HTML, no directamente al elemento
+   SVG. Así el desplazamiento se mide y reproduce en píxeles CSS de forma
+   idéntica en Chrome, Safari iPhone, Android y tablet. */
+.category-tile:is(.theme-plumbing,.theme-masonry,.theme-parquet,.theme-renovation) .category-motion{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  width:100%;
+  max-width:185px;
+  height:100%;
+  flex:0 0 auto;
+  transform:translateY(5px);
+  animation:reparado-category-float 3.4s ease-in-out infinite;
+  will-change:transform;
+}
+.category-tile:is(.theme-plumbing,.theme-masonry,.theme-parquet,.theme-renovation) svg.clean-category-illustration{
+  width:100%;
+  max-width:185px;
+  height:100%;
+  display:block;
+  overflow:visible;
+  filter:drop-shadow(0 7px 7px rgba(25,66,118,.2));
+  animation:none;
 }
 .category-tile:is(.theme-plumbing,.theme-masonry,.theme-parquet,.theme-renovation)
-  .category-photo {
-  border-radius:0;
-  transform-origin:50% 66%;
-  animation:reparado-photo-contained 3.6s ease-in-out infinite;
-  -webkit-mask-image:linear-gradient(to bottom,transparent 0%,#000 17%,#000 81%,transparent 100%);
-  mask-image:linear-gradient(to bottom,transparent 0%,#000 17%,#000 81%,transparent 100%);
+  svg.clean-category-illustration .float-slow{
+  animation:reparado-category-detail 2.7s ease-in-out infinite;
 }
 @media(prefers-reduced-motion:reduce){
   .category-tile:is(.theme-plumbing,.theme-masonry,.theme-parquet,.theme-renovation)
-    .category-photo{
+    .category-motion,
+  .category-tile:is(.theme-plumbing,.theme-masonry,.theme-parquet,.theme-renovation)
+    svg.clean-category-illustration .float-slow{
     animation:none!important;
-    transform:scale(1.26);
+    will-change:auto;
+    transform:none;
   }
 }
