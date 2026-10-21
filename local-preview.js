@@ -2,7 +2,7 @@ import {requestStorageKey,profileStorageKey,messageDraftStorageKey,safeReadJSON,
 import {localReceipt,localRequestBackup,localBackupName,historicalEvents,readableTimestamp} from './local-document.js';
 import {makeLocalCollection,restoreLocalCollection,localBackupLimit} from './local-backup.js';
 
-import {appHeader,bottomNavigation,renderLanding,renderCategory,serviceFormHeader,formPeriodPicker,priceFor,esc,setActiveNav,matchServices,serviceRow} from './customer-ui.js';
+import {appHeader,bottomNavigation,renderLanding,renderCategory,serviceFormHeader,formPeriodPicker,priceFor,esc,setActiveNav,matchServices,serviceRow,featuredServices} from './customer-ui.js';
 
 // La misma interfaz que verá el cliente: si faltan credenciales, se conservan
 // solicitudes locales para probar la navegación, sin simular envíos a operarios.
@@ -21,7 +21,7 @@ export function mountLocal({app,services}){
     input?.addEventListener('input',()=>{
       const term=input.value.trim().toLocaleLowerCase('es-ES');
       const matches=matchServices(services,term);
-      main.querySelector('.popular-list').innerHTML=(term?matches: [0,2,3,7].map(i=>({s:services[i],i})))
+      main.querySelector('.popular-list').innerHTML=(term?matches:featuredServices(services))
         .map(({s,i})=>serviceRow(s,i)).join('');
       main.querySelectorAll('.category-tile').forEach(tile=>{
         tile.hidden=!matches.some(({s})=>s[0]===tile.dataset.categoryOpen);
