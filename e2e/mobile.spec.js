@@ -348,3 +348,28 @@ test('Ver todos restaura cinco categorías después de una búsqueda vacía o co
  await expect(page.locator('.popular-list .catalog-service')).toHaveCount(5);
  await expect.poll(()=>page.evaluate(()=>document.documentElement.scrollWidth-window.innerWidth)).toBeLessThanOrEqual(2);
 });
+
+test('cada trabajo de Manitas presenta una foto real distinta y visible',async({page})=>{
+ await page.goto('/');
+ await page.locator('.category-tile[data-category-open="Manitas"]').click();
+ await expect(page.locator('.category-view h1')).toHaveText('Manitas');
+ await page.locator('[data-expand-services]').click();
+ const photos=page.locator('.category-services .service-photo');
+ await expect(photos).toHaveCount(12);
+ const srcs=new Set();
+ for(const photo of await photos.all()){
+   await photo.scrollIntoViewIfNeeded();
+   const src=await photo.getAttribute('src');
+   expect(src).toMatch(/services\/handyman-[a-z-]+[.]webp/);
+   srcs.add(src);
+   await expect.poll(()=>photo.evaluate(img=>img.complete && img.naturalWidth>=300 && img.naturalHeight>=200),{timeout:12000}).toBeTruthy();
+ }
+ expect(srcs.size).toBe(12);
+ const credits=page.getByRole('link',{name:'Créditos y licencias de las fotografías de Manitas'});
+ await expect(credits).toBeVisible();
+ const href=await credits.getAttribute('href');
+ expect(href).toContain('creditos-fotos-manitas.html');
+ const check=await page.request.get(href);
+ expect(check.ok()).toBeTruthy();
+ await expect.poll(()=>page.evaluate(()=>document.documentElement.scrollWidth-window.innerWidth)).toBeLessThanOrEqual(2);
+});
