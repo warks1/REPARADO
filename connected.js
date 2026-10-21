@@ -1,6 +1,6 @@
 import {appHeader,bottomNavigation,setActiveNav,renderLanding,renderCategory,serviceFormHeader,formPeriodPicker,serviceRow,matchServices,featuredServices,showAllCategories} from './customer-ui.js'
 import { operatorMaySetStatus } from './rules.js'
-import {jobFilters,filterJobs,jobCounters,vatIncluded,sameOperatorSlot,validateAdminJobUpdate} from './staff-workflows.js'
+import {jobFilters,filterJobs,jobCounters,vatIncluded,sameOperatorSlot,staffVisitGapMinutes,validateAdminJobUpdate} from './staff-workflows.js'
 import {staffProgressMarkup,staffDocument} from './staff-documents.js'
 import {calculateQuoteLines} from './quote-calculator.js'
 import { renderInvoices } from './invoices.js'
@@ -405,6 +405,7 @@ export function mountConnected({app, services, supabase}) {
     </div>
     <div class="staff-filters" role="group" aria-label="Filtrar trabajos">${jobFilters.filter(f=>admin||f.id!=='unassigned').map(f=>`<button type="button" data-admin-filter="${f.id}" aria-pressed="${filter===f.id}">${esc(f.label)} (${counts[f.id]})</button>`).join('')}</div>
     <p class="notice">Los precios indicados incluyen el 21 % de IVA. Este panel no emite facturas fiscales.</p>
+    ${admin?'<p class="notice">Agenda: se aplica un margen preventivo de '+staffVisitGapMinutes+' minutos entre comienzos de visita para cada operario. Confirma la duración real del servicio y el desplazamiento antes de programar.</p>':''}
     <p data-feedback class="feedback" role="status"></p></section>
     ${chosen.map(job=>`<article class="card job-card"><div class="staff-job-title"><h3>${esc(job.service_name)}</h3><span class="staff-status">${esc(statusLabels[job.status]||job.status)}</span></div><p>${esc(job.street)} ${esc(job.address_number)}, ${esc(job.city)}</p><p>Tel.: ${esc(job.phone)} · ${money(job.price)}</p><p class="notice">Operario: ${esc(job.operator_name||'Sin asignar')} · Visita: ${esc(safeTime(job.scheduled_at))}</p><p class="notice">${esc(job.description)}</p>${staffProgressMarkup(job.status)}
       <a target="_blank" rel="noopener noreferrer" href="https://www.google.com/maps/search/?api=1&amp;query=${encodeURIComponent(`${job.street} ${job.address_number}, ${job.city}`)}">📍 Abrir Google Maps</a>
@@ -524,8 +525,24 @@ export function mountConnected({app, services, supabase}) {
       if(validation)return message(validation,true);
       if(operator_id&&!operators.some(op=>op.id===operator_id))return message('Operario no encontrado en el personal autorizado.',true);
       if(['scheduled','in_progress'].includes(status)&&stamp){
-        const existing=sameOperatorSlot(all,{requestId:form.dataset.jobId,operatorId:operator_id,scheduledAt:stamp.toISOString()});
-        if(existing.length)return message('El operario ya tiene otra visita a esa misma hora. Selecciona otra fecha u otro operario.',true);
+        // Refrescar el horario del operario desde Supabase. La lista del
+        // panel se limita a 150 solicitudes y podría estar desactualizada.
+        const gap=staffVisitGapMinutes*60000;
+        const start=new Date(stamp.getTime()-gap).toISOString();
+        const end=new Date(stamp.getTime()+gap).toISOString();
+        const appointments=await supabase.from('service_requests')
+          .select('id,operator_id,scheduled_at,status')
+          .eq('operator_id',operator_id)
+          .in('status',['scheduled','in_progress'])
+          .gte('scheduled_at',start)
+          .lt('scheduled_at',end);
+        if(appointments.error)
+          return message('No se pudo comprobar la agenda del operario. No se ha guardado la programación: '+appointments.error.message,true);
+        const existing=sameOperatorSlot(appointments.data,{
+          requestId:form.dataset.jobId,operatorId:operator_id,scheduledAt:stamp.toISOString()
+        });
+        if(existing.length)
+          return message('El operario ya tiene una visita a menos de '+staffVisitGapMinutes+' minutos. Selecciona otra hora u otro operario.',true);
       }
       const operator=operators.find(op=>op.id===operator_id);
       const {error}=await supabase.from('service_requests').update({

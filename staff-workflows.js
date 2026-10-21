@@ -48,24 +48,29 @@ export function vatIncluded(total,percent=21){
   const baseCents=Math.round(cents*100/(100+percent));
   return {total:cents/100,base:baseCents/100,vat:(cents-baseCents)/100,percent};
 }
-export function sameOperatorSlot(jobs,{requestId,operatorId,scheduledAt}){
+// Margen mínimo preventivo entre el inicio de dos visitas del mismo operario.
+// No es una estimación de la duración real: planificación debe confirmar
+// duración de cada tarea y desplazamientos antes de asignar definitivamente.
+export const staffVisitGapMinutes=60;
+export function sameOperatorSlot(jobs,{requestId,operatorId,scheduledAt,gapMinutes=staffVisitGapMinutes}){
   if(!operatorId||!scheduledAt)return [];
   const target=Date.parse(scheduledAt);
   if(!Number.isFinite(target))return [];
-  // Solo compara la misma hora exacta; no pretende determinar
-  // la duración del desplazamiento ni eliminar conflictos en servidor.
+  const gap=Number(gapMinutes);
+  if(!Number.isFinite(gap)||gap<=0)return [];
   return (Array.isArray(jobs)?jobs:[]).filter(j=>
     j.id!==requestId&&j.operator_id===operatorId&&
     ['scheduled','in_progress'].includes(j.status)&&
     Number.isFinite(Date.parse(j.scheduled_at||''))&&
-    Math.abs(Date.parse(j.scheduled_at)-target)<60000
+    Math.abs(Date.parse(j.scheduled_at)-target)<gap*60000
   );
 }
 export function validateAdminJobUpdate({status,operatorId,scheduledAt,price}){
   if(!jobStatuses.includes(status))return 'Estado no válido.';
   if(price!==null&&vatIncluded(price)===null)return 'Introduce un precio válido, IVA incluido.';
   if(status==='quoted'&&price===null)return 'Indica un importe antes de enviar el presupuesto.';
-  if(status==='scheduled'&&(!operatorId||!scheduledAt))return 'Para programar, selecciona operario y fecha.';
+  if(['scheduled','in_progress'].includes(status)&&(!operatorId||!scheduledAt))
+    return 'Para programar o iniciar un trabajo, selecciona operario y fecha.';
   if(scheduledAt&&!Number.isFinite(Date.parse(scheduledAt)))return 'Fecha y hora no válidas.';
   return null;
 }
