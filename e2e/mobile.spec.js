@@ -9,16 +9,15 @@ test('portada real por categorías, imágenes y navegación sin desbordamiento',
   await expect(page.locator('.category-tile')).toHaveCount(5);
   await expect(page.locator('.customer-nav button')).toHaveCount(5);
   await expect(page.locator('.promo-banner')).toBeVisible();
-  const photos=page.locator('.category-tile img.category-photo');
-  await expect(photos).toHaveCount(5);
-  // Safari pospone las imágenes loading=lazy hasta que se desplazan a pantalla.
-  // Comprobamos que cada imagen carga de verdad, no su estado prematuro.
-  for (const photo of await photos.all()) {
-    await photo.scrollIntoViewIfNeeded();
-    await expect.poll(()=>photo.evaluate(img=>
-      img.complete && img.naturalWidth>=200 && img.naturalHeight>=80
-    ),{timeout:12000}).toBeTruthy();
-  }
+  // Cuatro SVG sin fondo blanco y la imagen original intacta de Manitas.
+  const drawings=page.locator('.category-tile svg.clean-category-illustration');
+  await expect(drawings).toHaveCount(4);
+  const photos=page.locator('.theme-handyman img.category-photo');
+  await expect(photos).toHaveCount(1);
+  await photos.first().scrollIntoViewIfNeeded();
+  await expect.poll(()=>photos.first().evaluate(img=>
+    img.complete && img.naturalWidth>=200 && img.naturalHeight>=80
+  ),{timeout:12000}).toBeTruthy();
   const dims=await page.evaluate(()=>({
     documentWidth:document.documentElement.scrollWidth,
     viewportWidth:window.innerWidth,
@@ -273,39 +272,33 @@ test('Manitas navega, abre servicios y mantiene el ancho en móvil',async({page}
  await expect(page.locator('.category-view h1')).toHaveText('Manitas');
 });
 
-test('las cuatro fotos animadas no dejan ver bordes blancos y Manitas se mantiene intacta',async({page},testInfo)=>{
+test('las cuatro ilustraciones tienen movimiento real sin franjas blancas y Manitas sigue intacta',async({page},testInfo)=>{
   await page.goto('/');
   const slugs=['plumbing','masonry','parquet','renovation'];
-  const selector=slugs.map(slug=>'.category-tile.theme-'+slug+' .category-photo').join(',');
-  await expect(page.locator(selector)).toHaveCount(4);
-  // Comprobamos varias fases de la animación, también en Safari iPhone.
-  for(let step=0;step<5;step++){
-    const state=await page.locator(selector).evaluateAll(photos=>photos.map(img=>{
-      const art=img.closest('.category-art').getBoundingClientRect();
-      const area=img.getBoundingClientRect();
-      const style=getComputedStyle(img);
-      return {
-        topCovered:area.top<=art.top-4,
-        bottomCovered:area.bottom>=art.bottom+3,
-        leftCovered:area.left<=art.left-3,
-        rightCovered:area.right>=art.right+3,
-        animation:style.animationName,
-        mask:style.webkitMaskImage||style.maskImage
-      };
-    }));
-    for(const item of state){
-      expect(item.topCovered).toBeTruthy();
-      expect(item.bottomCovered).toBeTruthy();
-      expect(item.leftCovered).toBeTruthy();
-      expect(item.rightCovered).toBeTruthy();
-      expect(item.animation).toContain('reparado-photo-contained');
-      expect(item.mask).toContain('linear-gradient');
-    }
-    await page.waitForTimeout(410);
+  for(const slug of slugs){
+    const card=page.locator('.category-tile.theme-'+slug);
+    const svg=card.locator('svg.clean-category-illustration');
+    await expect(svg).toBeVisible();
+    await expect(card.locator('img.category-photo')).toHaveCount(0);
+    const info=await svg.evaluate(node=>{
+      const anim=node.getAnimations().find(a=>a.animationName==='reparado-category-float');
+      if(!anim)return {name:getComputedStyle(node).animationName,travel:0,hasBitmap:!!node.querySelector('image')};
+      anim.pause();
+      anim.currentTime=0;
+      const first=node.getBoundingClientRect().top;
+      anim.currentTime=1700;
+      const second=node.getBoundingClientRect().top;
+      anim.play();
+      return {name:getComputedStyle(node).animationName,travel:Math.abs(second-first),hasBitmap:!!node.querySelector('image')};
+    });
+    expect(info.name).toContain('reparado-category-float');
+    expect(info.travel).toBeGreaterThan(4); // No es un zoom imperceptible
+    expect(info.hasBitmap).toBe(false); // Imposible mostrar una banda del viejo WebP
   }
-  const manitas=await page.locator('.theme-handyman .category-photo').evaluate(img=>getComputedStyle(img).animationName);
-  expect(manitas).not.toContain('reparado-photo-contained');
+  const manitas=page.locator('.theme-handyman img.category-photo');
+  await expect(manitas).toHaveCount(1);
+  await expect(manitas).toHaveAttribute('src',/handyman\.svg/);
   const dir=join(testInfo.outputDir,'evidencia-visual');
   mkdirSync(dir,{recursive:true});
-  await page.screenshot({path:join(dir,'categorias-sin-franjas-'+testInfo.project.name+'.png'),fullPage:true});
+  await page.screenshot({path:join(dir,'ilustraciones-svg-animadas-'+testInfo.project.name+'.png'),fullPage:true});
 });
