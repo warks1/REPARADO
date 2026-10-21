@@ -116,7 +116,7 @@ test('las categorías usan imágenes propias, no recortes entremezclados del atl
  for(const slug of ['plumbing','masonry','parquet','renovation']){
    assert.ok(html.includes('categories/'+slug+'.webp'));
  }
- assert.equal((html.match(/class="category-photo"/g)||[]).length,4);
+ assert.equal((html.match(/class="category-photo"/g)||[]).length,5);
 });
 
 test('las fotografías destacadas son independientes del atlas',()=>{
