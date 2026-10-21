@@ -6,7 +6,7 @@ La web de GitHub Pages puede funcionar en **modo demostración local**. Para ate
 
 Abre el panel de Supabase y confirma que el proyecto que vas a usar pertenece a REPARADO. Si quieres que ChatGPT lo compruebe directamente, conéctalo mediante la integración de Supabase y autoriza el espacio de trabajo adecuado. No compartas contraseñas, `service_role`, tokens privados ni claves de administración en el chat.
 
-**Estado comprobado el 21/10/2026:** creado el proyecto independiente **REPARADO Test**, en París (UE), con PostgreSQL 17. El esquema, migraciones V4–V11 y almacenamiento privado están instalados. La auditoría de 20 controles ha resultado correcta. Todavía no está enlazado a la web pública ni se han probado cuatro cuentas reales de Auth. No se ha instalado nada en producción.
+**Estado comprobado el 21/10/2026:** **REPARADO Test** está instalado en París (UE), con PostgreSQL 17, esquema y migraciones V4–V11. Existen cuatro cuentas de Supabase Auth con correo confirmado y perfiles asignados: **dos clientes, un operario y un administrador**. Se han verificado en el proyecto real los permisos de lectura por rol y un circuito completo (solicitud, presupuesto, aceptación, asignación, notificaciones y cambio de estado) mediante SQL transaccional con `ROLLBACK`; no permanecen solicitudes, mensajes ni facturas ficticias. Auditorías **20/20** de integridad y **10/10** de cuentas correctas. **Pendiente:** probar el inicio de sesión en navegador y comprobar desde el Dashboard si el registro público de Auth está deshabilitado; la columna `invited_at` de las cuatro cuentas consultadas es nula, por lo que **no se puede confirmar el envío de invitaciones**. El proyecto Test continúa separado de la web pública.
 
 ## 2. Base aislada de pruebas
 
@@ -31,7 +31,7 @@ Prueba **dos clientes distintos**, **un operario** y **un administrador**. El re
 - Cambiar una asignación o cancelar una visita crea el aviso interno correcto con V8, siempre que la transacción se confirme.
 - El esquema V9 debe rechazar números finales duplicados y bloquear cambios en documentos finalizados. Esto **no autoriza a emitir facturas fiscales** desde la beta.
 
-Estas pruebas de roles se ejecutan automáticamente en GitHub Actions contra **PostgreSQL 16 efímero** mediante `tests/supabase-roles-rls.py`, junto a las pruebas V7, V8 y V9. Una ejecución satisfactoria de pruebas locales **no sustituye** la integración con Supabase real.
+Las pruebas de roles se ejecutan automáticamente en GitHub Actions contra **PostgreSQL 16 efímero** mediante `tests/supabase-roles-rls.py`. Además, el 21/10/2026 se simuló la identidad de las cuatro cuentas reales **en el propio PostgreSQL de REPARADO Test**, realizando operaciones ficticias y cancelándolas con `ROLLBACK`. Esto valida restricciones de la base, **no equivale a iniciar sesión mediante el cliente Auth o probar correos de invitación**. La consulta `supabase/auditoria-cuentas-test-v12.sql` es de solo lectura y resume diez controles sin exponer correos.
 
 ## 4. Activar la versión conectada
 

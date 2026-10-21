@@ -1,6 +1,6 @@
 # Reparado · Puesta en producción
 
-Estado: web y APK de pruebas generadas. **REPARADO Test** creado en Supabase (París, UE), esquema y migraciones V4–V11 instaladas, bucket privado disponible y auditoría SQL 20/20 correcta el 21/10/2026. **No desplegar a clientes reales** hasta completar autenticación con cuentas de prueba, políticas de datos y demás verificaciones.
+Estado 21/10/2026: web y APK beta generadas. **REPARADO Test** (París, UE) tiene migraciones V4–V11, bucket privado, auditoría SQL **20/20** y auditoría de cuatro cuentas **10/10** correctas. Existen dos clientes, un operario y un administrador con correos confirmados y roles asignados. Se verificó un circuito SQL real con `ROLLBACK`, sin dejar solicitudes de prueba. **Faltan** la comprobación del registro público de Auth en el Dashboard, la prueba de inicio de sesión e invitaciones por correo y las verificaciones legales y de dispositivos; **no desplegar a clientes reales**.
 
 ## Base de datos y seguridad
 1. Crear un proyecto propio de Supabase en una región adecuada para operar en España/UE.
@@ -11,6 +11,9 @@ Estado: web y APK de pruebas generadas. **REPARADO Test** creado en Supabase (Pa
 6. **Acceso privado por invitación:** la pantalla conectada oculta el registro público por defecto. `VITE_REPARADO_ALLOW_PUBLIC_REGISTRATION=false` es solo una medida visual: desactivar también los nuevos registros en **Supabase Auth** mediante su panel de ajustes. Invitar las cuatro cuentas de pruebas desde Auth, nunca insertar usuarios mediante SQL. Verificar inicio de sesión, confirmación del correo, recuperación de acceso y presupuestos con usuarios reales de prueba.
 7. Crear o asignar el rol administrador exclusivamente desde el backend con privilegios de administración. Nunca habilitar la elección de rol desde un formulario de cliente.
 
+
+**Control adicional de acceso (21/10/2026):** `supabase/auditoria-cuentas-test-v12.sql` verifica diez condiciones agregadas (4 perfiles y correos confirmados, 2 clientes, 1 operario, 1 administrador, RLS, anónimo sin permisos, fotos privadas y RPC autenticadas). Resultado en REPARADO Test: **10/10 OK**. Los permisos de los cuatro roles y la secuencia solicitud → presupuesto → asignación → aviso se comprobaron mediante suplantación SQL de JWT **dentro de una transacción revertida**; esto no sustituye probar Supabase Auth desde un navegador. **No consta invitación por correo** (`invited_at` sin fecha) ni está comprobado que el registro público de Auth esté deshabilitado.
+
 ## Conectar la app y el despliegue
 1. Configurar en GitHub Actions las variables `VITE_SUPABASE_URL` y `VITE_SUPABASE_ANON_KEY` como secretos de repositorio. La clave anónima/publicable puede exponerse en el cliente, pero **nunca** incluir la clave `service_role`, claves de administración o contraseñas en Vite ni en GitHub Pages.
 2. Ejecutar de nuevo el flujo de publicación web y el flujo de Android, porque las variables `VITE_*` se incorporan **en el momento de compilar**. Una APK generada antes de configurar las variables seguirá funcionando solo en local.
@@ -20,19 +23,19 @@ Estado: web y APK de pruebas generadas. **REPARADO Test** creado en Supabase (Pa
 ## Agenda y asignación (validaciones de la beta)
 - La interfaz comprueba de nuevo en Supabase las visitas `scheduled` y `in_progress` del operario antes de guardar. Rechaza inicios separados por menos de 60 minutos para prevenir dobles asignaciones; ese margen **no sustituye** la duración real de las reparaciones ni los tiempos de desplazamiento.
 - Para pasar a `scheduled` o `in_progress` se exige una cuenta de operario válida y una fecha/hora asignada.
-- **Servidor (V7, pendiente de instalar en el Supabase real):** `supabase/migration-v7.sql` implementa un trigger protegido con bloqueo transaccional por operario (`pg_advisory_xact_lock`). Verifica que el perfil sea `operator`, exige operario y fecha en visitas `scheduled` / `in_progress` y rechaza otra visita activa con menos de 60 minutos entre inicios. Se ha probado con dos conexiones PostgreSQL concurrentes usando el aislamiento por defecto `READ COMMITTED`: solo una pudo reservar.
-- **No equivale a instalación en la base real.** GitHub Pages no ejecuta migraciones de PostgreSQL; es necesario aplicar V7 explícitamente en Supabase de pruebas y después, tras aprobar la revisión, en el entorno de destino. Las reglas anteriores de la interfaz siguen siendo una comprobación adicional, no la garantía definitiva.
+- **Servidor (V7 instalada en REPARADO Test, no en producción):** `supabase/migration-v7.sql` implementa un trigger protegido con bloqueo transaccional por operario (`pg_advisory_xact_lock`). Verifica que el perfil sea `operator`, exige operario y fecha en visitas `scheduled` / `in_progress` y rechaza otra visita activa con menos de 60 minutos entre inicios. Se ha probado con dos conexiones PostgreSQL concurrentes usando el aislamiento por defecto `READ COMMITTED`: solo una pudo reservar.
+- **V7 instalada en REPARADO Test, no en producción.** GitHub Pages no ejecuta migraciones de PostgreSQL. Tras revisar la beta y antes del entorno definitivo, habrá que ejecutar y validar las migraciones en la base de producción por separado. Las reglas anteriores de la interfaz siguen siendo una comprobación adicional, no la garantía definitiva.
 - La migración V7 se niega a instalarse si hay citas programadas sin operario/fecha, operarios inválidos o conflictos históricos. Corregir los registros y repetir la instalación; no desactivar el control preventivo.
 - **Concurrencia y operación:** ensayar con conexiones Supabase reales, roles `admin` y `operator`, dos usuarios simultáneos, zonas horarias y reprogramaciones. El bloqueo V7 está diseñado para transacciones PostgreSQL `READ COMMITTED`; cualquier integración que utilice niveles de aislamiento personalizados debe comprobarse por separado. La separación fija de 60 minutos no calcula desplazamientos ni duración real.
 - Si no puede consultarse la agenda, el panel bloquea el guardado de la nueva programación en lugar de asumir disponibilidad. Revisar con cuentas `admin` y `operator` reales, cambios de estado y límites de zonas horarias.
 
-## Avisos a operarios (migración V8, pendiente de instalar)
+## Avisos a operarios (V8 instalada en REPARADO Test, no en producción)
 - `supabase/migration-v8.sql` incorpora avisos **internos** a la tabla privada `notifications` cuando se asigna un trabajo al operario, se programa o cambia su visita, comienza el trabajo, se retira su asignación o se cancela. No cambia los permisos de acceso ni revela dirección o teléfono en los mensajes.
 - Los avisos se insertan en la misma transacción que el cambio de solicitud. Si V7 rechaza una reserva incompatible, V8 no creará un aviso engañoso. El SQL es repetible y se verifica contra PostgreSQL de pruebas.
 - Para activarlo hay que ejecutar V8 **después de V7** en un proyecto Supabase asociado, con las políticas de seguridad vigentes, y probar con cuentas reales de cliente, operario y administración.
 - No se trata de push remoto: `device_tokens` y el registro de tokens Capacitor no envían automáticamente notificaciones. El envío a dispositivos requiere FCM/APNs, un backend seguro, consentimiento y ensayos en dispositivos.
 
-## Facturación (migración V9, pendiente de instalar)
+## Facturación (V9 instalada en REPARADO Test, no en producción)
 - `supabase/migration-v9.sql` protege los registros **no borrador** con número único, incluso ante dos inserciones simultáneas. El preflight detecta números históricos duplicados y se detiene sin alterarlos.
 - Los documentos finales requieren referencia a solicitud y cliente coherentes, base imponible, IVA único del 21 % y total consistente (redondeo de céntimos); no se admiten otros tipos de IVA sin ampliar el diseño fiscal.
 - Los registros ya emitidos quedan bloqueados para edición o borrado en la base de datos. Las rectificativas, anulaciones fiscales y pagos necesitarán un flujo regulado propio; no se simula su emisión desde el navegador.
