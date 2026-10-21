@@ -10,7 +10,8 @@ test('Supabase invite/recovery enlaces URL: detectar sólo intención sin usar t
   assert.equal(authLinkIntentFromUrl('?type=magiclink',''),null);
   assert.equal(authLinkIntentFromUrl('?type=signup','#type=unknown'),null);
   assert.equal(authLinkIntentFromUrl('',''),null);
-  assert.equal(authLinkIntentFromUrl('?type=recovery','#type=invite'),'recovery');
+  assert.equal(authLinkIntentFromUrl('?type=recovery&token_hash=ficticio','#type=invite'),'recovery');
+  assert.equal(authLinkIntentFromUrl('?type=invite',''),null);
 });
 test('Auth cerrado por defecto incluso en enlace de invitación',()=>{
   assert.equal(publicRegistrationEnabled(undefined),false);
