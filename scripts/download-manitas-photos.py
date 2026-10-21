@@ -96,7 +96,7 @@ def main():
             digest=md5(filename.encode("utf8")).hexdigest()
             data={
               "title":title,
-              "url":"https://upload.wikimedia.org/wikipedia/commons/"+digest[0]+"/"+digest[:2]+"/"+quote(filename),
+              "url":"https://thumb.wikimedia.org/wikipedia/commons/thumb/"+digest[0]+"/"+digest[:2]+"/"+quote(filename)+"/500px-"+quote(filename),
               "source":"https://commons.wikimedia.org/wiki/File:Modern_door_handle.jpg",
               "author":"Vicrubini","license":"CC BY-SA 4.0"
             }
