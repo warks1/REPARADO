@@ -285,9 +285,9 @@ test('las cuatro ilustraciones tienen movimiento real sin franjas blancas y Mani
       if(!anim)return {name:getComputedStyle(node).animationName,travel:0,hasBitmap:!!node.querySelector('image')};
       anim.pause();
       anim.currentTime=0;
-      const first=node.getBoundingClientRect().top;
+      const first=new DOMMatrix(getComputedStyle(node).transform).m42;
       anim.currentTime=1700;
-      const second=node.getBoundingClientRect().top;
+      const second=new DOMMatrix(getComputedStyle(node).transform).m42;
       anim.play();
       return {name:getComputedStyle(node).animationName,travel:Math.abs(second-first),hasBitmap:!!node.querySelector('image')};
     });
