@@ -1,0 +1,30 @@
+name: Recuperar ilustraciones originales sin fondos blancos
+on:
+  push:
+    branches: [fix/recuperar-iconos-originales-20261021]
+    paths:
+      - 'scripts/clean-category-images.py'
+      - '.github/workflows/prepare-category-art.yml'
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  preparar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: python -m pip install --disable-pip-version-check pillow
+      - name: Eliminar blanco del borde conservando dibujos originales
+        run: python scripts/clean-category-images.py
+      - name: Guardar ilustraciones originales transparentes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add public/categories/*-transparent.png
+          git diff --cached --quiet || git commit -m "Conservar iconos originales con transparencia real"
+          git push
