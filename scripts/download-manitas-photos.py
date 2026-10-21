@@ -90,7 +90,7 @@ def main():
         if not any(x in license for x in ("cc by","cc-by","cc0","public domain","pdm")):
             raise RuntimeError(f"Licencia no verificada para {title}: {license}")
         url=data["url"]
-        if not url.startswith("https://upload.wikimedia.org/"):
+        if not url.startswith(("https://upload.wikimedia.org/","https://thumb.wikimedia.org/")):
             raise RuntimeError(f"URL no autorizada: {url}")
         raw=get(url,"image/*")
         try:
