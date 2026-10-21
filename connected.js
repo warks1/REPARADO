@@ -548,8 +548,18 @@ export function mountConnected({app, services, supabase}) {
       const {error}=await supabase.from('service_requests').update({
         status,price:quotedPrice,operator_id,operator_name:operator?.full_name||null,scheduled_at:stamp?stamp.toISOString():null
       }).eq('id',form.dataset.jobId);
-      if(error)message('No se han guardado los cambios: '+error.message,true);
-      else {await renderAdmin(filter);message('Solicitud actualizada.')}
+      if(error){
+        // Postgres V7: error transaccional, incluso con dos administradores
+        // guardando en paralelo. No anunciar cambios cuando el servidor falla.
+        if(error.code==='23P01'||error.message?.includes('REPARADO_SCHEDULE_CONFLICT'))
+          return message('No se ha programado: otro administrador acaba de reservar una visita de ese operario a menos de 60 minutos. Actualiza el panel y elige otra hora.',true);
+        if(error.message?.includes('REPARADO_SCHEDULE_OPERATOR_REQUIRED')||
+           error.message?.includes('REPARADO_SCHEDULE_INVALID_OPERATOR'))
+          return message('No se ha guardado: revisa el operario y la fecha de la visita.',true);
+        return message('No se han guardado los cambios: '+error.message,true);
+      }
+      await renderAdmin(filter);
+      message('Solicitud actualizada.');
     }));
     // Los documentos se generan solo a partir de los trabajos consultados con
     // los permisos actuales. No se envían, firman ni insertan en facturación.
