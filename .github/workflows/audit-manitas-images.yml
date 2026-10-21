@@ -1,0 +1,29 @@
+name: Auditar fotografías libres de Manitas
+on:
+  push:
+    branches: [feat/manitas-fotografias-licencias-20261021]
+    paths:
+      - 'scripts/audit-manitas-photos.py'
+      - '.github/workflows/audit-manitas-images.yml'
+permissions:
+  contents: write
+jobs:
+  catalogo:
+    runs-on: ubuntu-latest
+    timeout-minutes: 16
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.11'}
+      - name: Buscar referencias de imágenes y comprobar licencias
+        run: python -u scripts/audit-manitas-photos.py
+      - name: Guardar listado de archivos candidatos
+        if: success()
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add docs/manitas-photo-candidates.json
+          git diff --cached --quiet || git commit -m "Registrar imágenes libres candidatas de Manitas"
+          git push
