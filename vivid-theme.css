@@ -401,3 +401,45 @@ body,.shell,.customer-header,.customer-nav {background:#fff}
  background:#e3f3ff;color:#155d9a;border:1px solid #bddafa;padding:10px 14px;font-weight:770}
 .local-backup-tools .flex-actions button:focus-visible{outline:3px solid #1a96e5;outline-offset:2px}
 .local-backup-tools [data-backup-feedback]{font-size:12px;color:#204e71;line-height:1.5;margin:10px 0 0}
+
+/* Quinta categoría sin alterar las cuatro tarjetas del diseño aprobado.
+   Se expande a todo el ancho de la fila en PC, tablet y móvil. */
+.category-tile.theme-handyman{
+  grid-column:1/-1;
+  aspect-ratio:auto;
+  min-height:143px!important;
+  padding:20px min(4vw,30px)!important;
+  justify-content:center;
+  background:linear-gradient(122deg,#fff0be 0%,#ffd878 45%,#ffb748 100%);
+  box-shadow:inset 0 1px 0 #fff9df,0 5px 13px #a86a1a26;
+}
+.category-tile.theme-handyman .category-art{
+  position:absolute;right:8%;top:10px;
+  width:32%;height:calc(100% - 20px);max-height:none;
+  border-radius:20px;overflow:hidden;
+}
+.category-tile.theme-handyman .category-photo{
+  width:100%;height:100%;object-fit:contain;object-position:center;
+}
+.category-tile.theme-handyman strong{font-size:clamp(19px,2.7vw,25px)}
+.category-tile.theme-handyman>span:not(.tile-arrow){max-width:55%;font-size:clamp(12px,1.5vw,15px)}
+.category-tile.theme-handyman .tile-arrow{bottom:17px;right:15px}
+.category-view.theme-handyman{background:transparent}
+.category-view.theme-handyman .category-hero{
+  background:radial-gradient(circle at 85% 25%,#ffc04c 0%,#ffe6aa 40%,transparent 65%),
+    linear-gradient(110deg,#fff 5%,#fff4d8 100%);
+}
+.thumb-handyman{background:linear-gradient(135deg,#fff7da,#ffe09a)}
+@media(max-width:540px){
+  .category-tile.theme-handyman{min-height:123px!important;padding:14px 17px!important}
+  .category-tile.theme-handyman .category-art{right:8%;width:37%;top:5px;height:calc(100% - 10px)}
+  .category-tile.theme-handyman strong{font-size:20px}
+  .category-tile.theme-handyman>span:not(.tile-arrow){max-width:55%;font-size:12px}
+  .category-view.theme-handyman .category-hero{padding-right:125px;min-height:175px}
+}
+@media(max-width:360px){
+  .category-tile.theme-handyman{min-height:116px!important}
+  .category-tile.theme-handyman .category-art{width:34%;right:9%}
+  .category-tile.theme-handyman>span:not(.tile-arrow){font-size:10px}
+  .category-view.theme-handyman .category-hero{padding-right:108px}
+}
