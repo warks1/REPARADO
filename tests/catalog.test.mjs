@@ -111,27 +111,28 @@ test('la vista de Fontanería presenta cuatro servicios y conserva el catálogo 
  assert.ok(html.includes('data-service="5"'));
 });
 
-test('las cuatro categorías usan dibujos vectoriales transparentes sin recortes blancos',()=>{
+test('las cuatro categorías recuperan las imágenes 3D originales con fondo transparente',()=>{
  const html=renderLanding(services);
  for(const slug of ['plumbing','masonry','parquet','renovation']){
    const card=html.match(new RegExp('<button[^>]*theme-'+slug+'[\\s\\S]*?<\\/button>'))?.[0];
-   assert.ok(card,'Falta tarjeta '+slug);
-   assert.ok(card.includes('class="clean-category-illustration"'),slug);
-   assert.ok(card.includes('<svg'),slug);
-   assert.ok(!card.includes('<img'),slug);
-   assert.ok(!card.includes('categories/'+slug+'.webp'),slug);
+   assert.ok(card,'Falta la tarjeta '+slug);
+   assert.ok(card.includes('categories/'+slug+'-transparent.png'),slug);
+   assert.ok(card.includes('class="category-photo category-restored"'),slug);
+   assert.ok(card.includes('class="category-motion"'),slug);
  }
- // Manitas conserva su ilustración aprobada y su archivo original.
  assert.ok(html.includes('categories/handyman.svg'));
- assert.equal((html.match(/class="category-photo"/g)||[]).length,1);
+ assert.equal((html.match(/class="category-photo category-restored"/g)||[]).length,4);
 });
-test('las cuatro animaciones son visibles y Manitas no se toca',async()=>{
- const {readFileSync}=await import('node:fs');
+test('los PNG restaurados existen y mantienen animación independiente de Manitas',async()=>{
+ const {existsSync,readFileSync}=await import('node:fs');
+ for(const slug of ['plumbing','masonry','parquet','renovation']){
+   assert.ok(existsSync(new URL('../public/categories/'+slug+'-transparent.png',import.meta.url)),slug);
+ }
  const css=readFileSync(new URL('../vivid-theme.css',import.meta.url),'utf8');
  assert.ok(css.includes('@keyframes reparado-category-float'));
  assert.ok(css.includes('translateY(-11px)'));
- assert.ok(css.includes('svg.clean-category-illustration'));
- assert.ok(!css.includes('reparado-photo-contained'));
+ assert.ok(css.includes('img.category-restored'));
+ assert.ok(css.includes('animation:none!important'));
 });
 
 test('las fotografías destacadas son independientes del atlas',()=>{

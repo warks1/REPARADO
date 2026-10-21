@@ -9,15 +9,16 @@ test('portada real por categorías, imágenes y navegación sin desbordamiento',
   await expect(page.locator('.category-tile')).toHaveCount(5);
   await expect(page.locator('.customer-nav button')).toHaveCount(5);
   await expect(page.locator('.promo-banner')).toBeVisible();
-  // Cuatro SVG sin fondo blanco y la imagen original intacta de Manitas.
-  const drawings=page.locator('.category-tile svg.clean-category-illustration');
-  await expect(drawings).toHaveCount(4);
-  const photos=page.locator('.theme-handyman img.category-photo');
-  await expect(photos).toHaveCount(1);
-  await photos.first().scrollIntoViewIfNeeded();
-  await expect.poll(()=>photos.first().evaluate(img=>
-    img.complete && img.naturalWidth>=200 && img.naturalHeight>=80
-  ),{timeout:12000}).toBeTruthy();
+  // La portada conserva los cinco dibujos 3D; cuatro PNG transparentes
+  // y el SVG de Manitas sin modificar.
+  const photos=page.locator('.category-tile img.category-photo');
+  await expect(photos).toHaveCount(5);
+  for (const photo of await photos.all()){
+    await photo.scrollIntoViewIfNeeded();
+    await expect.poll(()=>photo.evaluate(img=>
+      img.complete && img.naturalWidth>=200 && img.naturalHeight>=80
+    ),{timeout:12000}).toBeTruthy();
+  }
   const dims=await page.evaluate(()=>({
     documentWidth:document.documentElement.scrollWidth,
     viewportWidth:window.innerWidth,
@@ -275,40 +276,45 @@ test('Manitas navega, abre servicios y mantiene el ancho en móvil',async({page}
  await expect(page.locator('.category-view h1')).toHaveText('Manitas');
 });
 
-test('las cuatro ilustraciones tienen movimiento real sin franjas blancas y Manitas sigue intacta',async({page},testInfo)=>{
+test('las cuatro ilustraciones originales se animan sin franjas blancas y Manitas permanece igual',async({page},testInfo)=>{
   await page.goto('/');
-  const slugs=['plumbing','masonry','parquet','renovation'];
-  for(const slug of slugs){
+  for(const slug of ['plumbing','masonry','parquet','renovation']){
     const card=page.locator('.category-tile.theme-'+slug);
-    const svg=card.locator('svg.clean-category-illustration');
-    await expect(svg).toBeVisible();
-    await expect(card.locator('img.category-photo')).toHaveCount(0);
-    // El elemento animado es el contenedor HTML: mover el SVG raíz producía
-    // distintas escalas por su viewBox y se veía casi inmóvil en smartphone.
-    const stage=card.locator('.category-motion');
-    await expect(stage).toBeVisible();
-    const info=await stage.evaluate(async node=>{
-      const anim=node.getAnimations().find(a=>a.animationName==='reparado-category-float');
-      if(!anim)return {name:getComputedStyle(node).animationName,travel:0,hasBitmap:!!node.querySelector('image')};
-      const frame=()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
-      anim.pause();
-      anim.currentTime=0;
-      await frame();
-      const first=new DOMMatrix(getComputedStyle(node).transform).m42;
-      anim.currentTime=1700;
-      await frame();
-      const second=new DOMMatrix(getComputedStyle(node).transform).m42;
-      anim.play();
-      return {name:getComputedStyle(node).animationName,travel:Math.abs(second-first),hasBitmap:!!node.querySelector('image')};
+    const restored=card.locator('img.category-restored');
+    await expect(restored).toHaveAttribute('src',new RegExp(slug+'-transparent\\.png'));
+    await restored.scrollIntoViewIfNeeded();
+    await expect.poll(()=>restored.evaluate(img=>img.complete&&img.naturalWidth>=200),{timeout:12000}).toBeTruthy();
+    const stats=await restored.evaluate(img=>{
+      const c=document.createElement('canvas');
+      c.width=img.naturalWidth;c.height=img.naturalHeight;
+      const ctx=c.getContext('2d');
+      ctx.drawImage(img,0,0);
+      const rgba=ctx.getImageData(0,0,c.width,c.height).data;
+      let clear=0,opaque=0;
+      for(let i=3;i<rgba.length;i+=4){
+        if(rgba[i]===0)clear++;
+        if(rgba[i]===255)opaque++;
+      }
+      return {clear,opaque,total:c.width*c.height};
     });
-    expect(info.name).toContain('reparado-category-float');
-    expect(info.travel).toBeGreaterThan(10); // 16 píxeles CSS, movimiento visible
-    expect(info.hasBitmap).toBe(false); // Imposible mostrar una banda del viejo WebP
+    expect(stats.clear/stats.total).toBeGreaterThan(.07);
+    expect(stats.opaque).toBeGreaterThan(1000);
+    const stage=card.locator('.category-motion');
+    const movement=await stage.evaluate(async el=>{
+      const anim=el.getAnimations().find(a=>a.animationName==='reparado-category-float');
+      if(!anim)return 0;
+      const frame=()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
+      anim.pause();anim.currentTime=0;await frame();
+      const a=new DOMMatrix(getComputedStyle(el).transform).m42;
+      anim.currentTime=1700;await frame();
+      const b=new DOMMatrix(getComputedStyle(el).transform).m42;
+      anim.play();
+      return Math.abs(a-b);
+    });
+    expect(movement).toBeGreaterThan(10);
   }
-  const manitas=page.locator('.theme-handyman img.category-photo');
-  await expect(manitas).toHaveCount(1);
-  await expect(manitas).toHaveAttribute('src',/handyman\.svg/);
+  await expect(page.locator('.theme-handyman img.category-photo')).toHaveAttribute('src',/handyman[.]svg/);
   const dir=join(testInfo.outputDir,'evidencia-visual');
   mkdirSync(dir,{recursive:true});
-  await page.screenshot({path:join(dir,'ilustraciones-svg-animadas-'+testInfo.project.name+'.png'),fullPage:true});
+  await page.screenshot({path:join(dir,'iconos-originales-animados-'+testInfo.project.name+'.png'),fullPage:true});
 });
