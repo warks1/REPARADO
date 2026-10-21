@@ -31,3 +31,20 @@ test('las imágenes del repositorio publicado no devuelven error',async({page})=
    await expect.poll(()=>photo.evaluate(img=>img.complete && img.naturalWidth>0),{timeout:12000}).toBeTruthy();
  }
 });
+
+test('las 12 fotografías de Manitas están publicadas y cargan sin errores',async({page})=>{
+ await page.goto('./');
+ await expect(page.locator('.category-tile')).toHaveCount(5,{timeout:20000});
+ await page.locator('.category-tile[data-category-open="Manitas"]').click();
+ await page.locator('[data-expand-services]').click();
+ const photos=page.locator('.category-services img.service-photo');
+ await expect(photos).toHaveCount(12);
+ for(const img of await photos.all()){
+   await img.scrollIntoViewIfNeeded();
+   await expect.poll(()=>img.evaluate(e=>e.complete && e.naturalWidth>=300),{timeout:12000}).toBeTruthy();
+ }
+ const credit=page.locator('.manitas-photo-credits a');
+ await expect(credit).toHaveAttribute('href',/creditos-fotos-manitas[.]html/);
+ const file=await page.request.get(await credit.getAttribute('href'));
+ expect(file.ok()).toBeTruthy();
+});
