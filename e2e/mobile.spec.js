@@ -276,8 +276,28 @@ test('Manitas navega, abre servicios y mantiene el ancho en móvil',async({page}
  await expect(page.locator('.category-view h1')).toHaveText('Manitas');
 });
 
-test('las cuatro ilustraciones originales se animan sin franjas blancas y Manitas permanece igual',async({page},testInfo)=>{
+test('las cuatro ilustraciones tienen exactamente la oscilación suave de Manitas',async({page},testInfo)=>{
   await page.goto('/');
+  const manitas=page.locator('.theme-handyman img.category-photo');
+  await expect(manitas).toHaveAttribute('src',/handyman[.]svg/);
+  // Se compara el nombre, la duración y el desplazamiento en fotogramas
+  // renderizados de Manitas con cada uno de los otros cuatro iconos.
+  const readMotion=async locator=>locator.evaluate(async el=>{
+    const style=getComputedStyle(el);
+    const anim=el.getAnimations().find(a=>a.animationName==='illustration-bob');
+    if(!anim) return {name:style.animationName,duration:style.animationDuration,travel:-1};
+    const frame=()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
+    anim.pause();anim.currentTime=0;await frame();
+    const initial=new DOMMatrix(getComputedStyle(el).transform).m42;
+    anim.currentTime=1800;await frame();
+    const half=new DOMMatrix(getComputedStyle(el).transform).m42;
+    anim.play();
+    return {name:style.animationName,duration:style.animationDuration,travel:Math.abs(half-initial)};
+  });
+  const reference=await readMotion(manitas);
+  expect(reference.name).toContain('illustration-bob');
+  expect(reference.travel).toBeGreaterThan(5);
+  expect(reference.travel).toBeLessThan(7);
   for(const slug of ['plumbing','masonry','parquet','renovation']){
     const card=page.locator('.category-tile.theme-'+slug);
     const restored=card.locator('img.category-restored');
@@ -287,34 +307,22 @@ test('las cuatro ilustraciones originales se animan sin franjas blancas y Manita
     const stats=await restored.evaluate(img=>{
       const c=document.createElement('canvas');
       c.width=img.naturalWidth;c.height=img.naturalHeight;
-      const ctx=c.getContext('2d');
-      ctx.drawImage(img,0,0);
+      const ctx=c.getContext('2d');ctx.drawImage(img,0,0);
       const rgba=ctx.getImageData(0,0,c.width,c.height).data;
-      let clear=0,opaque=0;
-      for(let i=3;i<rgba.length;i+=4){
-        if(rgba[i]===0)clear++;
-        if(rgba[i]===255)opaque++;
-      }
-      return {clear,opaque,total:c.width*c.height};
+      let transparent=0;
+      for(let i=3;i<rgba.length;i+=4) if(rgba[i]===0) transparent++;
+      return {ratio:transparent/(c.width*c.height),
+              mask:getComputedStyle(img).maskImage||getComputedStyle(img).webkitMaskImage};
     });
-    expect(stats.clear/stats.total).toBeGreaterThan(.07);
-    expect(stats.opaque).toBeGreaterThan(1000);
-    const stage=card.locator('.category-motion');
-    const movement=await stage.evaluate(async el=>{
-      const anim=el.getAnimations().find(a=>a.animationName==='reparado-category-float');
-      if(!anim)return 0;
-      const frame=()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
-      anim.pause();anim.currentTime=0;await frame();
-      const a=new DOMMatrix(getComputedStyle(el).transform).m42;
-      anim.currentTime=1700;await frame();
-      const b=new DOMMatrix(getComputedStyle(el).transform).m42;
-      anim.play();
-      return Math.abs(a-b);
-    });
-    expect(movement).toBeGreaterThan(10);
+    expect(stats.ratio).toBeGreaterThan(.07);
+    expect(stats.mask).toContain('linear-gradient');
+    const current=await readMotion(card.locator('.category-motion'));
+    expect(current.name).toContain('illustration-bob');
+    expect(current.duration).toBe(reference.duration);
+    expect(Math.abs(current.travel-reference.travel)).toBeLessThan(.5);
+    expect(current.travel).toBeLessThan(7);
   }
-  await expect(page.locator('.theme-handyman img.category-photo')).toHaveAttribute('src',/handyman[.]svg/);
   const dir=join(testInfo.outputDir,'evidencia-visual');
   mkdirSync(dir,{recursive:true});
-  await page.screenshot({path:join(dir,'iconos-originales-animados-'+testInfo.project.name+'.png'),fullPage:true});
+  await page.screenshot({path:join(dir,'mismo-movimiento-manitas-'+testInfo.project.name+'.png'),fullPage:true});
 });
