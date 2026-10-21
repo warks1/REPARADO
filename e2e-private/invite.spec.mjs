@@ -24,3 +24,17 @@ test('REPARADO conectado: navegar a un servicio sin sesión conduce a login priv
   await expect(page.locator('.auth-invite-notice')).toBeVisible();
   await expect(page.locator('#register-form')).toHaveCount(0);
 });
+
+test('Acceso privado: recuperar contraseña sin mostrar registro público',async({page})=>{
+  await page.goto('/');
+  await page.getByRole('button',{name:'Mi perfil'}).click();
+  await expect(page.locator('#login')).toBeVisible();
+  await page.getByRole('button',{name:'¿Has olvidado tu contraseña?'}).click();
+  await expect(page.locator('#reset-form')).toBeVisible();
+  await expect(page.locator('#login')).toBeHidden();
+  await expect(page.locator('#register')).toHaveCount(0);
+  await expect(page.locator('#reset-form input[name=email]')).toHaveAttribute('type','email');
+  await page.getByRole('button',{name:'Volver a entrar'}).click();
+  await expect(page.locator('#login')).toBeVisible();
+  await expect(page.locator('#reset-form')).toBeHidden();
+});
