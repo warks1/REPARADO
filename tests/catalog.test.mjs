@@ -129,10 +129,13 @@ test('los PNG restaurados existen y mantienen animación independiente de Manita
    assert.ok(existsSync(new URL('../public/categories/'+slug+'-transparent.png',import.meta.url)),slug);
  }
  const css=readFileSync(new URL('../vivid-theme.css',import.meta.url),'utf8');
- assert.ok(css.includes('@keyframes reparado-category-float'));
- assert.ok(css.includes('translateY(-11px)'));
+ const base=readFileSync(new URL('../customer-theme.css',import.meta.url),'utf8');
+ assert.ok(base.includes('@keyframes illustration-bob'));
+ assert.ok(base.includes('translateY(-6px)'));
+ assert.ok(css.includes('animation:illustration-bob 3.6s ease-in-out infinite'));
+ assert.ok(!css.includes('reparado-category-float'));
  assert.ok(css.includes('img.category-restored'));
- assert.ok(css.includes('animation:none!important'));
+ assert.ok(css.includes('transparent 0%,#000 11%'));
 });
 
 test('las fotografías destacadas son independientes del atlas',()=>{
