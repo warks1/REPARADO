@@ -1,4 +1,4 @@
--- REPARADO · auditoría de SOLO LECTURA para Supabase, tras migraciones V4–V9.
+-- REPARADO · auditoría de SOLO LECTURA para Supabase, tras migraciones V4–V10.
 -- Ejecutar en SQL Editor de un proyecto de pruebas, sin claves en ChatGPT.
 -- No crea tablas, no instala funciones, no altera ni muestra datos privados:
 -- solo indica presencia de protecciones y cuenta incidencias agregadas.
@@ -81,6 +81,35 @@ with auditoria as (
      where f.status<>'draft'
        and (r.id is null or f.customer_id is distinct from r.customer_id)),
    'Cada factura debe estar ligada al cliente de su solicitud.'
+ union all select 160,'V10: funciones anónimas sin acceso',
+   not exists(select 1 from pg_proc p
+      join pg_namespace n on n.oid=p.pronamespace
+      where n.nspname='public' and p.prosecdef
+        and has_function_privilege('anon',p.oid,'EXECUTE')),
+   'Revocar EXECUTE anónimo a todas las funciones internas SECURITY DEFINER.'
+ union all select 170,'V10: triggers internos no públicos',
+   not exists(select 1 from pg_proc p
+      join pg_namespace n on n.oid=p.pronamespace
+      where n.nspname='public' and p.prosecdef and
+      p.proname not in ('accept_reparado_quote','is_reparado_admin','is_reparado_staff')
+      and has_function_privilege('authenticated',p.oid,'EXECUTE')),
+   'Revocar acceso directo a las funciones internas del servidor.'
+ union all select 180,'V10: funciones de usuario disponibles',
+   has_function_privilege('authenticated','public.accept_reparado_quote(uuid)','EXECUTE')
+   and has_function_privilege('authenticated','public.is_reparado_admin()','EXECUTE')
+   and has_function_privilege('authenticated','public.is_reparado_staff()','EXECUTE'),
+   'Restituir únicamente las tres funciones requeridas por presupuestos y RLS.'
+ union all select 190,'V10: siete índices de acceso',
+   (select count(*)=7 from pg_indexes i
+     where i.schemaname='public' and i.indexname in (
+       'reparado_requests_customer_created_v10',
+       'reparado_messages_customer_created_v10',
+       'reparado_messages_sender_v10',
+       'reparado_notifications_user_created_v10',
+       'reparado_tokens_user_v10',
+       'reparado_invoices_customer_created_v10',
+       'reparado_invoices_request_v10')),
+   'Crear índices de usuario y claves externas para solicitudes, mensajes, avisos, tokens y facturas.'
 )
 select control,case when correcto then 'OK' else 'PENDIENTE' end as resultado,
        case when correcto then 'Comprobación superada.' else accion end as detalle
