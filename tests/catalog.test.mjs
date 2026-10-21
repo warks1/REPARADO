@@ -129,7 +129,7 @@ test('las cuatro animaciones son visibles y Manitas no se toca',async()=>{
  const {readFileSync}=await import('node:fs');
  const css=readFileSync(new URL('../vivid-theme.css',import.meta.url),'utf8');
  assert.ok(css.includes('@keyframes reparado-category-float'));
- assert.ok(css.includes('translateY(-8px)'));
+ assert.ok(css.includes('translateY(-11px)'));
  assert.ok(css.includes('svg.clean-category-illustration'));
  assert.ok(!css.includes('reparado-photo-contained'));
 });
