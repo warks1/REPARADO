@@ -1,4 +1,4 @@
-export async function renderNotifications({main,supabase,session,backButton,onRefresh}) {
+export async function renderNotifications({main,supabase,session,backButton,onRefresh,isStaff=false}) {
   main.innerHTML='<section class="card">'+backButton+'<h2>Mis avisos</h2><p>Cargando…</p></section>';
   const {data,error}=await supabase.from('notifications').select('id,title,body,read,created_at')
     .eq('user_id',session.user.id).order('created_at',{ascending:false}).limit(50);
@@ -8,7 +8,7 @@ export async function renderNotifications({main,supabase,session,backButton,onRe
   back.dataset.back='';back.textContent='← Volver';card.append(back);
   const title=document.createElement('h2');title.textContent='Mis avisos';card.append(title);
   const intro=document.createElement('p');intro.className='notice';
-  intro.textContent='Avisos de presupuestos, citas y mensajes del equipo.';card.append(intro);
+  intro.textContent=isStaff?'Avisos de trabajos asignados, cambios de agenda y mensajes.':'Avisos de presupuestos, citas y mensajes del equipo.';card.append(intro);
   if(error){const p=document.createElement('p');p.textContent=error.message;card.append(p);main.replaceChildren(card);return;}
   if(!data?.length){const p=document.createElement('p');p.textContent='Todavía no hay avisos.';card.append(p);}
   for(const alert of data||[]){
