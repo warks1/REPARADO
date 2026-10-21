@@ -444,32 +444,47 @@ body,.shell,.customer-header,.customer-nav {background:#fff}
   .category-view.theme-handyman .category-hero{padding-right:108px}
 }
 
-/* Corrección 21/10/2026: las cuatro fotografías proceden de recortes
-   rectangulares. El movimiento vertical anterior sacaba a la vista los
-   bordes blancos originales. El zoom permanece SIEMPRE dentro del recorte.
-   Manitas conserva su animación propia sin modificaciones. */
-@keyframes reparado-photo-contained {
-  0%,100% {transform:scale(1.26)}
-  50% {transform:scale(1.29)}
+/* Ilustraciones vectoriales sin recortes raster y con movimiento perceptible.
+   No se modifican los estilos ni la animación de Manitas. */
+@keyframes reparado-category-float {
+  0%,100% { transform:translateY(3px) rotate(-2deg) scale(.96) }
+  50% { transform:translateY(-8px) rotate(2deg) scale(1.035) }
 }
-.category-tile:is(.theme-plumbing,.theme-masonry,.theme-parquet,.theme-renovation)
-  .category-art {
+@keyframes reparado-category-detail {
+  0%,100% { transform:translateY(0) }
+  50% { transform:translateY(-5px) }
+}
+.category-tile:is(.theme-plumbing,.theme-masonry,.theme-parquet,.theme-renovation) .category-art{
   overflow:hidden;
   isolation:isolate;
   border-radius:15px;
+  background:transparent;
 }
+.category-tile:is(.theme-plumbing,.theme-masonry,.theme-parquet,.theme-renovation) svg.clean-category-illustration{
+  width:100%;
+  max-width:185px;
+  height:100%;
+  display:block;
+  overflow:visible;
+  transform-origin:50% 55%;
+  filter:drop-shadow(0 7px 7px rgba(25,66,118,.2));
+  animation:reparado-category-float 3.4s ease-in-out infinite;
+  will-change:transform;
+}
+.category-tile.theme-masonry svg.clean-category-illustration{animation-delay:-.8s}
+.category-tile.theme-parquet svg.clean-category-illustration{animation-delay:-1.7s}
+.category-tile.theme-renovation svg.clean-category-illustration{animation-delay:-2.4s}
 .category-tile:is(.theme-plumbing,.theme-masonry,.theme-parquet,.theme-renovation)
-  .category-photo {
-  border-radius:0;
-  transform-origin:50% 66%;
-  animation:reparado-photo-contained 3.6s ease-in-out infinite;
-  -webkit-mask-image:linear-gradient(to bottom,transparent 0%,#000 17%,#000 81%,transparent 100%);
-  mask-image:linear-gradient(to bottom,transparent 0%,#000 17%,#000 81%,transparent 100%);
+  svg.clean-category-illustration .float-slow{
+  animation:reparado-category-detail 2.7s ease-in-out infinite;
 }
 @media(prefers-reduced-motion:reduce){
+  .category-tile:is(.theme-plumbing,.theme-masonry,.theme-parquet,.theme-renovation) 
+    svg.clean-category-illustration,
   .category-tile:is(.theme-plumbing,.theme-masonry,.theme-parquet,.theme-renovation)
-    .category-photo{
+    svg.clean-category-illustration .float-slow{
     animation:none!important;
-    transform:scale(1.26);
+    will-change:auto;
+    transform:none;
   }
 }
