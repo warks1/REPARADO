@@ -272,3 +272,40 @@ test('Manitas navega, abre servicios y mantiene el ancho en móvil',async({page}
  await page.locator('.request-screen [data-back]').click();
  await expect(page.locator('.category-view h1')).toHaveText('Manitas');
 });
+
+test('las cuatro fotos animadas no dejan ver bordes blancos y Manitas se mantiene intacta',async({page},testInfo)=>{
+  await page.goto('/');
+  const slugs=['plumbing','masonry','parquet','renovation'];
+  const selector=slugs.map(slug=>'.category-tile.theme-'+slug+' .category-photo').join(',');
+  await expect(page.locator(selector)).toHaveCount(4);
+  // Comprobamos varias fases de la animación, también en Safari iPhone.
+  for(let step=0;step<5;step++){
+    const state=await page.locator(selector).evaluateAll(photos=>photos.map(img=>{
+      const art=img.closest('.category-art').getBoundingClientRect();
+      const area=img.getBoundingClientRect();
+      const style=getComputedStyle(img);
+      return {
+        topCovered:area.top<=art.top-4,
+        bottomCovered:area.bottom>=art.bottom+3,
+        leftCovered:area.left<=art.left-3,
+        rightCovered:area.right>=art.right+3,
+        animation:style.animationName,
+        mask:style.webkitMaskImage||style.maskImage
+      };
+    }));
+    for(const item of state){
+      expect(item.topCovered).toBeTruthy();
+      expect(item.bottomCovered).toBeTruthy();
+      expect(item.leftCovered).toBeTruthy();
+      expect(item.rightCovered).toBeTruthy();
+      expect(item.animation).toContain('reparado-photo-contained');
+      expect(item.mask).toContain('linear-gradient');
+    }
+    await page.waitForTimeout(410);
+  }
+  const manitas=await page.locator('.theme-handyman .category-photo').evaluate(img=>getComputedStyle(img).animationName);
+  expect(manitas).not.toContain('reparado-photo-contained');
+  const dir=join(testInfo.outputDir,'evidencia-visual');
+  mkdirSync(dir,{recursive:true});
+  await page.screenshot({path:join(dir,'categorias-sin-franjas-'+testInfo.project.name+'.png'),fullPage:true});
+});

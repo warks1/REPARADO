@@ -443,3 +443,33 @@ body,.shell,.customer-header,.customer-nav {background:#fff}
   .category-tile.theme-handyman>span:not(.tile-arrow){font-size:10px}
   .category-view.theme-handyman .category-hero{padding-right:108px}
 }
+
+/* Corrección 21/10/2026: las cuatro fotografías proceden de recortes
+   rectangulares. El movimiento vertical anterior sacaba a la vista los
+   bordes blancos originales. El zoom permanece SIEMPRE dentro del recorte.
+   Manitas conserva su animación propia sin modificaciones. */
+@keyframes reparado-photo-contained {
+  0%,100% {transform:scale(1.26)}
+  50% {transform:scale(1.29)}
+}
+.category-tile:is(.theme-plumbing,.theme-masonry,.theme-parquet,.theme-renovation)
+  .category-art {
+  overflow:hidden;
+  isolation:isolate;
+  border-radius:15px;
+}
+.category-tile:is(.theme-plumbing,.theme-masonry,.theme-parquet,.theme-renovation)
+  .category-photo {
+  border-radius:0;
+  transform-origin:50% 66%;
+  animation:reparado-photo-contained 3.6s ease-in-out infinite;
+  -webkit-mask-image:linear-gradient(to bottom,transparent 0%,#000 17%,#000 81%,transparent 100%);
+  mask-image:linear-gradient(to bottom,transparent 0%,#000 17%,#000 81%,transparent 100%);
+}
+@media(prefers-reduced-motion:reduce){
+  .category-tile:is(.theme-plumbing,.theme-masonry,.theme-parquet,.theme-renovation)
+    .category-photo{
+    animation:none!important;
+    transform:scale(1.26);
+  }
+}
