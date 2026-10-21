@@ -21,7 +21,7 @@ for (const query of ['', '?reparado_version=' + (process.env.REPARADO_SHA || 'ac
 
 test('las imágenes del repositorio publicado no devuelven error',async({page})=>{
  await page.goto('./');
- await expect(page.locator('.category-tile')).toHaveCount(4,{timeout:20000});
+ await expect(page.locator('.category-tile')).toHaveCount(5,{timeout:20000});
  const photos=page.locator('.category-tile .category-photo');
  for(const photo of await photos.all()){
    await photo.scrollIntoViewIfNeeded();
