@@ -2,7 +2,7 @@ import {requestStorageKey,profileStorageKey,messageDraftStorageKey,safeReadJSON,
 import {localReceipt,localRequestBackup,localBackupName,historicalEvents,readableTimestamp} from './local-document.js';
 import {makeLocalCollection,restoreLocalCollection,localBackupLimit} from './local-backup.js';
 
-import {appHeader,bottomNavigation,renderLanding,renderCategory,serviceFormHeader,formPeriodPicker,priceFor,esc,setActiveNav,matchServices,serviceRow,featuredServices} from './customer-ui.js';
+import {appHeader,bottomNavigation,renderLanding,renderCategory,serviceFormHeader,formPeriodPicker,priceFor,esc,setActiveNav,matchServices,serviceRow,featuredServices,showAllCategories} from './customer-ui.js';
 
 // La misma interfaz que verá el cliente: si faltan credenciales, se conservan
 // solicitudes locales para probar la navegación, sin simular envíos a operarios.
@@ -294,7 +294,7 @@ export function mountLocal({app,services}){
     if(categoryBtn)return category(categoryBtn.dataset.categoryOpen);
     const custom=event.target.closest('[data-custom-request]');
     if(custom){lastCategory=custom.dataset.customRequest;return request([lastCategory,'Consulta personalizada',0])}
-    if(event.target.closest('[data-show-all]')){main.querySelector('.category-grid')?.scrollIntoView({behavior:'smooth'});return}
+    if(event.target.closest('[data-show-all]')){showAllCategories(main);return}
     if(event.target.closest('[data-back]')){
       if(page==='request-detail')return requests(detailOrigin==='agenda');
       return page==='new-request' && lastCategory ? category(lastCategory) : home();
