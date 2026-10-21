@@ -1,7 +1,22 @@
 name: Auditar RLS y roles de Supabase
 on:
   push:
-    branches: [test/supabase-rls-roles-20261021]
+    branches: [main]
+    paths:
+      - 'schema.sql'
+      - 'supabase/migration-v*.sql'
+      - 'supabase/auditoria-readonly-v9.sql'
+      - 'tests/supabase-roles-rls.py'
+      - '.github/workflows/qa-supabase-roles.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'schema.sql'
+      - 'supabase/migration-v*.sql'
+      - 'supabase/auditoria-readonly-v9.sql'
+      - 'tests/supabase-roles-rls.py'
+      - '.github/workflows/qa-supabase-roles.yml'
+  workflow_dispatch:
 permissions:
   contents: read
 jobs:
