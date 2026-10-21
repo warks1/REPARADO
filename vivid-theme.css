@@ -490,3 +490,8 @@ body,.shell,.customer-header,.customer-nav {background:#fff}
  -webkit-mask-image:linear-gradient(to bottom,transparent 0%,#000 11%,#000 81%,transparent 100%);
  mask-image:linear-gradient(to bottom,transparent 0%,#000 11%,#000 81%,transparent 100%);
 }
+
+/* Créditos claros y discretos para imágenes ilustrativas de Manitas. */
+.manitas-photo-credits{margin:14px 0 18px;font-size:12px;line-height:1.35}
+.manitas-photo-credits a{color:#276eb1;text-decoration:underline;text-underline-offset:2px}
+.manitas-photo-credits a:focus-visible{outline:2px solid #278de0;outline-offset:3px}
