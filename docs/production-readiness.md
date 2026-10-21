@@ -16,6 +16,12 @@ Estado: interfaz web y APK Android de pruebas generadas. **No desplegar a client
 3. Crear una solicitud de prueba desde el formulario, añadir fotos, revisar el trabajo desde una cuenta administradora, asignar un operario y comprobar la agenda del cliente y del operario.
 4. Probar mensajes, estados, presupuestos, facturas, notificaciones internas y el filtrado por usuario. Verificar que cualquier error de red produce mensajes entendibles y no confirmaciones falsas.
 
+## Agenda y asignación (validaciones de la beta)
+- La interfaz comprueba de nuevo en Supabase las visitas `scheduled` y `in_progress` del operario antes de guardar. Rechaza inicios separados por menos de 60 minutos para prevenir dobles asignaciones; ese margen **no sustituye** la duración real de las reparaciones ni los tiempos de desplazamiento.
+- Para pasar a `scheduled` o `in_progress` se exige una cuenta de operario válida y una fecha/hora asignada.
+- **Limitación de concurrencia:** esta verificación es de cliente, no una restricción transaccional de PostgreSQL. Dos administradores que programen simultáneamente podrían guardar citas incompatibles. Antes de producción hay que implantar y probar validación atómica en la base de datos o planificación mediante backend con bloqueo transaccional.
+- Si no puede consultarse la agenda, el panel bloquea el guardado de la nueva programación en lugar de asumir disponibilidad. Revisar con cuentas `admin` y `operator` reales, cambios de estado y límites de zonas horarias.
+
 ## Notificaciones, facturación y privacidad
 - Los avisos internos registrados en la base de datos no implican **push remoto**. Para enviar push reales deben configurarse FCM y APNs y un backend que mande los avisos de forma autenticada.
 - Revisar numeración de facturas, IVA, datos fiscales, exportación/PDF, anulaciones y obligaciones legales antes de facturar.
