@@ -4,9 +4,9 @@ Estado: interfaz web y APK Android de pruebas generadas. **No desplegar a client
 
 ## Base de datos y seguridad
 1. Crear un proyecto propio de Supabase en una región adecuada para operar en España/UE.
-2. Aplicar, en una base de pruebas, `schema.sql` y después `supabase/migration-v4.sql`, `supabase/migration-v5.sql`, `supabase/migration-v6.sql`, **`supabase/migration-v7.sql`, `supabase/migration-v8.sql` y `supabase/migration-v9.sql`** en ese orden. El esquema incorpora parte de v4; comprobar que las migraciones son repetibles antes de aplicarlas al entorno definitivo. La V7 instala la protección de reservas simultáneas en PostgreSQL y comprueba antes que no existan conflictos.
+2. Aplicar, en una base de pruebas, `schema.sql` y después `supabase/migration-v4.sql`, `supabase/migration-v5.sql`, `supabase/migration-v6.sql`, **`supabase/migration-v7.sql`, `supabase/migration-v8.sql`, `supabase/migration-v9.sql` y `supabase/migration-v10.sql`** en ese orden. El esquema incorpora parte de v4; comprobar que las migraciones son repetibles antes de aplicarlas al entorno definitivo. La V7 instala la protección de reservas simultáneas en PostgreSQL y comprueba antes que no existan conflictos.
 3. Ejecutar `supabase/storage-photos.sql` para crear un bucket **privado** para imágenes.
-4. Ejecutar `supabase/auditoria-readonly-v9.sql` y revisar sus quince controles de solo lectura; todos deben estar en **OK** antes de recibir solicitudes reales. Instrucciones detalladas: `docs/activar-supabase.md`.
+4. Ejecutar `supabase/auditoria-readonly-v9.sql` y revisar sus diecinueve controles de solo lectura; todos deben estar en **OK** antes de recibir solicitudes reales. Instrucciones detalladas: `docs/activar-supabase.md`.
 5. Probar por separado **dos clientes**, `operator` y `admin`, así como las restricciones RLS: un cliente no puede ver solicitudes, avisos o facturas de otro; un operario únicamente ve los trabajos asignados y solo administración puede asignar personal y modificar precios. El test automático `tests/supabase-roles-rls.py` prueba este aislamiento en un PostgreSQL temporal, pero no equivale a haber probado tu Supabase real.
 6. Verificar el registro, inicio de sesión, confirmación de email, recuperación de contraseña y las acciones de aceptación de presupuesto.
 7. Crear o asignar el rol administrador exclusivamente desde el backend con privilegios de administración. Nunca habilitar la elección de rol desde un formulario de cliente.
@@ -40,6 +40,11 @@ Estado: interfaz web y APK Android de pruebas generadas. **No desplegar a client
 - La vista «Mis facturas» sigue siendo informativa y señala discrepancias del desglose, sin generar un PDF ni afirmar validez fiscal.
 - Aplicar V9 primero en Supabase de **pruebas**, después de V8, resolviendo previamente los errores que señale. No se ha ejecutado en la base real, porque no hay un proyecto Supabase conectado.
 - Antes de emitir legalmente: identificar emisor (NIF, domicilio fiscal), destinatario, serie y numeración correlativa, fecha de operación y expedición, concepto y bases por tipo, rectificaciones, archivo/integridad y requisitos fiscales españoles vigentes. Validarlo con asesoría fiscal.
+
+## Seguridad y rendimiento (migración V10)
+- Supabase detectó ejecución anónima en funciones internas `SECURITY DEFINER`. La migración `supabase/migration-v10.sql` revoca explícitamente `EXECUTE` de `anon` y de cuentas autenticadas a funciones exclusivas de disparadores, conservando las tres funciones de acceso necesarias para roles y presupuestos solo en `authenticated`.
+- Añade siete índices sobre claves externas y consultas por cliente. Se debe volver a ejecutar la auditoría SQL de **19 controles** tras instalarla en el proyecto de pruebas.
+- Tras V10, revisar nuevamente el analizador de seguridad y rendimiento de Supabase. Algunas sugerencias sobre optimización RLS pueden seguir pendientes; no relajar las políticas para ganar velocidad.
 
 ## Notificaciones, facturación y privacidad
 - Los avisos internos registrados en la base de datos no implican **push remoto**. Para enviar push reales deben configurarse FCM y APNs y un backend que mande los avisos de forma autenticada.
