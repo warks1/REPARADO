@@ -73,6 +73,15 @@ with connect() as db:
     db.execute("grant execute on function auth.role() to anon,authenticated")
     db.execute((ROOT/"schema.sql").read_text(encoding="utf8"))
     for version in range(4,12):
+        if version==11:
+            # PostgreSQL local no proporciona los GRANT iniciales de Supabase
+            # hospedado. Simular las concesiones amplias reales de su rol anon.
+            db.execute("""grant select,insert,update,delete on
+              public.profiles,public.service_requests,public.messages,
+              public.notifications,public.device_tokens,public.invoices to anon""")
+            db.execute("""grant select on
+              public.profiles,public.service_requests,public.messages,
+              public.notifications,public.device_tokens,public.invoices to authenticated""")
         db.execute((ROOT/f"supabase/migration-v{version}.sql").read_text(encoding="utf8"))
     db.execute("grant usage on schema public to anon,authenticated")
     # En Supabase estos permisos básicos son los valores por defecto del
