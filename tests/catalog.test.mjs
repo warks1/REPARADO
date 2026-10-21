@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {categories,catFor,priceFor,renderLanding,renderCategory,bottomNavigation} from '../customer-ui.js';
+import {categories,catFor,priceFor,renderLanding,renderCategory,bottomNavigation,matchServices} from '../customer-ui.js';
 
 const services=[
  ['Fontanería','Reparación de fuga',115],
@@ -235,4 +235,26 @@ test('la categoría Manitas tiene dibujo propio y diseño adaptable',async()=>{
  const css=readFileSync(new URL('../vivid-theme.css',import.meta.url),'utf8');
  assert.ok(css.includes('.category-tile.theme-handyman'));
  assert.ok(css.includes('.category-view.theme-handyman'));
+});
+
+test('el catálogo admite búsquedas sin tildes y varias palabras no consecutivas',async()=>{
+ const {services:full}=await import('../catalog-data.js');
+ const names=term=>matchServices(full,term).map(({s})=>s[1]);
+ assert.deepEqual(names('ALBANILERIA').length,full.filter(s=>s[0]==='Albañilería').length);
+ assert.ok(names('fontaneria FUGA').includes('Reparación de fuga'));
+ assert.ok(names('montaje mueble').includes('Montaje de mueble en kit (mediano)'));
+ assert.ok(names('lámpara').includes('Instalación de lámpara sencilla'));
+ assert.ok(names('lampara').includes('Instalación de lámpara sencilla'));
+ assert.ok(names('CINTA   PERSIANA').includes('Cambio de cinta de persiana'));
+ assert.equal(names('servicio-no-existente').length,0);
+ assert.equal(names('  ').length,full.length);
+});
+test('el botón Ver todos comparte una acción funcional entre clientes locales y conectados',async()=>{
+ const {readFileSync}=await import('node:fs');
+ const ui=readFileSync(new URL('../customer-ui.js',import.meta.url),'utf8');
+ const local=readFileSync(new URL('../local-preview.js',import.meta.url),'utf8');
+ const connected=readFileSync(new URL('../connected.js',import.meta.url),'utf8');
+ assert.ok(ui.includes("search.dispatchEvent(new Event('input'"));
+ assert.ok(local.includes("showAllCategories(main)"));
+ assert.ok(connected.includes("showAllCategories(main)"));
 });
