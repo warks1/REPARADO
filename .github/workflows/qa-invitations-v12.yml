@@ -1,0 +1,46 @@
+name: Verificar acceso privado por invitacion
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'connected.js'
+      - 'auth-mode.js'
+      - 'tests/auth-invitations.test.mjs'
+      - 'playwright.invite.config.mjs'
+      - 'e2e-private/**'
+      - '.github/workflows/qa-invitations-v12.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'connected.js'
+      - 'auth-mode.js'
+      - 'tests/auth-invitations.test.mjs'
+      - 'playwright.invite.config.mjs'
+      - 'e2e-private/**'
+      - '.github/workflows/qa-invitations-v12.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  navegadores:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: {node-version: '22'}
+      - run: npm install --no-audit --no-fund
+      - run: npm test
+      - name: Compilar modo cerrado
+        run: npm run build
+        env:
+          VITE_REPARADO_ALLOW_PUBLIC_REGISTRATION: 'false'
+      - name: Compilar alta opcional (solo prueba)
+        run: npm run build
+        env:
+          VITE_REPARADO_ALLOW_PUBLIC_REGISTRATION: 'true'
+      - run: npx playwright install --with-deps chromium webkit
+      - name: Prueba por invitación en iPhone y Android
+        run: npx playwright test --config playwright.invite.config.mjs
+      - name: Regresión del diseño aprobado
+        run: npm run test:visual

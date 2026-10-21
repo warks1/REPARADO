@@ -8,7 +8,7 @@ Estado: web y APK de pruebas generadas. **REPARADO Test** creado en Supabase (Pa
 3. Ejecutar `supabase/storage-photos.sql` para crear un bucket **privado** para imágenes.
 4. Ejecutar `supabase/auditoria-readonly-v9.sql` y revisar sus veinte controles de solo lectura; todos deben estar en **OK** antes de recibir solicitudes reales. Instrucciones detalladas: `docs/activar-supabase.md`.
 5. Probar por separado **dos clientes**, `operator` y `admin`, así como las restricciones RLS: un cliente no puede ver solicitudes, avisos o facturas de otro; un operario únicamente ve los trabajos asignados y solo administración puede asignar personal y modificar precios. El test automático `tests/supabase-roles-rls.py` prueba este aislamiento en un PostgreSQL temporal, pero no equivale a haber probado tu Supabase real.
-6. Verificar el registro, inicio de sesión, confirmación de email, recuperación de contraseña y las acciones de aceptación de presupuesto.
+6. **Acceso privado por invitación:** la pantalla conectada oculta el registro público por defecto. `VITE_REPARADO_ALLOW_PUBLIC_REGISTRATION=false` es solo una medida visual: desactivar también los nuevos registros en **Supabase Auth** mediante su panel de ajustes. Invitar las cuatro cuentas de pruebas desde Auth, nunca insertar usuarios mediante SQL. Verificar inicio de sesión, confirmación del correo, recuperación de acceso y presupuestos con usuarios reales de prueba.
 7. Crear o asignar el rol administrador exclusivamente desde el backend con privilegios de administración. Nunca habilitar la elección de rol desde un formulario de cliente.
 
 ## Conectar la app y el despliegue

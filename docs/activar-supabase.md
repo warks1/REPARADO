@@ -59,6 +59,17 @@ El flujo `.github/workflows/deploy.yml` incorpora estas variables al compilar. D
 - Repite `supabase/auditoria-readonly-v9.sql` después de V10. Pese al nombre histórico del fichero, ahora devuelve **20 verificaciones**. Ninguna de ellas modifica datos.
 
 
+## Acceso por invitación en la versión conectada
+
+En la beta conectada, el formulario de registro público **no se muestra por defecto**. Los clientes y profesionales invitados mantienen la pantalla «Entrar» para iniciar sesión.
+
+- La variable de compilación `VITE_REPARADO_ALLOW_PUBLIC_REGISTRATION` es opcional y vale `false` por defecto. Solo el valor exacto `true` habilita el formulario de alta pública. En **REPARADO Test** debe permanecer en `false`.
+- **Importante:** ocultar el formulario no cierra el endpoint Auth. Para bloquear registros ajenos a las invitaciones, en el Dashboard de REPARADO Test abre Authentication → Providers/Sign In y desactiva la opción que permite nuevos registros de usuarios. Debe verificarse allí antes de invitar cuentas.
+- Invita a dos correos de prueba que controles para clientes, uno para operario y otro para administrador mediante Authentication → Users → Invite User. **No insertar filas manualmente en `auth.users`** ni inventar contraseñas.
+- Cada invitación crea inicialmente el perfil con rol `customer`. Los roles `operator` y `admin` solo se cambian después de confirmar la identidad, desde un procedimiento administrativo autorizado, nunca desde el navegador.
+- Para probar las invitaciones utiliza una compilación local o un entorno de previsualización aislado, con `VITE_SUPABASE_URL` y la clave **publicable** correspondientes. No agregues las credenciales del proyecto Test a los secretos usados por el despliegue público de GitHub Pages.
+- Verifica con esas cuatro cuentas reales los permisos de RLS, fotos privadas, presupuestos, agenda y notificaciones. Las pruebas automáticas PostgreSQL no reemplazan el flujo de Supabase Auth ni el correo real.
+
 ## 7. Acceso privado a datos (V11)
 
 REPARADO Test tiene aplicada la migración `supabase/migration-v11.sql`. Se ha confirmado directamente en Supabase que `anon` no puede leer, insertar, actualizar ni borrar filas de ninguna de las seis tablas de la aplicación. Las políticas RLS continúan activas para usuarios autenticados, y el bucket `request-photos` sigue siendo **privado**. La auditoría contiene **20 comprobaciones, todas OK**.
