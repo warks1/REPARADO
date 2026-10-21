@@ -26,3 +26,12 @@ test('el IVA incluido se muestra sin simular facturación oficial',()=>{
  assert.ok(code.includes('No se pudo comprobar la agenda del operario'));
  assert.ok(code.includes('Fecha y hora no válidas.'));
 });
+
+test('la aplicación identifica conflictos transaccionales de PostgreSQL V7',()=>{
+ const code=readFileSync(new URL('../connected.js',import.meta.url),'utf8');
+ assert.ok(code.includes("error.code==='23P01'"));
+ assert.ok(code.includes('REPARADO_SCHEDULE_OPERATOR_REQUIRED'));
+ assert.ok(code.includes('REPARADO_SCHEDULE_INVALID_OPERATOR'));
+ assert.ok(code.includes('No se ha programado: otro administrador'));
+ assert.ok(code.includes('No se han guardado los cambios:'));
+});
