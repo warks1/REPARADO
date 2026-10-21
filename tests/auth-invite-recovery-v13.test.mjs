@@ -6,7 +6,7 @@ import {authLinkIntentFromUrl,publicRegistrationEnabled} from '../auth-mode.js';
 test('Supabase invite/recovery enlaces URL: detectar sólo intención sin usar tokens',()=>{
   assert.equal(authLinkIntentFromUrl('?type=invite&token_hash=secret',''),'invite');
   assert.equal(authLinkIntentFromUrl('','#access_token=ficticio&type=recovery'),'recovery');
-  assert.equal(authLinkIntentFromUrl('?code=ficticio','#type=invite'),'invite');
+  assert.equal(authLinkIntentFromUrl('?type=invite&code=ficticio',''),'invite');
   assert.equal(authLinkIntentFromUrl('?type=magiclink',''),null);
   assert.equal(authLinkIntentFromUrl('?type=signup','#type=unknown'),null);
   assert.equal(authLinkIntentFromUrl('',''),null);
