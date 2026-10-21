@@ -50,6 +50,9 @@ test('filtros, categoría y formulario de cliente navegan y vuelven correctament
   await expect.poll(()=>hero.evaluate(img=>img.complete && img.naturalWidth>=200)).toBe(true);
   await expect(page.locator('.category-services .catalog-service').first()).toBeVisible();
   await expect(page.locator('.category-services .catalog-service:visible')).toHaveCount(4);
+  await expect.poll(()=>page.locator('.category-services .catalog-service:visible .service-photo').evaluateAll(items=>
+    items.every(img=>img.complete&&img.naturalWidth>=100)
+  ),{timeout:12000}).toBeTruthy();
   const photoSizes=await page.locator('.category-services .catalog-service:visible .service-photo').evaluateAll(items=>
     items.map(img=>({loaded:img.complete,width:img.naturalWidth}))
   );
@@ -280,14 +283,17 @@ test('las cuatro ilustraciones tienen movimiento real sin franjas blancas y Mani
     const svg=card.locator('svg.clean-category-illustration');
     await expect(svg).toBeVisible();
     await expect(card.locator('img.category-photo')).toHaveCount(0);
-    const info=await svg.evaluate(node=>{
+    const info=await svg.evaluate(async node=>{
       const anim=node.getAnimations().find(a=>a.animationName==='reparado-category-float');
       if(!anim)return {name:getComputedStyle(node).animationName,travel:0,hasBitmap:!!node.querySelector('image')};
+      const frame=()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
       anim.pause();
       anim.currentTime=0;
-      const first=new DOMMatrix(getComputedStyle(node).transform).m42;
+      await frame();
+      const first=node.getBoundingClientRect().top;
       anim.currentTime=1700;
-      const second=new DOMMatrix(getComputedStyle(node).transform).m42;
+      await frame();
+      const second=node.getBoundingClientRect().top;
       anim.play();
       return {name:getComputedStyle(node).animationName,travel:Math.abs(second-first),hasBitmap:!!node.querySelector('image')};
     });
