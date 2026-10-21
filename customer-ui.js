@@ -78,11 +78,11 @@ export function categoryArt(slug) {
   // Reutilizamos las ilustraciones vectoriales originales del proyecto,
   // cuyo fondo es verdaderamente transparente y cuyas partes pueden moverse.
   if(safe!=='handyman'){
-    return '<div class="category-art art-'+esc(safe)+'">'+
+    return '<div class="category-art art-'+esc(safe)+'"><span class="category-motion">'+
       (art[safe]||art.plumbing)
         .replace('<svg ','<svg class="clean-category-illustration" ')
         .replace(/aria-label="[^"]*"/,'aria-label="Ilustración de '+esc(category?.title||'reparación')+'"')+
-      '</div>';
+      '</span></div>';
   }
   // Conservar exactamente la categoría Manitas aprobada.
   const src=imageBase()+'categories/handyman.svg';
