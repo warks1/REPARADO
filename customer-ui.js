@@ -234,13 +234,28 @@ const handymanSymbols={
  'Reparación menor de muebles':'🔧',
  'Cambio de manilla de puerta':'🚪'
 };
+const handymanPhotoKeys={
+ 'Montaje de mueble en kit (mediano)':'furniture-assembly',
+ 'Colocación de estantería':'wall-shelf',
+ 'Colgar cuadros o espejos (hasta 3)':'pictures-mirrors',
+ 'Instalación de barras de cortina o estores':'curtain-rod',
+ 'Instalación de soporte de TV en pared':'tv-mount',
+ 'Ajuste de puertas y bisagras':'door-hinges',
+ 'Cambio de cinta de persiana':'shutter-belt',
+ 'Renovación de silicona de bañera o ducha':'bath-caulk',
+ 'Instalación de lámpara sencilla':'ceiling-lamp',
+ 'Colocación de accesorios de baño':'bath-accessories',
+ 'Reparación menor de muebles':'furniture-repair',
+ 'Cambio de manilla de puerta':'door-handle'
+};
 export function serviceRow(s,i) {
   if(!s)return '';
   const cat=catFor(s[0]);
   const symbol=handymanSymbols[s[1]] || (/grifo/i.test(s[1])?'🚰':/fuga/i.test(s[1])?'💧':/desatasco|sifón/i.test(s[1])?'🛁':/cisterna/i.test(s[1])?'🚽':/pladur/i.test(s[1])?'🧱':/alicatado/i.test(s[1])?'▦':/parquet|tabla|barniz/i.test(s[1])?'🪵':cat.slug==='renovation'?'🏡':'🛠️');
-  const photo=cat.slug==='plumbing'?(/fuga/i.test(s[1])?'leak':/desatasco/i.test(s[1])?'drain':/termo/i.test(s[1])?'heater':/grifo/i.test(s[1])?'faucet':null):null;
-  const photoUrl=photo?imageBase()+'services/'+photo+'.webp':null;
-  return '<button type="button" class="catalog-service" data-service="'+i+'"><span class="service-thumb thumb-'+cat.slug+'">'+(photo?'<img class="service-photo" src="'+esc(photoUrl)+'" width="105" height="91" loading="lazy" decoding="async" alt="Foto de '+esc(s[1])+'">':symbol)+'</span>'+
+  const photo=cat.slug==='plumbing'?(/fuga/i.test(s[1])?'leak':/desatasco/i.test(s[1])?'drain':/termo/i.test(s[1])?'heater':/grifo/i.test(s[1])?'faucet':null):
+    cat.slug==='handyman'?handymanPhotoKeys[s[1]]:null;
+  const photoUrl=photo?imageBase()+'services/'+(cat.slug==='handyman'?'handyman-':'')+photo+'.webp':null;
+  return '<button type="button" class="catalog-service" data-service="'+i+'"><span class="service-thumb thumb-'+cat.slug+'">'+(photo?'<img class="service-photo" src="'+esc(photoUrl)+'" width="105" height="91" loading="lazy" decoding="async" alt="'+(cat.slug==='handyman'?'Fotografía ilustrativa de ':'Foto de ')+esc(s[1])+'">':symbol)+'</span>'+
    '<span class="service-details"><strong>'+esc(serviceViewLabels[s[1]]||s[1])+'</strong><small>'+esc(serviceDescriptions[s[1]]||cat.description)+'</small><em>'+(s[2]?'Desde '+esc(priceFor(s)):'Por presupuesto')+'</em></span><span class="service-chevron">'+ico('arrow')+'</span></button>';
 }
 export function renderCategory(services,id) {
@@ -258,6 +273,7 @@ export function renderCategory(services,id) {
      '<div class="section-heading"><h2>Servicios más solicitados</h2></div>'+
      '<div class="category-services">'+ranked.map((x,i)=>i<4?serviceRow(x.s,x.i):serviceRow(x.s,x.i).replace('class="catalog-service"','class="catalog-service service-extra" hidden')).join('')+'</div>'+
      (ranked.length>4?'<button type="button" class="services-expand" data-expand-services aria-expanded="false">Ver todos los servicios ('+ranked.length+') '+ico('arrow')+'</button>':'')+
+     (c.slug==='handyman'?'<p class="manitas-photo-credits"><a href="'+esc(imageBase()+'creditos-fotos-manitas.html')+'" target="_blank" rel="noopener noreferrer">Créditos y licencias de las fotografías de Manitas</a></p>':'')+
      '<div class="custom-request"><div><h3>¿No encuentras lo que necesitas?</h3><p>Cuéntanos tu caso y te ayudamos.</p></div>'+
      '<button type="button" class="primary-cta" data-custom-request="'+esc(c.id)+'">Solicitar servicio '+ico('arrow')+'</button></div>'+
      '</div>';
