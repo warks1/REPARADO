@@ -461,27 +461,37 @@ body,.shell,.customer-header,.customer-nav {background:#fff}
   border-radius:15px;
   background:transparent;
 }
+/* El movimiento se aplica a un SPAN HTML, no directamente al elemento
+   SVG. Así el desplazamiento se mide y reproduce en píxeles CSS de forma
+   idéntica en Chrome, Safari iPhone, Android y tablet. */
+.category-tile:is(.theme-plumbing,.theme-masonry,.theme-parquet,.theme-renovation) .category-motion{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  width:100%;
+  max-width:185px;
+  height:100%;
+  flex:0 0 auto;
+  transform:translateY(5px);
+  animation:reparado-category-float 3.4s ease-in-out infinite;
+  will-change:transform;
+}
 .category-tile:is(.theme-plumbing,.theme-masonry,.theme-parquet,.theme-renovation) svg.clean-category-illustration{
   width:100%;
   max-width:185px;
   height:100%;
   display:block;
   overflow:visible;
-  transform-origin:50% 55%;
   filter:drop-shadow(0 7px 7px rgba(25,66,118,.2));
-  animation:reparado-category-float 3.4s ease-in-out infinite;
-  will-change:transform;
+  animation:none;
 }
-.category-tile.theme-masonry svg.clean-category-illustration{animation-delay:-.8s}
-.category-tile.theme-parquet svg.clean-category-illustration{animation-delay:-1.7s}
-.category-tile.theme-renovation svg.clean-category-illustration{animation-delay:-2.4s}
 .category-tile:is(.theme-plumbing,.theme-masonry,.theme-parquet,.theme-renovation)
   svg.clean-category-illustration .float-slow{
   animation:reparado-category-detail 2.7s ease-in-out infinite;
 }
 @media(prefers-reduced-motion:reduce){
-  .category-tile:is(.theme-plumbing,.theme-masonry,.theme-parquet,.theme-renovation) 
-    svg.clean-category-illustration,
+  .category-tile:is(.theme-plumbing,.theme-masonry,.theme-parquet,.theme-renovation)
+    .category-motion,
   .category-tile:is(.theme-plumbing,.theme-masonry,.theme-parquet,.theme-renovation)
     svg.clean-category-illustration .float-slow{
     animation:none!important;
