@@ -117,7 +117,6 @@ def writer(i):
     except psycopg.Error as e:
         outcomes[i]=e.sqlstate
 with ThreadPoolExecutor(max_workers=2) as pool:
-    pool.submit(writer,1).result(timeout=20) if False else None
     f1=pool.submit(writer,1)
     f2=pool.submit(writer,2)
     f1.result(timeout=25)
