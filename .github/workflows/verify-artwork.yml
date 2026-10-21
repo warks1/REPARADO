@@ -1,0 +1,31 @@
+name: Validar arreglo de animaciones Reparado
+on:
+  push:
+    branches: [fix/animaciones-sin-franjas-20261021]
+permissions:
+  contents: read
+jobs:
+  validar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm install --no-audit --no-fund
+      - name: Pruebas unitarias
+        run: npm test
+      - name: Compilación
+        run: npm run build
+      - name: Navegadores
+        run: npx playwright install --with-deps chromium webkit
+      - name: Validación visual responsive
+        run: npm run test:visual
+      - name: Capturas de diagnóstico
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: reparado-franjas-evidencias
+          path: test-results
+          retention-days: 7
