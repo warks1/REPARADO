@@ -495,3 +495,33 @@ body,.shell,.customer-header,.customer-nav {background:#fff}
 .manitas-photo-credits{margin:14px 0 18px;font-size:12px;line-height:1.35}
 .manitas-photo-credits a{color:#276eb1;text-decoration:underline;text-underline-offset:2px}
 .manitas-photo-credits a:focus-visible{outline:2px solid #278de0;outline-offset:3px}
+
+
+/* REPARADO · recorte limpio de Parquet y Reformas (21/10/2026).
+   El vídeo del usuario muestra en estas dos categorías el fondo rectangular
+   de la ilustración original y una banda horizontal en su borde inferior.
+   No hay que cambiar los dibujos, ni la animación de Manitas, ni el texto.
+   En lugar de transformar el PNG (que haría perder calidad) atenuamos los
+   extremos del recorte como una viñeta suave. El SPAN .category-motion
+   sigue oscilando únicamente 6px, idéntico a la animación aprobada. */
+.category-tile.theme-parquet img.category-restored,
+.category-tile.theme-renovation img.category-restored{
+  border-radius:0;
+  object-fit:cover;
+  /* Difuminar los cuatro bordes del rectángulo en la propia imagen:
+     también oculta la franja recta del margen inferior. */
+  -webkit-mask-image:radial-gradient(ellipse 66% 52% at 50% 49%,
+      #000 0%,#000 38%,rgba(0,0,0,.92) 53%,
+      rgba(0,0,0,.56) 67%,rgba(0,0,0,.10) 83%,transparent 100%);
+  mask-image:radial-gradient(ellipse 66% 52% at 50% 49%,
+      #000 0%,#000 38%,rgba(0,0,0,.92) 53%,
+      rgba(0,0,0,.56) 67%,rgba(0,0,0,.10) 83%,transparent 100%);
+  -webkit-mask-repeat:no-repeat;
+  mask-repeat:no-repeat;
+}
+/* En las tarjetas pequeñas evitar que el PNG recortado roce el marco.
+   No alteramos el movimiento de 3,6s / 6px ni los demás servicios. */
+.category-tile:is(.theme-parquet,.theme-renovation) .category-motion{
+  overflow:hidden;
+  border-radius:15px;
+}
