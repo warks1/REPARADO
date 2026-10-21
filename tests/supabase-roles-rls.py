@@ -72,7 +72,7 @@ with connect() as db:
     db.execute("grant execute on function auth.uid() to anon,authenticated")
     db.execute("grant execute on function auth.role() to anon,authenticated")
     db.execute((ROOT/"schema.sql").read_text(encoding="utf8"))
-    for version in range(4,10):
+    for version in range(4,11):
         db.execute((ROOT/f"supabase/migration-v{version}.sql").read_text(encoding="utf8"))
     db.execute("grant usage on schema public to anon,authenticated")
     # En Supabase estos permisos básicos son los valores por defecto del
@@ -112,6 +112,19 @@ with connect() as db:
       ('reparado_guard_operator_schedule_v7',
        'reparado_notify_operator_assignment_v8',
        'reparado_guard_invoice_v9') and not tgisinternal""").fetchone()[0]==3
+    functions=db.execute("""select p.proname,
+      has_function_privilege('anon',p.oid,'EXECUTE'),
+      has_function_privilege('authenticated',p.oid,'EXECUTE')
+      from pg_proc p join pg_namespace n on n.oid=p.pronamespace
+      where n.nspname='public' and p.prosecdef
+      order by p.proname""").fetchall()
+    assert len(functions)>=11,functions
+    assert all(not anonymous for _,anonymous,_ in functions),functions
+    safe_rpc={'accept_reparado_quote','is_reparado_admin','is_reparado_staff'}
+    assert all(authenticated==(name in safe_rpc)
+               for name,_,authenticated in functions),functions
+    print("V10: 0 funciones SECURITY DEFINER anónimas; 3 RPC autenticadas; 8 triggers internos",flush=True)
+
     # Informe de puesta en marcha sin datos personales. Debe ser seguro
     # repetirlo porque solo utiliza consultas SELECT sobre la base.
     audit=(ROOT/"supabase/auditoria-readonly-v9.sql").read_text(encoding="utf8")
