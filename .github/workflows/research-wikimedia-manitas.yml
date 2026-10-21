@@ -1,0 +1,27 @@
+name: Revisar fotos Wikimedia para Manitas
+on:
+  push:
+    branches: [feat/manitas-fotografias-licencias-20261021]
+    paths:
+      - 'scripts/research-manitas-wikimedia.py'
+      - '.github/workflows/research-wikimedia-manitas.yml'
+permissions:
+  contents: write
+jobs:
+  search:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with: {persist-credentials: true}
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.11'}
+      - name: Listar licencias y fotografías
+        run: python -u scripts/research-manitas-wikimedia.py
+      - name: Documentar posibles fuentes
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add docs/manitas-wikimedia-targeted.json
+          git diff --cached --quiet || git commit -m "Documentar candidatos Wikimedia para fotos de Manitas"
+          git push
