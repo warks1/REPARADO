@@ -196,3 +196,15 @@ Los administradores conectados pueden desplegar «Desglosar presupuesto», añad
 
 ### Exportar y restaurar solicitudes locales
 En «Mis solicitudes» se puede descargar **una copia JSON de todas las solicitudes locales**, y restaurar una copia completa o la copia de una única ficha. Los registros ya presentes no se sobrescriben y no se duplica su identificador; se valida todo el archivo antes de guardar y se pide consentimiento para importar. El límite es de 250 solicitudes y 500 KB de JSON. La importación conserva únicamente datos de solicitud e historial local; no permite crear estados ficticios confirmados o pagos ni activa Supabase. Las copias incluyen datos de contacto y domicilio; deben guardarse en un lugar privado. Los campos de perfil y los borradores de chat no forman parte de esta copia.
+
+## Mejora del catálogo: Manitas y destacados (21-10-2026)
+
+- Quinta categoría `Manitas`, con 12 servicios y precios comerciales orientativos para Cataluña con IVA del 21 % incluido.
+- Tarjeta adaptativa amarilla con ilustración SVG local, preservando los colores y la disposición de las cuatro categorías previas.
+- Los servicios destacados se eligen por nombre y categoría, sin índices rígidos: ahora aparece un servicio de cada categoría disponible.
+- La búsqueda restaura esta selección tanto en modo local como en modo conectado, manteniendo los índices originales para formularios y solicitudes.
+- Pruebas unitarias y de navegador adaptadas a cinco categorías, con navegación y despliegue completo de Manitas.
+- Referencias de precios, condiciones y limitaciones: `docs/manitas-tarifas.md`.
+- **Pendiente**: fotografías reales individuales para los doce servicios nuevos. Se muestran pictogramas identificativos provisionales, no se presentan como fotografías.
+
+La nueva categoría amplía el diseño visual aprobado; no sustituye los cuatro colores y las imágenes previas del boceto.
