@@ -129,7 +129,7 @@ with connect() as db:
     # repetirlo porque solo utiliza consultas SELECT sobre la base.
     audit=(ROOT/"supabase/auditoria-readonly-v9.sql").read_text(encoding="utf8")
     audit_result=db.execute(audit).fetchall()
-    assert len(audit_result)>=15,audit_result
+    assert len(audit_result)==19,audit_result
     pending=[row for row in audit_result if row[1]!='OK']
     assert not pending,("Auditoría pendiente",pending)
     assert db.execute(audit).fetchall()==audit_result
