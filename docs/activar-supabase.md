@@ -75,3 +75,18 @@ En la beta conectada, el formulario de registro público **no se muestra por def
 REPARADO Test tiene aplicada la migración `supabase/migration-v11.sql`. Se ha confirmado directamente en Supabase que `anon` no puede leer, insertar, actualizar ni borrar filas de ninguna de las seis tablas de la aplicación. Las políticas RLS continúan activas para usuarios autenticados, y el bucket `request-photos` sigue siendo **privado**. La auditoría contiene **20 comprobaciones, todas OK**.
 
 **Límites:** los endpoints de Auth y la API Supabase continúan técnicamente accesibles por Internet, protegidos mediante permisos y autenticación; esto no es aislamiento de red ni significa que se haya desactivado el registro de nuevos usuarios. Si el objetivo es impedir nuevos registros, configúralo desde los ajustes de Authentication del Dashboard antes de ofrecer invitaciones a cuentas de prueba. No se puede asegurar desde esta migración SQL. Mantener la web publicada en modo demostración sin enlazarla al proyecto Test.
+
+
+## 8. Primer acceso y recuperación de contraseñas (interfaz conectada)
+
+La aplicación conectada permite que una persona **invitada** establezca su propia contraseña (mínimo 12 caracteres), y ofrece «¿Has olvidado tu contraseña?» para pedir a Supabase un enlace de recuperación. La contraseña se envía al servicio oficial `supabase.auth.updateUser`; no se guarda en los formularios, en GitHub ni en ninguna tabla REPARADO. Los enlaces deben ser verificados por Supabase Auth antes de mostrar el cambio de contraseña.
+
+Antes de probar con correos de prueba controlados:
+
+1. Confirma que el registro abierto esté desactivado en **Authentication → Providers/Sign In**. Esta condición es de servidor; `VITE_REPARADO_ALLOW_PUBLIC_REGISTRATION=false` solo oculta el formulario.
+2. En <https://supabase.com/dashboard/project/kpmmlzjvespenogqtujo/auth/url-configuration> configura una **Site URL** para la app privada de pruebas y añade esa URL a **Redirect URLs**. Por ejemplo, al probar localmente con Vite, `http://127.0.0.1:5173/**`. No redirijas invitaciones del proyecto Test a GitHub Pages público ni expongas claves privadas.
+3. Invita los cuatro correos de pruebas desde el apartado **Authentication → Users**. El alta por invitación puede depender de la configuración y los límites del correo SMTP. Cada nueva cuenta obtiene inicialmente el rol `customer` mediante el trigger de perfiles.
+4. Completa la invitación en un navegador privado, establece la contraseña y vuelve a entrar. Para la recuperación, solicita el enlace desde la pantalla «Entrar», ábrelo desde ese mismo entorno y cambia la contraseña. Comprueba que un enlace caducado no concede acceso.
+5. Con dos clientes, operario y administrador, comprueba que las políticas RLS impiden ver solicitudes, avisos o facturas ajenas. Las elevaciones de rol solo se realizan desde administración autorizada, nunca con el formulario web.
+
+**Límite confirmado:** la conexión de ChatGPT a Supabase no permite cambiar los ajustes del servicio Auth ni crear/invitar usuarios por el flujo administrativo. La prueba de login real debe realizarse tras autorizar las invitaciones desde Supabase. Los tests de navegador de este repositorio usan exclusivamente credenciales ficticias y no envían correos.

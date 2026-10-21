@@ -9,7 +9,7 @@ import {publicRegistrationEnabled} from './auth-mode.js'
 import { Capacitor } from '@capacitor/core'
 import { PushNotifications } from '@capacitor/push-notifications'
 
-export function mountConnected({app, services, supabase}) {
+export function mountConnected({app, services, supabase, authLinkIntent=null}) {
   const money = value => value===null || value===undefined ? 'Por presupuesto' : `${Number(value).toFixed(2)} €`;
   const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({
     '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;'
@@ -18,6 +18,7 @@ export function mountConnected({app, services, supabase}) {
   const statusLabels = {new:'Nueva', quoted:'Presupuesto',accepted:'Aceptada',scheduled:'Programada',in_progress:'En curso',completed:'Terminada',cancelled:'Cancelada'};
   const validStatus = Object.keys(statusLabels);
   let session=null, profile=null, pushReady=false, currentView='home', adminFilter='all', lastCategory=null, pendingService=null, pendingView=null;
+  let passwordSetupPending=authLinkIntent==='invite'||authLinkIntent==='recovery';
   app.innerHTML = `<div class="shell">${appHeader()}<main id="main"></main><footer>© Reparado · Servicios para tu hogar <button type="button" id="logout" class="hidden" hidden>Cerrar sesión</button></footer></div>${bottomNavigation()}`;
   const main=app.querySelector('#main');
   const message = (text, error=false) => {
@@ -78,7 +79,7 @@ export function mountConnected({app, services, supabase}) {
     const pendingNotice=pendingService?`<p class="auth-pending">Continuar con: <strong>${esc(pendingService[1])}</strong></p>`:'';
     const registerMarkup=openRegistration?`<button id="register" class="link" type="button">Crear una cuenta</button><form id="register-form" class="hidden"><label>Nombre y apellidos<input name="full_name" autocomplete="name" maxlength="100" required></label><label>Correo electrónico<input name="email" type="email" autocomplete="email" required></label><label>Contraseña<input name="password" type="password" autocomplete="new-password" minlength="8" required></label><label>Repetir contraseña<input name="password_confirm" type="password" autocomplete="new-password" minlength="8" required></label><button type="submit">Crear cuenta de cliente</button></form>`
       :'<p class="auth-invite-notice" role="note">Acceso privado: solicita una invitación al equipo de Reparado. Si ya tienes cuenta, inicia sesión.</p>';
-    main.innerHTML=`<section class="auth card"><div class="heroicon"><img src="./icon.svg" width="44" height="44" alt=""></div><h1>Reparado</h1><p>Accede a tus servicios de reparación.</p>${pendingNotice}<form id="login"><input name="email" type="email" autocomplete="email" placeholder="Correo electrónico" required><input name="password" type="password" autocomplete="current-password" placeholder="Contraseña" required><button>Entrar</button></form>${registerMarkup}<p data-feedback class="feedback" role="status"></p></section>`;
+    main.innerHTML=`<section class="auth card"><div class="heroicon"><img src="./icon.svg" width="44" height="44" alt=""></div><h1>Reparado</h1><p>Accede a tus servicios de reparación.</p>${pendingNotice}<form id="login"><input name="email" type="email" autocomplete="email" placeholder="Correo electrónico" required><input name="password" type="password" autocomplete="current-password" placeholder="Contraseña" required><button>Entrar</button></form><button id="forgot-password" type="button" class="link">¿Has olvidado tu contraseña?</button><form id="reset-form" class="hidden"><label>Correo de tu cuenta<input name="email" type="email" autocomplete="email" placeholder="Correo electrónico" required></label><button type="submit">Recibir enlace de recuperación</button></form>${registerMarkup}<p data-feedback class="feedback" role="status"></p></section>`;
     main.querySelector('#login').addEventListener('submit',async event=>{
       event.preventDefault();
       const data=new FormData(event.currentTarget);
@@ -86,6 +87,27 @@ export function mountConnected({app, services, supabase}) {
       if(error){message(error.message,true);return}
       // Supabase emitirá SIGNED_IN y restaurará la solicitud escogida.
       message('Acceso correcto. Cargando tu solicitud…');
+    });
+    main.querySelector('#forgot-password').addEventListener('click',()=>{
+      const form=main.querySelector('#reset-form');
+      const opened=form.classList.toggle('hidden')===false;
+      main.querySelector('#login').classList.toggle('hidden',opened);
+      main.querySelector('#forgot-password').textContent=opened?'Volver a entrar':'¿Has olvidado tu contraseña?';
+      message('');
+    });
+    main.querySelector('#reset-form').addEventListener('submit',async event=>{
+      event.preventDefault();
+      const form=event.currentTarget;
+      const email=String(new FormData(form).get('email')||'').trim();
+      if(!email)return message('Introduce tu correo electrónico.',true);
+      const submit=form.querySelector('[type=submit]');submit.disabled=true;
+      // Solo el origen/ruta de la propia app. Debe estar permitido en
+      // Authentication -> URL Configuration del proyecto de pruebas.
+      const redirectTo=window.location.origin+window.location.pathname;
+      const {error}=await supabase.auth.resetPasswordForEmail(email,{redirectTo});
+      submit.disabled=false;
+      message(error?'No se pudo enviar el enlace. Prueba de nuevo o contacta con Reparado.':
+        'Si la cuenta existe, recibirás un enlace para restablecer tu contraseña.',Boolean(error));
     });
     if(!openRegistration)return;
     main.querySelector('#register').addEventListener('click',()=>{
@@ -113,10 +135,38 @@ export function mountConnected({app, services, supabase}) {
       if(!error)form.reset();
     });
   }
+  function showPasswordSetup(){
+    if(!session){showLogin();return}
+    currentView='password-setup';
+    setActiveNav(app,'profile');
+    const invited=authLinkIntent==='invite';
+    main.innerHTML=`<section class="auth card"><h2>${invited?'Completar invitación':'Restablecer contraseña'}</h2><p>Establece una contraseña nueva para entrar en REPARADO desde cualquier dispositivo.</p><form id="password-setup-form"><label>Nueva contraseña<input name="password" type="password" autocomplete="new-password" minlength="12" required></label><label>Repetir contraseña<input name="confirm" type="password" autocomplete="new-password" minlength="12" required></label><button type="submit">Guardar contraseña</button></form><button type="button" class="link" id="password-setup-logout">Cerrar sesión</button><p data-feedback class="feedback" role="status"></p></section>`;
+    main.querySelector('#password-setup-logout').addEventListener('click',async()=>{
+      const {error}=await supabase.auth.signOut();
+      if(error)message('No se pudo cerrar sesión: '+error.message,true);
+    });
+    main.querySelector('#password-setup-form').addEventListener('submit',async event=>{
+      event.preventDefault();
+      const form=event.currentTarget;
+      const data=new FormData(form);
+      const password=String(data.get('password')||'');
+      if(password.length<12)return message('Usa al menos 12 caracteres.',true);
+      if(password!==data.get('confirm'))return message('Las contraseñas no coinciden.',true);
+      const submit=form.querySelector('[type=submit]');submit.disabled=true;
+      const {error}=await supabase.auth.updateUser({password});
+      submit.disabled=false;
+      if(error)return message('No se pudo guardar la contraseña: '+error.message,true);
+      passwordSetupPending=false;
+      authLinkIntent=null;
+      // Nunca añadir contraseñas o tokens a enlaces, registros o mensajes.
+      await boot();
+    });
+  }
   async function boot(){
     const {data,error}=await supabase.auth.getSession();
     if(error || !data?.session){session=null;profile=null;renderHome();return}
     session=data.session;
+    if(passwordSetupPending){showPasswordSetup();return}
     const result=await supabase.from('profiles').select('id,full_name,phone,role').eq('id',session.user.id).maybeSingle();
     profile=result.data || {role:'customer',full_name:''};
     app.querySelector('#logout').classList.add('hidden');
@@ -613,8 +663,13 @@ export function mountConnected({app, services, supabase}) {
     }));
   }
   supabase.auth.onAuthStateChange((event)=>{
-    if(event==='SIGNED_OUT'){session=null;profile=null;pendingService=null;pendingView=null;renderHome()}
-    else if(event==='SIGNED_IN')queueMicrotask(()=>boot());
+    if(event==='SIGNED_OUT'){
+      session=null;profile=null;passwordSetupPending=false;
+      pendingService=null;pendingView=null;renderHome();
+    }else if(event==='PASSWORD_RECOVERY'){
+      passwordSetupPending=true;
+      queueMicrotask(()=>boot());
+    }else if(event==='SIGNED_IN')queueMicrotask(()=>boot());
   });
   // Mostrar la portada inmediatamente, incluso si la sesión tarda o no hay red.
   renderHome();
