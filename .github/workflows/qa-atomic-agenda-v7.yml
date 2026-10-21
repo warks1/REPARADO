@@ -1,7 +1,22 @@
 name: Validar concurrencia agenda PostgreSQL V7
 on:
   push:
-    branches: [feat/supabase-atomic-agenda-v7-20261021]
+    branches: [main]
+    paths:
+      - 'supabase/migration-v7.sql'
+      - 'tests/schedule-db-concurrency.py'
+      - 'connected.js'
+      - 'tests/staff-interface.test.mjs'
+      - '.github/workflows/qa-atomic-agenda-v7.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'supabase/migration-v7.sql'
+      - 'tests/schedule-db-concurrency.py'
+      - 'connected.js'
+      - 'tests/staff-interface.test.mjs'
+      - '.github/workflows/qa-atomic-agenda-v7.yml'
+  workflow_dispatch:
 permissions:
   contents: read
 jobs:
