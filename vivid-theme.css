@@ -447,8 +447,9 @@ body,.shell,.customer-header,.customer-nav {background:#fff}
 /* Ilustraciones vectoriales sin recortes raster y con movimiento perceptible.
    No se modifican los estilos ni la animación de Manitas. */
 @keyframes reparado-category-float {
-  0%,100% { transform:translateY(3px) rotate(-2deg) scale(.96) }
-  50% { transform:translateY(-8px) rotate(2deg) scale(1.035) }
+  /* Movimiento vertical claramente perceptible sin alterar el marco */
+  0%,100% { transform:translateY(5px) }
+  50% { transform:translateY(-11px) }
 }
 @keyframes reparado-category-detail {
   0%,100% { transform:translateY(0) }
