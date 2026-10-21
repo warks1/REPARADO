@@ -1,6 +1,6 @@
 # Reparado · Puesta en producción
 
-Estado: interfaz web y APK Android de pruebas generadas. **No desplegar a clientes reales** hasta completar las dependencias externas y estas verificaciones.
+Estado: web y APK de pruebas generadas. **REPARADO Test** creado en Supabase (París, UE), esquema y migraciones V4–V10 instaladas, bucket privado disponible y auditoría SQL 19/19 correcta el 21/10/2026. **No desplegar a clientes reales** hasta completar autenticación con cuentas de prueba, políticas de datos y demás verificaciones.
 
 ## Base de datos y seguridad
 1. Crear un proyecto propio de Supabase en una región adecuada para operar en España/UE.
