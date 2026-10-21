@@ -186,7 +186,19 @@ const serviceDescriptions={
  'Instalación de termo eléctrico':'Instalación y sustitución de termos eléctricos.',
  'Sustitución de grifo':'Montaje o sustitución de grifería.',
  'Cambio de sifón':'Revisión y sustitución de sifones.',
- 'Mecanismo de cisterna':'Reparación de mecanismos y cisternas.'
+ 'Mecanismo de cisterna':'Reparación de mecanismos y cisternas.',
+ 'Montaje de mueble en kit (mediano)':'Montaje y ajuste de un mueble estándar en kit.',
+ 'Colocación de estantería':'Nivelación y fijación segura a una pared adecuada.',
+ 'Colgar cuadros o espejos (hasta 3)':'Marcado, nivelación y colocación de hasta tres piezas.',
+ 'Instalación de barras de cortina o estores':'Fijación de soportes y ajuste de barra o estor.',
+ 'Instalación de soporte de TV en pared':'Colocación de soporte compatible según tipo de pared.',
+ 'Ajuste de puertas y bisagras':'Corrección de descuadres, roces y bisagras flojas.',
+ 'Cambio de cinta de persiana':'Sustitución de cinta y revisión del recogedor.',
+ 'Renovación de silicona de bañera o ducha':'Retirada de silicona deteriorada y sellado sanitario.',
+ 'Instalación de lámpara sencilla':'Sustitución de luminaria básica en punto existente.',
+ 'Colocación de accesorios de baño':'Montaje de toalleros, portarrollos o pequeños soportes.',
+ 'Reparación menor de muebles':'Ajuste y fijación de herrajes o uniones accesibles.',
+ 'Cambio de manilla de puerta':'Sustitución de juego de manillas compatible.'
 };
 const featuredServiceIndices={
  'Fontanería':[2,0,6,3],
