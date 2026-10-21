@@ -112,6 +112,15 @@ with connect() as db:
       ('reparado_guard_operator_schedule_v7',
        'reparado_notify_operator_assignment_v8',
        'reparado_guard_invoice_v9') and not tgisinternal""").fetchone()[0]==3
+    # Informe de puesta en marcha sin datos personales. Debe ser seguro
+    # repetirlo porque solo utiliza consultas SELECT sobre la base.
+    audit=(ROOT/"supabase/auditoria-readonly-v9.sql").read_text(encoding="utf8")
+    audit_result=db.execute(audit).fetchall()
+    assert len(audit_result)>=15,audit_result
+    pending=[row for row in audit_result if row[1]!='OK']
+    assert not pending,("Auditoría pendiente",pending)
+    assert db.execute(audit).fetchall()==audit_result
+    print(f"Auditoría Supabase: {len(audit_result)} comprobaciones correctas y ninguna escritura",flush=True)
 
 with as_user(C1) as db:
     assert ids(db,"public.service_requests")=={R1}
