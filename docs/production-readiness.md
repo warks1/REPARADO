@@ -4,7 +4,7 @@ Estado: interfaz web y APK Android de pruebas generadas. **No desplegar a client
 
 ## Base de datos y seguridad
 1. Crear un proyecto propio de Supabase en una región adecuada para operar en España/UE.
-2. Aplicar, en una base de pruebas, `schema.sql` y después `supabase/migration-v4.sql`, `supabase/migration-v5.sql`, `supabase/migration-v6.sql` y **`supabase/migration-v7.sql`** en ese orden. El esquema incorpora parte de v4; comprobar que las migraciones son repetibles antes de aplicarlas al entorno definitivo. La V7 instala la protección de reservas simultáneas en PostgreSQL y comprueba antes que no existan conflictos.
+2. Aplicar, en una base de pruebas, `schema.sql` y después `supabase/migration-v4.sql`, `supabase/migration-v5.sql`, `supabase/migration-v6.sql`, **`supabase/migration-v7.sql` y `supabase/migration-v8.sql`** en ese orden. El esquema incorpora parte de v4; comprobar que las migraciones son repetibles antes de aplicarlas al entorno definitivo. La V7 instala la protección de reservas simultáneas en PostgreSQL y comprueba antes que no existan conflictos.
 3. Ejecutar `supabase/storage-photos.sql` para crear un bucket **privado** para imágenes.
 4. Probar por separado las cuentas `customer`, `operator` y `admin`, así como las restricciones de RLS: un cliente no puede ver solicitudes o fotos de otro, un operario únicamente ve los trabajos asignados y solo administración puede asignar personal y modificar precios.
 5. Verificar el registro, inicio de sesión, confirmación de email, recuperación de contraseña y las acciones de aceptación de presupuesto.
@@ -24,6 +24,12 @@ Estado: interfaz web y APK Android de pruebas generadas. **No desplegar a client
 - La migración V7 se niega a instalarse si hay citas programadas sin operario/fecha, operarios inválidos o conflictos históricos. Corregir los registros y repetir la instalación; no desactivar el control preventivo.
 - **Concurrencia y operación:** ensayar con conexiones Supabase reales, roles `admin` y `operator`, dos usuarios simultáneos, zonas horarias y reprogramaciones. El bloqueo V7 está diseñado para transacciones PostgreSQL `READ COMMITTED`; cualquier integración que utilice niveles de aislamiento personalizados debe comprobarse por separado. La separación fija de 60 minutos no calcula desplazamientos ni duración real.
 - Si no puede consultarse la agenda, el panel bloquea el guardado de la nueva programación en lugar de asumir disponibilidad. Revisar con cuentas `admin` y `operator` reales, cambios de estado y límites de zonas horarias.
+
+## Avisos a operarios (migración V8, pendiente de instalar)
+- `supabase/migration-v8.sql` incorpora avisos **internos** a la tabla privada `notifications` cuando se asigna un trabajo al operario, se programa o cambia su visita, comienza el trabajo, se retira su asignación o se cancela. No cambia los permisos de acceso ni revela dirección o teléfono en los mensajes.
+- Los avisos se insertan en la misma transacción que el cambio de solicitud. Si V7 rechaza una reserva incompatible, V8 no creará un aviso engañoso. El SQL es repetible y se verifica contra PostgreSQL de pruebas.
+- Para activarlo hay que ejecutar V8 **después de V7** en un proyecto Supabase asociado, con las políticas de seguridad vigentes, y probar con cuentas reales de cliente, operario y administración.
+- No se trata de push remoto: `device_tokens` y el registro de tokens Capacitor no envían automáticamente notificaciones. El envío a dispositivos requiere FCM/APNs, un backend seguro, consentimiento y ensayos en dispositivos.
 
 ## Notificaciones, facturación y privacidad
 - Los avisos internos registrados en la base de datos no implican **push remoto**. Para enviar push reales deben configurarse FCM y APNs y un backend que mande los avisos de forma autenticada.
