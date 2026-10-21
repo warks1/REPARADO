@@ -1,7 +1,7 @@
 import './style.css'
 import './customer-theme.css'
 import './vivid-theme.css'
-import { supabase, isConfigured } from './supabase.js'
+import { supabase, isConfigured, authLinkIntent } from './supabase.js'
 import { mountLocal } from './local-preview.js'
 import { services } from './catalog-data.js'
 
@@ -17,7 +17,7 @@ function startupFailed(error) {
 if(isConfigured){
   import('./connected.js')
     .then(({mountConnected})=>{
-      mountConnected({app,services,supabase});
+      mountConnected({app,services,supabase,authLinkIntent});
       window.__reparadoBoot?.ready();
     })
     .catch(startupFailed);
