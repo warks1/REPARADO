@@ -1,0 +1,32 @@
+name: Validar rama Manitas antes de publicar
+on:
+  push:
+    branches: [mejoras/manitas-y-categorias-20261021]
+permissions:
+  contents: read
+jobs:
+  verificar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Instalar dependencias
+        run: npm install --no-audit --no-fund
+      - name: Pruebas unitarias
+        run: npm test
+      - name: Compilación Vite
+        run: npm run build
+      - name: Instalar navegadores de pruebas
+        run: npx playwright install --with-deps chromium webkit
+      - name: Pruebas visuales móviles
+        run: npm run test:visual
+      - name: Guardar diagnósticos
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pruebas-rama-manitas
+          path: test-results
+          if-no-files-found: warn
