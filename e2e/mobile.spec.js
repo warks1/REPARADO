@@ -283,22 +283,26 @@ test('las cuatro ilustraciones tienen movimiento real sin franjas blancas y Mani
     const svg=card.locator('svg.clean-category-illustration');
     await expect(svg).toBeVisible();
     await expect(card.locator('img.category-photo')).toHaveCount(0);
-    const info=await svg.evaluate(async node=>{
+    // El elemento animado es el contenedor HTML: mover el SVG raíz producía
+    // distintas escalas por su viewBox y se veía casi inmóvil en smartphone.
+    const stage=card.locator('.category-motion');
+    await expect(stage).toBeVisible();
+    const info=await stage.evaluate(async node=>{
       const anim=node.getAnimations().find(a=>a.animationName==='reparado-category-float');
       if(!anim)return {name:getComputedStyle(node).animationName,travel:0,hasBitmap:!!node.querySelector('image')};
       const frame=()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
       anim.pause();
       anim.currentTime=0;
       await frame();
-      const first=node.getBoundingClientRect().top;
+      const first=new DOMMatrix(getComputedStyle(node).transform).m42;
       anim.currentTime=1700;
       await frame();
-      const second=node.getBoundingClientRect().top;
+      const second=new DOMMatrix(getComputedStyle(node).transform).m42;
       anim.play();
       return {name:getComputedStyle(node).animationName,travel:Math.abs(second-first),hasBitmap:!!node.querySelector('image')};
     });
     expect(info.name).toContain('reparado-category-float');
-    expect(info.travel).toBeGreaterThan(4); // No es un zoom imperceptible
+    expect(info.travel).toBeGreaterThan(10); // 16 píxeles CSS, movimiento visible
     expect(info.hasBitmap).toBe(false); // Imposible mostrar una banda del viejo WebP
   }
   const manitas=page.locator('.theme-handyman img.category-photo');
