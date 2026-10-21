@@ -1,7 +1,24 @@
 name: Validar avisos internos V8
 on:
   push:
-    branches: [feat/notificaciones-operarios-v8-20261021]
+    branches: [main]
+    paths:
+      - 'supabase/migration-v8.sql'
+      - 'tests/notifications-db-v8.py'
+      - 'tests/notifications-v8.test.mjs'
+      - 'notifications.js'
+      - 'connected.js'
+      - '.github/workflows/qa-operator-notifications-v8.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'supabase/migration-v8.sql'
+      - 'tests/notifications-db-v8.py'
+      - 'tests/notifications-v8.test.mjs'
+      - 'notifications.js'
+      - 'connected.js'
+      - '.github/workflows/qa-operator-notifications-v8.yml'
+  workflow_dispatch:
 permissions:
   contents: read
 jobs:
