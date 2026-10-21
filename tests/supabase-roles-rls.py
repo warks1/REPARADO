@@ -147,7 +147,11 @@ with as_user(ADM) as db:
     assert ids(db,"public.service_requests")=={R1,R2}
     assert len(ids(db,"public.invoices"))==3  # El admin ve borradores.
     assert len(ids(db,"public.profiles"))==4
-    assert len(ids(db,"public.notifications"))==1
+    # El admin recibe avisos V5 por solicitudes nuevas y presupuestos
+    # aceptados, además de su aviso inicial; siempre son avisos propios.
+    own=ids(db,"public.notifications")
+    assert len(own)>=2
+    assert db.execute("select count(*) from public.notifications where user_id<>%s",(ADM,)).fetchone()[0]==0
     assert db.execute("""update public.service_requests
       set operator_id=%s,operator_name='Técnico de pruebas',
           status='scheduled',scheduled_at='2026-10-26 10:00Z'
