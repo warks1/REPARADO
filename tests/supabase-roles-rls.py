@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Pruebas de permisos REPARADO sobre un PostgreSQL 16 TEMPORAL.
 
-Ejecuta el esquema original más V4–V9; simula auth.uid() / auth.role()
+Ejecuta el esquema original más V4–V11; simula auth.uid() / auth.role()
 de Supabase y las identidades customer, operator y admin. No se conecta
 nunca a la cuenta ni a la base real del usuario.
 """
@@ -72,7 +72,16 @@ with connect() as db:
     db.execute("grant execute on function auth.uid() to anon,authenticated")
     db.execute("grant execute on function auth.role() to anon,authenticated")
     db.execute((ROOT/"schema.sql").read_text(encoding="utf8"))
-    for version in range(4,11):
+    for version in range(4,12):
+        if version==11:
+            # PostgreSQL local no proporciona los GRANT iniciales de Supabase
+            # hospedado. Simular las concesiones amplias reales de su rol anon.
+            db.execute("""grant select,insert,update,delete on
+              public.profiles,public.service_requests,public.messages,
+              public.notifications,public.device_tokens,public.invoices to anon""")
+            db.execute("""grant select on
+              public.profiles,public.service_requests,public.messages,
+              public.notifications,public.device_tokens,public.invoices to authenticated""")
         db.execute((ROOT/f"supabase/migration-v{version}.sql").read_text(encoding="utf8"))
     db.execute("grant usage on schema public to anon,authenticated")
     # En Supabase estos permisos básicos son los valores por defecto del
@@ -129,7 +138,7 @@ with connect() as db:
     # repetirlo porque solo utiliza consultas SELECT sobre la base.
     audit=(ROOT/"supabase/auditoria-readonly-v9.sql").read_text(encoding="utf8")
     audit_result=db.execute(audit).fetchall()
-    assert len(audit_result)==19,audit_result
+    assert len(audit_result)==20,audit_result
     pending=[row for row in audit_result if row[1]!='OK']
     assert not pending,("Auditoría pendiente",pending)
     assert db.execute(audit).fetchall()==audit_result
@@ -187,8 +196,13 @@ with as_user(OP) as db:
     assert db.execute("update public.service_requests set status='completed' where id=%s returning id",(R1,)).rowcount==1
 
 with as_user(None,role="anon") as db:
-    # Sin permisos de SELECT, un visitante anon no accede a solicitudes.
-    rejected(db,"select id from public.service_requests",error_code="42501")
-    rejected(db,"select id from public.invoices",error_code="42501")
+    for tab in ('profiles','service_requests','messages','notifications','device_tokens','invoices'):
+        rejected(db,f"select id from public.{tab}",error_code="42501")
+        assert not db.execute("select has_table_privilege('anon',%s,'INSERT')",(f"public.{tab}",)).fetchone()[0]
+        assert not db.execute("select has_table_privilege('anon',%s,'UPDATE')",(f"public.{tab}",)).fetchone()[0]
+        assert not db.execute("select has_table_privilege('anon',%s,'DELETE')",(f"public.{tab}",)).fetchone()[0]
+    rejected(db,"select public.is_reparado_admin()",error_code="42501")
+    rejected(db,"select public.accept_reparado_quote(%s)",(R1,),error_code="42501")
+    print("REPARADO Test privado: anon sin permisos sobre seis tablas ni RPC",flush=True)
 
-print("Integración RLS V4–V9: cliente, segundo cliente, operario, admin, anon, notas e invoices OK",flush=True)
+print("Integración RLS V4–V11: cliente, segundo cliente, operario, admin, anon, notas e invoices OK",flush=True)

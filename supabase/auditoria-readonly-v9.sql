@@ -1,4 +1,4 @@
--- REPARADO · auditoría de SOLO LECTURA para Supabase, tras migraciones V4–V10.
+-- REPARADO · auditoría de SOLO LECTURA para Supabase, tras migraciones V4–V11.
 -- Ejecutar en SQL Editor de un proyecto de pruebas, sin claves en ChatGPT.
 -- No crea tablas, no instala funciones, no altera ni muestra datos privados:
 -- solo indica presencia de protecciones y cuenta incidencias agregadas.
@@ -110,6 +110,20 @@ with auditoria as (
        'reparado_invoices_customer_created_v10',
        'reparado_invoices_request_v10')),
    'Crear índices de usuario y claves externas para solicitudes, mensajes, avisos, tokens y facturas.'
+ union all select 200,'V11: seis tablas sin acceso anónimo',
+   not exists (
+      select 1 from (values
+       ('public.profiles'::regclass),
+       ('public.service_requests'::regclass),
+       ('public.messages'::regclass),
+       ('public.notifications'::regclass),
+       ('public.device_tokens'::regclass),
+       ('public.invoices'::regclass)) t(tab)
+      where has_table_privilege('anon',tab,'SELECT')
+         or has_table_privilege('anon',tab,'INSERT')
+         or has_table_privilege('anon',tab,'UPDATE')
+         or has_table_privilege('anon',tab,'DELETE')),
+   'Revocar SELECT, INSERT, UPDATE y DELETE a anon en todas las tablas.'
 )
 select control,case when correcto then 'OK' else 'PENDIENTE' end as resultado,
        case when correcto then 'Comprobación superada.' else accion end as detalle
