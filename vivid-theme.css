@@ -587,3 +587,8 @@ body,.shell,.customer-header,.customer-nav {background:#fff}
 .review-moderation-buttons button:focus-visible,.review-moderation-entry:focus-visible{outline:3px solid #237cef;outline-offset:3px}
 @media(max-width:440px){.review-moderation-card{padding:13px}.review-moderation-buttons button{min-width:0}}
 @media(prefers-reduced-motion:reduce){.review-moderation-card,.review-moderation-buttons button{transition:none!important;animation:none!important}}
+
+/* V17 · Acción de valoración para trabajos realmente terminados. */
+.customer-review-action{border-radius:13px!important;background:#fff0dc!important;color:#864414!important;border:1px solid #f4bf7d!important;font-weight:800!important;min-height:42px;box-shadow:0 4px 10px rgba(154,91,24,.07)}
+.customer-review-action:focus-visible{outline:3px solid #2986d5;outline-offset:3px}
+@media(prefers-reduced-motion:reduce){.customer-review-action{animation:none!important;transition:none!important}}

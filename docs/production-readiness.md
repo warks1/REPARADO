@@ -90,3 +90,10 @@ La app estará lista para clientes solo cuando se hayan ejecutado y aprobado las
 - Al aprobar, la opinión verdadera aparece en la lista y suma a la media real; al rechazar, permanece oculta. Los 32 comentarios ficticios siguen identificados como ejemplos y nunca se insertan en `customer_reviews`.
 - Ejecutar `tests/reviews-moderation-rls-v15.py` solo después del montaje temporal de `tests/supabase-roles-rls.py` en PostgreSQL local: comprueba autorizaciones y denegaciones para cliente, cliente ajeno, operario, administrador y anónimo. No ejecutar este test en Supabase Test o producción: la prueba local introduce registros ficticios.
 - Antes de conectar datos verdaderos, comprobar manualmente en navegador con una cuenta de administrador invitada el flujo enviar → pendiente → aprobar/rechazar → aparecer/no aparecer públicamente. No mostrar reseñas auténticas sin consentimiento adecuado ni publicar datos personales que aparezcan en los comentarios.
+
+## V17 · Valorar desde «Mis solicitudes»
+- Una solicitud con estado `completed` muestra al cliente autenticado el botón «Valorar este trabajo».
+- El botón abre las reseñas en la portada y preselecciona exclusivamente esa solicitud tras comprobar de nuevo que pertenece al usuario y continúa finalizada en Supabase; no permite puntuar trabajos sin terminar.
+- El formulario usa puntuaciones de 1 a 5 estrellas y comentario de 12 a 1.000 caracteres. La valoración real queda en `pending`, y solo administración puede aprobarla con V15.
+- Enlaces de acciones no sustituyen RLS: la base de datos comprueba propiedad, estado completado y la restricción de una reseña por solicitud.
+- La prueba `e2e-private/customer-review-flow-v17.spec.mjs` utiliza un usuario, dos trabajos y backend **ficticios**. No demuestra un inicio de sesión real, ni introduce contenido en REPARADO Test.
