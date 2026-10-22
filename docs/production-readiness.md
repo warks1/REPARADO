@@ -79,15 +79,15 @@ La app estará lista para clientes solo cuando se hayan ejecutado y aprobado las
 
 ## V13 · Catálogo fotográfico y opiniones verificables (22/10/2026)
 - El catálogo incorpora una referencia visual para cada uno de los 37 servicios: conserva las 16 imágenes locales previas y utiliza 21 URLs ilustrativas externas de Pexels con créditos en `public/creditos-fotos-servicios.html`. Las fotos externas no están descargadas localmente ni hay garantía de permanencia; el navegador muestra un símbolo cuando no cargan.
-- La portada contiene 32 reseñas **ficticias de demostración**, etiquetadas una por una y como conjunto. No insertar esos ejemplos en Supabase, no asignarles autor real ni incluirlas en ninguna nota o promedio público.
+- A partir de V18, la portada no contiene reseñas ficticias: la lista incluye exclusivamente valoraciones reales aprobadas; si está vacía muestra un mensaje informativo y no calcula nota media.
 - La migración `supabase/migration-v13.sql` crea `customer_reviews` con RLS: lectura pública limitada a columnas no identificativas y a reseñas aprobadas; un cliente conectado solo puede enviar una reseña para una solicitud suya terminada, con puntuación 1–5 y texto de 12–1000 caracteres. La reseña queda pendiente de moderación. No se permite al cliente aprobar, editar ni borrar.
 - En el modo local, la sección permite probar el formulario sin escribir ni transmitir valoraciones. La web conectada necesita V13 aplicada. La publicación real de opiniones debe hacerse desde un administrador de bases autorizado tras evaluar el contenido, no por el cliente.
-- Antes de publicar en producción, comprobar la licencia/disponibilidad de los enlaces fotográficos, la carga móvil, una reseña pendiente propia y ajena, la ausencia de fugas de identificadores, la moderación administrativa y la presentación separada de ejemplos frente a testimonios auténticos.
+- Antes de publicar en producción, comprobar licencias de las fotografías, carga móvil, restricciones de propiedad, moderación administrativa y que solo se muestren opiniones aprobadas.
 
 ## V15 · Moderación real de reseñas desde la app
 - Tras V13, aplicar `supabase/migration-v15.sql` **primero en REPARADO Test**. La migración concede únicamente UPDATE de la columna `status` a usuarios autenticados, con RLS que lo permite solo a `public.is_reparado_admin()`, exclusivamente cuando la opinión sigue `pending` y pasa a `approved` o `rejected`.
 - El panel interno y Mi perfil muestran al administrador la opción «Revisar reseñas». El operario y el cliente no reciben esa opción ni permisos del servidor para moderar. El administrador revisa texto, puntuación y fecha; **no puede cambiar el texto ni la nota**.
-- Al aprobar, la opinión verdadera aparece en la lista y suma a la media real; al rechazar, permanece oculta. Los 32 comentarios ficticios siguen identificados como ejemplos y nunca se insertan en `customer_reviews`.
+- Al aprobar, la opinión real aparece en la lista y suma a la media; al rechazar, permanece oculta. La web no genera ni publica reseñas ficticias.
 - Ejecutar `tests/reviews-moderation-rls-v15.py` solo después del montaje temporal de `tests/supabase-roles-rls.py` en PostgreSQL local: comprueba autorizaciones y denegaciones para cliente, cliente ajeno, operario, administrador y anónimo. No ejecutar este test en Supabase Test o producción: la prueba local introduce registros ficticios.
 - Antes de conectar datos verdaderos, comprobar manualmente en navegador con una cuenta de administrador invitada el flujo enviar → pendiente → aprobar/rechazar → aparecer/no aparecer públicamente. No mostrar reseñas auténticas sin consentimiento adecuado ni publicar datos personales que aparezcan en los comentarios.
 
@@ -97,3 +97,9 @@ La app estará lista para clientes solo cuando se hayan ejecutado y aprobado las
 - El formulario usa puntuaciones de 1 a 5 estrellas y comentario de 12 a 1.000 caracteres. La valoración real queda en `pending`, y solo administración puede aprobarla con V15.
 - Enlaces de acciones no sustituyen RLS: la base de datos comprueba propiedad, estado completado y la restricción de una reseña por solicitud.
 - La prueba `e2e-private/customer-review-flow-v17.spec.mjs` utiliza un usuario, dos trabajos y backend **ficticios**. No demuestra un inicio de sesión real, ni introduce contenido en REPARADO Test.
+
+## V18 · Solo reseñas auténticas (22/10/2026)
+- Se retiraron las 32 reseñas ilustrativas de código y de la interfaz; se eliminaron sus filtros, estilos y pruebas obsoletas. No hay datos ficticios precargados.
+- La portada presenta únicamente opiniones de `customer_reviews` en estado `approved`, con puntuaciones reales de 1 a 5 estrellas. Si no las hay, muestra «Todavía no hay valoraciones reales publicadas», sin puntuación inventada.
+- El formulario permanece disponible en el modo conectado para servicios finalizados, con aprobación administrativa. En el modo demostración se puede probar el formulario, pero nunca se publican o guardan reseñas.
+- Las pruebas de navegador deben verificar que no existen tarjetas `review-demo` ni filtros de ejemplos y que las reseñas pendientes o rechazadas no se publican.
