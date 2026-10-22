@@ -5,7 +5,7 @@
 const photos = new Map([
   [
     "Cambio de sifón",
-    5629141
+    16509869
   ],
   [
     "Mecanismo de cisterna",
@@ -57,7 +57,7 @@ const photos = new Map([
   ],
   [
     "Reparación de tablas",
-    1388944
+    6790935
   ],
   [
     "Acuchillado/lijado",
@@ -81,7 +81,7 @@ const photos = new Map([
   ],
   [
     "Reforma integral de cocina",
-    15124969
+    15124970
   ],
   [
     "Reforma de vivienda",
