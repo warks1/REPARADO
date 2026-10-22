@@ -1,3 +1,4 @@
+import { mountReviewModeration } from './review-moderation.js';
 import { mountReviews } from './reviews.js';
 import {appHeader,bottomNavigation,setActiveNav,renderLanding,renderCategory,serviceFormHeader,formPeriodPicker,serviceRow,matchServices,featuredServices,showAllCategories} from './customer-ui.js'
 import { operatorMaySetStatus } from './rules.js'
@@ -67,6 +68,7 @@ export function mountConnected({app, services, supabase, authLinkIntent=null}) {
       else if(view==='profile')loadProfile();
       else if(view==='notifications')loadNotifications();
       else if(view==='admin')renderAdmin();
+      else if(view==='review-moderation')openReviewModeration();
       else renderHome();
     }
   });
@@ -359,7 +361,7 @@ export function mountConnected({app, services, supabase, authLinkIntent=null}) {
     if(!session){showLogin();return}
     currentView='profile';
     main.innerHTML=`<section class="card">${backButton}<h2>Mi perfil</h2><p>${esc(session.user.email)}</p><p>Tipo de cuenta: ${esc(profile?.role||'customer')}</p>
-      <form id="profile-form"><label>Nombre completo<input name="full_name" autocomplete="name" maxlength="100" value="${esc(profile?.full_name||'')}"></label><label>Teléfono<input name="phone" type="tel" autocomplete="tel" maxlength="25" value="${esc(profile?.phone||'')}"></label><button type="submit">Guardar perfil</button></form><div class="flex-actions"><button type="button" data-logout>Cerrar sesión</button><button type="button" id="view-invoices">🧾 Mis facturas</button>${userIsStaff()?'<button type="button" data-view="admin">🧰 Gestión interna</button>':''}</div>
+      <form id="profile-form"><label>Nombre completo<input name="full_name" autocomplete="name" maxlength="100" value="${esc(profile?.full_name||'')}"></label><label>Teléfono<input name="phone" type="tel" autocomplete="tel" maxlength="25" value="${esc(profile?.phone||'')}"></label><button type="submit">Guardar perfil</button></form><div class="flex-actions"><button type="button" data-logout>Cerrar sesión</button><button type="button" id="view-invoices">🧾 Mis facturas</button>${userIsStaff()?'<button type="button" data-view="admin">🧰 Gestión interna</button>':''}${profile?.role==='admin'?'<button type="button" data-view="review-moderation">⭐ Moderar reseñas</button>':''}</div>
       <p data-feedback class="feedback" role="status"></p></section>`;
     main.querySelector('#view-invoices').addEventListener('click',loadInvoices);
     main.querySelector('#profile-form').addEventListener('submit',async event=>{
@@ -431,6 +433,21 @@ export function mountConnected({app, services, supabase, authLinkIntent=null}) {
     });
   }
 
+  async function openReviewModeration(){
+    if(!session || profile?.role!=='admin'){
+      if(!session)showLogin();
+      else renderHome();
+      return;
+    }
+    currentView='review-moderation';
+    setActiveNav(app,'profile');
+    await mountReviewModeration({
+      main,supabase,
+      isActive:()=>currentView==='review-moderation' && Boolean(session) && profile?.role==='admin',
+      onBack:()=>renderAdmin(adminFilter)
+    });
+  }
+
   async function renderAdmin(filter=adminFilter){
     setActiveNav(app,'profile');
     if(!userIsStaff()){renderHome();return}
@@ -463,6 +480,7 @@ export function mountConnected({app, services, supabase, authLinkIntent=null}) {
       <div><strong>${counts.unassigned}</strong><small>Sin operario</small></div>
     </div>
     <div class="staff-filters" role="group" aria-label="Filtrar trabajos">${jobFilters.filter(f=>admin||f.id!=='unassigned').map(f=>`<button type="button" data-admin-filter="${f.id}" aria-pressed="${filter===f.id}">${esc(f.label)} (${counts[f.id]})</button>`).join('')}</div>
+    ${admin?'<button type="button" class="review-moderation-entry" data-view="review-moderation">⭐ Revisar reseñas de clientes</button>':''}
     <p class="notice">Los precios indicados incluyen el 21 % de IVA. Este panel no emite facturas fiscales.</p>
     ${admin?'<p class="notice">Agenda: se aplica un margen preventivo de '+staffVisitGapMinutes+' minutos entre comienzos de visita para cada operario. Confirma la duración real del servicio y el desplazamiento antes de programar.</p>':''}
     <p data-feedback class="feedback" role="status"></p></section>
