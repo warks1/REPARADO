@@ -15,7 +15,8 @@ create index if not exists customer_reviews_public_idx on public.customer_review
 create index if not exists customer_reviews_customer_idx on public.customer_reviews(customer_id,created_at desc);
 alter table public.customer_reviews enable row level security;
 revoke all on public.customer_reviews from public,anon,authenticated;
-grant select on public.customer_reviews to anon,authenticated;
+-- La API pública no expone IDs personales de clientes ni de solicitudes.
+grant select(id,rating,comment,status,created_at) on public.customer_reviews to anon,authenticated;
 grant insert(customer_id,request_id,rating,comment) on public.customer_reviews to authenticated;
 drop policy if exists "reviews show approved" on public.customer_reviews;
 drop policy if exists "reviews see own" on public.customer_reviews;
