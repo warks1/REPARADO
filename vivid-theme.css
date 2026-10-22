@@ -556,3 +556,17 @@ body,.shell,.customer-header,.customer-nav {background:#fff}
 .reparado-reviews [data-review-feedback]{font-weight:650;font-size:13px}
 @media (max-width:410px){.demo-review-grid,.real-review-grid{grid-template-columns:1fr}}
 @media(prefers-reduced-motion:reduce){.reparado-reviews *{animation:none!important;transition:none!important}}
+
+/* V14: listado único de reseñas con distinción permanente entre reales y ejemplos. */
+.review-feed-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:11px;margin-top:12px}
+.review-filters{display:flex;gap:8px;flex-wrap:wrap;margin-top:11px;margin-bottom:6px}
+.review-filter{background:#fff;border:1px solid #d6e5f6;color:#21426c;border-radius:999px;font:700 12px/1.2 system-ui,sans-serif;padding:9px 13px;cursor:pointer}
+.review-filter.active,.review-filter[aria-pressed=true]{background:#ff662a;border-color:#ff662a;color:white;box-shadow:0 5px 12px rgba(248,96,37,.18)}
+.review-filter:focus-visible,.review-expand:focus-visible{outline:3px solid #1d90d7;outline-offset:3px}
+.reviews-summary{margin:4px 0 9px;font-size:13px;font-weight:700;line-height:1.55;color:#30496d}
+.review-feed-grid .review-real{background:#fffdf8;border-color:#ffe3b8}
+.review-feed-grid .review-demo{background:#f6f8fb}
+.review-feed-grid .review-example-label{color:#6a7690}
+.review-feed-grid .review-verified-label{color:#146b51;font-weight:800}
+.review-feed-grid .review-card[hidden]{display:none!important}
+@media(max-width:410px){.review-feed-grid{grid-template-columns:1fr}.review-filter{padding:8px 11px}}
