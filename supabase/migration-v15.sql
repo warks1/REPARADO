@@ -1,5 +1,5 @@
 -- REPARADO V15 · Moderación por administradores de opiniones auténticas.
--- Requiere V13. No crea, altera ni publica las 32 opiniones ficticias.
+-- Requiere V13. Solo modera opiniones auténticas existentes; no genera reseñas.
 -- La lectura general sigue limitada a cinco columnas no identificativas.
 -- Los clientes no adquieren permisos de moderación.
 do $v15$
