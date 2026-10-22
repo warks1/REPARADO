@@ -30,6 +30,7 @@ spoof_c1=f"{C1}/{R2}/foto-ajena.webp"
 spoof_c2=f"{C2}/{R1}/carpeta-no-coincide.webp"
 orphan=f"{C1}/10000000-0000-4000-8000-000000000099/huérfano.webp"
 extra=f"{C1}/{R1}/subdirectorio/invalido.webp"
+new_c1=f"{C1}/{R1}/nueva.webp"
 
 def connect():
     return psycopg.connect(DSN)
@@ -104,7 +105,7 @@ with connect() as db:
 
 with acting_as(C1) as db:
     assert names(db)=={valid_c1},names(db)
-    assert db.execute("insert into storage.objects(bucket_id,name) values(%s,%s) returning name",(B,f"{C1}/{R1}/nueva.webp")).fetchone()[0].endswith("/nueva.webp")
+    assert db.execute("insert into storage.objects(bucket_id,name) values(%s,%s) returning name",(B,new_c1)).fetchone()[0].endswith("/nueva.webp")
     rejected(db,"insert into storage.objects(bucket_id,name) values(%s,%s)",(B,spoof_c1))
     rejected(db,"insert into storage.objects(bucket_id,name) values(%s,%s)",(B,valid_c2))
     rejected(db,"insert into storage.objects(bucket_id,name) values(%s,%s)",(B,extra))
@@ -116,11 +117,11 @@ with acting_as(C2) as db:
     rejected(db,"insert into storage.objects(bucket_id,name) values(%s,%s)",(B,spoof_c2))
 
 with acting_as(OP) as db:
-    assert names(db)=={valid_c1},names(db)
+    assert names(db)=={valid_c1,new_c1},names(db)
     rejected(db,"insert into storage.objects(bucket_id,name) values(%s,%s)",(B,valid_c1))
 
 with acting_as(ADM) as db:
-    assert names(db)=={valid_c1,valid_c2},names(db)
+    assert names(db)=={valid_c1,valid_c2,new_c1},names(db)
     rejected(db,"insert into storage.objects(bucket_id,name) values(%s,%s)",(B,valid_c2))
 
 with acting_as(None,role="anon") as db:
