@@ -211,7 +211,7 @@ export function renderReviewsSection(){
     '<p data-review-feedback role="status" aria-live="polite"></p></div></section>';
 }
 
-export async function mountReviews(main,{supabase=null,session=null}={}){
+export async function mountReviews(main,{supabase=null,session=null,selectedRequestId=null}={}){
   const root=main.querySelector('#reparado-reviews');
   if(!root)return;
   let real=[],filter='all',expanded=false,loaded=!supabase,loadFailed=false;
@@ -283,7 +283,7 @@ export async function mountReviews(main,{supabase=null,session=null}={}){
   }
   try{
     const {data,error}=await supabase.from('service_requests')
-      .select('id').eq('customer_id',session.user.id).eq('status','completed').limit(50);
+      .select('id,service_name').eq('customer_id',session.user.id).eq('status','completed').limit(50);
     if(error)throw error;
     if(!root.isConnected)return;
     if(!data?.length){
@@ -291,9 +291,15 @@ export async function mountReviews(main,{supabase=null,session=null}={}){
       return;
     }
     form.elements.request_id.innerHTML='<option value="">Selecciona tu servicio</option>'+
-      data.map((row,i)=>'<option value="'+escapeText(row.id)+'">Servicio finalizado '+(i+1)+'</option>').join('');
+      data.map((row,i)=>'<option value="'+escapeText(row.id)+'">'+escapeText(row.service_name||'Servicio finalizado '+(i+1))+'</option>').join('');
     form.hidden=false;
-    note.textContent='Solo puedes valorar solicitudes tuyas que consten como terminadas. La publicación requiere revisión.';
+    const requested=data.find(row=>row.id===selectedRequestId);
+    if(requested){
+      form.elements.request_id.value=requested.id;
+      note.textContent='Valora el trabajo terminado: '+String(requested.service_name||'servicio seleccionado')+'. La publicación requiere revisión.';
+    }else{
+      note.textContent='Solo puedes valorar solicitudes tuyas que consten como terminadas. La publicación requiere revisión.';
+    }
     form.addEventListener('submit',async e=>{
       e.preventDefault();
       const d=new FormData(form),rating=Number(d.get('rating')),comment=String(d.get('comment')||'').trim();
