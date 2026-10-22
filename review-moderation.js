@@ -30,7 +30,7 @@ export async function mountReviewModeration({main,supabase,onBack,isActive=()=>t
   main.innerHTML='<section class="card review-moderation" id="review-moderation">'+
     '<button type="button" class="screen-back" data-review-admin-back aria-label="Volver al panel interno">← Volver</button>'+
     '<h2>Moderación de reseñas</h2>'+
-    '<p class="notice">Solo administración. Revisa comentarios auténticos sobre trabajos finalizados antes de publicarlos. Las 32 reseñas de ejemplo no están aquí ni se aprueban.</p>'+
+    '<p class="notice">Solo administración. Revisa comentarios auténticos sobre trabajos finalizados antes de publicarlos. En esta pantalla solo se revisan valoraciones auténticas.</p>'+
     '<p data-review-moderation-feedback role="status" aria-live="polite">Cargando reseñas pendientes…</p>'+
     '<div data-review-moderation-list></div></section>';
   const root=main.querySelector('#review-moderation');
