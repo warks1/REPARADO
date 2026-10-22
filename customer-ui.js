@@ -1,3 +1,5 @@
+import { additionalServicePhoto } from './service-photos.js';
+import { renderReviewsSection } from './reviews.js';
 
 // Diseño compartido entre la web, Android (Capacitor) y iOS (Capacitor).
 // Son componentes reales de interfaz, no capturas ni imágenes de maqueta.
@@ -176,6 +178,7 @@ export function renderLanding(services,{notice=''}={}) {
     ).join('')+'</section>'+
     '<div class="section-heading service-heading"><h2>Servicios destacados</h2></div>'+
     '<div class="popular-list">'+featuredServices(services).map(({s,i})=>serviceRow(s,i)).join('')+'</div>'+
+    renderReviewsSection()+
     (notice?'<p class="subtle-notice">'+esc(notice)+'</p>':'')+
     '<div class="no-results" hidden>No hemos encontrado ese servicio. Puedes consultar todas las categorías.</div>'+
    '</div>';
@@ -252,10 +255,16 @@ export function serviceRow(s,i) {
   if(!s)return '';
   const cat=catFor(s[0]);
   const symbol=handymanSymbols[s[1]] || (/grifo/i.test(s[1])?'🚰':/fuga/i.test(s[1])?'💧':/desatasco|sifón/i.test(s[1])?'🛁':/cisterna/i.test(s[1])?'🚽':/pladur/i.test(s[1])?'🧱':/alicatado/i.test(s[1])?'▦':/parquet|tabla|barniz/i.test(s[1])?'🪵':cat.slug==='renovation'?'🏡':'🛠️');
+  // Conservar las imágenes existentes de Fontanería y Manitas.
   const photo=cat.slug==='plumbing'?(/fuga/i.test(s[1])?'leak':/desatasco/i.test(s[1])?'drain':/termo/i.test(s[1])?'heater':/grifo/i.test(s[1])?'faucet':null):
     cat.slug==='handyman'?handymanPhotoKeys[s[1]]:null;
-  const photoUrl=photo?imageBase()+'services/'+(cat.slug==='handyman'?'handyman-':'')+photo+'.webp':null;
-  return '<button type="button" class="catalog-service" data-service="'+i+'"><span class="service-thumb thumb-'+cat.slug+'">'+(photo?'<img class="service-photo" src="'+esc(photoUrl)+'" width="105" height="91" loading="lazy" decoding="async" alt="'+(cat.slug==='handyman'?'Fotografía ilustrativa de ':'Foto de ')+esc(s[1])+'">':symbol)+'</span>'+
+  const additional=photo?null:additionalServicePhoto(s[1]);
+  const photoUrl=photo?imageBase()+'services/'+(cat.slug==='handyman'?'handyman-':'')+photo+'.webp':additional?.url;
+  const thumbnail=photoUrl?
+    '<span class="service-photo-fallback" aria-hidden="true">'+esc(symbol)+'</span>'+
+    '<img class="service-photo" src="'+esc(photoUrl)+'" width="105" height="91" loading="lazy" decoding="async" referrerpolicy="no-referrer" onerror="this.remove()" alt="Fotografía ilustrativa de '+esc(s[1])+'">':
+    esc(symbol);
+  return '<button type="button" class="catalog-service" data-service="'+i+'"><span class="service-thumb thumb-'+cat.slug+'">'+thumbnail+'</span>'+
    '<span class="service-details"><strong>'+esc(serviceViewLabels[s[1]]||s[1])+'</strong><small>'+esc(serviceDescriptions[s[1]]||cat.description)+'</small><em>'+(s[2]?'Desde '+esc(priceFor(s)):'Por presupuesto')+'</em></span><span class="service-chevron">'+ico('arrow')+'</span></button>';
 }
 export function renderCategory(services,id) {
@@ -273,6 +282,7 @@ export function renderCategory(services,id) {
      '<div class="section-heading"><h2>Servicios más solicitados</h2></div>'+
      '<div class="category-services">'+ranked.map((x,i)=>i<4?serviceRow(x.s,x.i):serviceRow(x.s,x.i).replace('class="catalog-service"','class="catalog-service service-extra" hidden')).join('')+'</div>'+
      (ranked.length>4?'<button type="button" class="services-expand" data-expand-services aria-expanded="false">Ver todos los servicios ('+ranked.length+') '+ico('arrow')+'</button>':'')+
+     '<p class="service-photo-credits"><a href="'+esc(imageBase()+'creditos-fotos-servicios.html')+'" target="_blank" rel="noopener noreferrer">Fotografías ilustrativas y sus créditos</a></p>'+
      (c.slug==='handyman'?'<p class="manitas-photo-credits"><a href="'+esc(imageBase()+'creditos-fotos-manitas.html')+'" target="_blank" rel="noopener noreferrer">Créditos y licencias de las fotografías de Manitas</a></p>':'')+
      '<div class="custom-request"><div><h3>¿No encuentras lo que necesitas?</h3><p>Cuéntanos tu caso y te ayudamos.</p></div>'+
      '<button type="button" class="primary-cta" data-custom-request="'+esc(c.id)+'">Solicitar servicio '+ico('arrow')+'</button></div>'+
