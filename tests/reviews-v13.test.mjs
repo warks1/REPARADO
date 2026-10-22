@@ -54,7 +54,7 @@ test('en modo conectado solo se valoran trabajos finalizados; modo local no fing
  const local=readFileSync(new URL('../local-preview.js',import.meta.url),'utf8');
  const reviews=readFileSync(new URL('../reviews.js',import.meta.url),'utf8');
  const sql=readFileSync(new URL('../supabase/migration-v13.sql',import.meta.url),'utf8');
- assert.ok(connected.includes('mountReviews(main,{supabase,session})'));
+ assert.ok(connected.includes('mountReviews(main,{supabase,session,selectedRequestId:selectedReviewRequestId})'));
  assert.ok(local.includes('mountReviews(main)'));
  assert.ok(reviews.includes(".eq('status','completed')"));
  assert.ok(reviews.includes(".eq('status','approved')"));
