@@ -533,15 +533,11 @@ body,.shell,.customer-header,.customer-nav {background:#fff}
 .service-photo-credits{margin:10px 4px 14px;font-size:12px}
 .service-photo-credits a{color:#2369ae;text-decoration:underline;text-underline-offset:2px}
 .reparado-reviews{margin-top:28px;padding-bottom:28px}
-.reviews-disclaimer{font-size:13px;color:#53637d;line-height:1.55;margin:2px 0 12px}
-.demo-review-grid,.real-review-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:11px}
 .review-card{border-radius:16px;padding:14px;background:#fff;border:1px solid #e4eaf2;box-shadow:0 3px 14px rgba(24,68,116,.06);min-width:0}
-.review-demo{background:#f9fbfd}
 .review-card[hidden]{display:none!important}
 .review-card-top{display:flex;align-items:start;justify-content:space-between;gap:8px;flex-wrap:wrap}
 .review-stars{font-size:16px;letter-spacing:1px;color:#f4ab1e;font-weight:900}
 .review-card small{font-size:11px;color:#687890}
-.review-example-label{font-weight:700;color:#64728a}
 .review-verified-label{color:#116e52!important;font-weight:700}
 .review-card p{font-size:13px;line-height:1.5;margin:10px 0 6px;color:#14274a;overflow-wrap:anywhere}
 .review-expand{margin:14px 0}
@@ -554,22 +550,15 @@ body,.shell,.customer-header,.customer-nav {background:#fff}
 .reparado-reviews form label{display:grid;gap:5px;font-size:13px;font-weight:700;color:#1b3158}
 .reparado-reviews select,.reparado-reviews textarea{width:100%;box-sizing:border-box;border:1px solid #cddbea;border-radius:12px;background:#fff;padding:12px;color:#172a48;font:inherit}
 .reparado-reviews [data-review-feedback]{font-weight:650;font-size:13px}
-@media (max-width:410px){.demo-review-grid,.real-review-grid{grid-template-columns:1fr}}
 @media(prefers-reduced-motion:reduce){.reparado-reviews *{animation:none!important;transition:none!important}}
 
-/* V14: listado único de reseñas con distinción permanente entre reales y ejemplos. */
+/* Valoraciones auténticas: solo reseñas aprobadas y sin datos ficticios. */
 .review-feed-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:11px;margin-top:12px}
-.review-filters{display:flex;gap:8px;flex-wrap:wrap;margin-top:11px;margin-bottom:6px}
-.review-filter{background:#fff;border:1px solid #d6e5f6;color:#21426c;border-radius:999px;font:700 12px/1.2 system-ui,sans-serif;padding:9px 13px;cursor:pointer}
-.review-filter.active,.review-filter[aria-pressed=true]{background:#ff662a;border-color:#ff662a;color:white;box-shadow:0 5px 12px rgba(248,96,37,.18)}
-.review-filter:focus-visible,.review-expand:focus-visible{outline:3px solid #1d90d7;outline-offset:3px}
 .reviews-summary{margin:4px 0 9px;font-size:13px;font-weight:700;line-height:1.55;color:#30496d}
 .review-feed-grid .review-real{background:#fffdf8;border-color:#ffe3b8}
-.review-feed-grid .review-demo{background:#f6f8fb}
-.review-feed-grid .review-example-label{color:#6a7690}
 .review-feed-grid .review-verified-label{color:#146b51;font-weight:800}
+.review-expand:focus-visible{outline:3px solid #1d90d7;outline-offset:3px}
 .review-feed-grid .review-card[hidden]{display:none!important}
-@media(max-width:410px){.review-feed-grid{grid-template-columns:1fr}.review-filter{padding:8px 11px}}
 
 /* V15 · Revisión privada de reseñas (interfaz actual, sin rediseño). */
 .review-moderation{max-width:820px;margin:0 auto 28px}
