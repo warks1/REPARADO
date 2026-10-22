@@ -32,7 +32,7 @@ test('32 opiniones ilustrativas ficticias, cinco estrellas y textos distintos, n
  assert.equal(new Set(demoReviews.map(r=>r.comment)).size,32);
  const html=renderReviewsSection();
  assert.equal((html.match(/class="review-card review-demo"/g)||[]).length,32);
- assert.ok(html.includes('las 32 opiniones siguientes son ficticias'));
+ assert.ok(html.includes('las 32 opiniones marcadas como ejemplos son ficticias'));
  assert.ok(html.includes('No son testimonios reales'));
  assert.ok(html.includes('id="reparado-review-form"'));
  assert.ok(html.includes('data-review-filter="all"'));
