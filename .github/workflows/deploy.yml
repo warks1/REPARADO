@@ -20,6 +20,11 @@ jobs:
           node-version: '22'
       - name: Instalar dependencias
         run: npm install --no-audit --no-fund
+      - name: Validar conexión segura antes de publicar
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+        run: node scripts/check-public-config.mjs
       - name: Pruebas de reglas de negocio
         run: npm test
       - name: Compilar
