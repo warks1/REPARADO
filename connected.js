@@ -205,7 +205,7 @@ export function mountConnected({app, services, supabase, authLinkIntent=null}) {
     mountReviews(main,{supabase,session,selectedRequestId:selectedReviewRequestId}); // Solo servicios finalizados.
     if(selectedReviewRequestId){
       const panel=main.querySelector('#reparado-reviews');
-      panel?.scrollIntoView({behavior:window.matchMedia('(prefers-reduced-motion: reduce)').matches?'instant':'smooth',block:'start'});
+      panel?.scrollIntoView({behavior:window.matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth',block:'start'});
     }
     const search=main.querySelector('#category-search');
     search?.addEventListener('input',()=>{
