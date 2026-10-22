@@ -268,7 +268,7 @@ export async function mountReviews(main,{supabase=null,session=null}={}){
       .order('created_at',{ascending:false}).limit(50);
     if(error)throw error;
     if(!root.isConnected)return;
-    real=combineReviews(data).filter(row=>!row.fictional);
+    real=Array.isArray(data)?data:[];
     loaded=true;showFeed();
   }catch{
     if(!root.isConnected)return;
