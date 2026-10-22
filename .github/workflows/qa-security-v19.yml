@@ -1,0 +1,64 @@
+name: Seguridad de datos clientes V19
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'supabase/migration-v19.sql'
+      - 'tests/security-acl-v19.py'
+      - 'tests/security-v19.test.mjs'
+      - 'connected.js'
+      - 'index.html'
+      - '.github/workflows/qa-security-v19.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'supabase/migration-v19.sql'
+      - 'tests/security-acl-v19.py'
+      - 'tests/security-v19.test.mjs'
+      - 'connected.js'
+      - 'index.html'
+      - '.github/workflows/qa-security-v19.yml'
+permissions:
+  contents: read
+jobs:
+  frontend:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm install --no-audit --no-fund
+      - run: npm test
+      - run: npm run build
+  security-postgres:
+    runs-on: ubuntu-latest
+    timeout-minutes: 14
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: reparado_test
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U postgres -d reparado_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+    env:
+      REPARADO_TEST_DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/reparado_test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: python -m pip install --disable-pip-version-check 'psycopg[binary]>=3.2,<4'
+      - name: Montar roles, solicitudes, chat y RLS V4–V11
+        run: python -u tests/supabase-roles-rls.py
+      - name: Montar V13 y V15 de reseñas
+        run: python -u tests/reviews-moderation-rls-v15.py
+      - name: Probar V19 contra permisos peligrosos
+        run: python -u tests/security-acl-v19.py
