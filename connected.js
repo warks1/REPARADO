@@ -81,16 +81,26 @@ export function mountConnected({app, services, supabase, authLinkIntent=null}) {
     currentView='login';setActiveNav(app,'profile');session=null;profile=null;
     app.querySelector('#logout').classList.add('hidden');
     const pendingNotice=pendingService?`<p class="auth-pending">Continuar con: <strong>${esc(pendingService[1])}</strong></p>`:'';
-    const registerMarkup=openRegistration?`<button id="register" class="link" type="button">Crear una cuenta</button><form id="register-form" class="hidden"><label>Nombre y apellidos<input name="full_name" autocomplete="name" maxlength="100" required></label><label>Correo electrónico<input name="email" type="email" autocomplete="email" required></label><label>Contraseña<input name="password" type="password" autocomplete="new-password" minlength="8" required></label><label>Repetir contraseña<input name="password_confirm" type="password" autocomplete="new-password" minlength="8" required></label><button type="submit">Crear cuenta de cliente</button></form>`
+    const registerMarkup=openRegistration?`<button id="register" class="link" type="button">Crear una cuenta</button><form id="register-form" class="hidden"><label>Nombre y apellidos<input name="full_name" autocomplete="name" maxlength="100" required></label><label>Correo electrónico<input name="email" type="email" autocomplete="email" required></label><label>Contraseña<input name="password" type="password" autocomplete="new-password" minlength="12" required></label><label>Repetir contraseña<input name="password_confirm" type="password" autocomplete="new-password" minlength="12" required></label><button type="submit">Crear cuenta de cliente</button></form>`
       :'<p class="auth-invite-notice" role="note">Acceso privado: solicita una invitación al equipo de Reparado. Si ya tienes cuenta, inicia sesión.</p>';
     main.innerHTML=`<section class="auth card"><div class="heroicon"><img src="./icon.svg" width="44" height="44" alt=""></div><h1>Reparado</h1><p>Accede a tus servicios de reparación.</p>${pendingNotice}<form id="login"><input name="email" type="email" autocomplete="email" placeholder="Correo electrónico" required><input name="password" type="password" autocomplete="current-password" placeholder="Contraseña" required><button>Entrar</button></form><button id="forgot-password" type="button" class="link">¿Has olvidado tu contraseña?</button><form id="reset-form" class="hidden"><label>Correo de tu cuenta<input name="email" type="email" autocomplete="email" placeholder="Correo electrónico" required></label><button type="submit">Recibir enlace de recuperación</button></form>${registerMarkup}<p data-feedback class="feedback" role="status"></p></section>`;
     main.querySelector('#login').addEventListener('submit',async event=>{
       event.preventDefault();
-      const data=new FormData(event.currentTarget);
-      const {error}=await supabase.auth.signInWithPassword({email:String(data.get('email')).trim(),password:String(data.get('password'))});
-      if(error){message(error.message,true);return}
-      // Supabase emitirá SIGNED_IN y restaurará la solicitud escogida.
-      message('Acceso correcto. Cargando tu solicitud…');
+      const form=event.currentTarget;
+      const button=form.querySelector('[type=submit]');
+      if(button.disabled)return;
+      const data=new FormData(form);
+      button.disabled=true;
+      try{
+        const {error}=await supabase.auth.signInWithPassword({
+          email:String(data.get('email')).trim(),password:String(data.get('password'))
+        });
+        // No mostrar la respuesta del servidor: podría revelar detalles de cuentas.
+        if(error){message('No se pudo iniciar sesión. Comprueba tus datos o recupera la contraseña.',true);return}
+        message('Acceso correcto. Cargando tu solicitud…');
+      }catch{
+        message('No se pudo conectar. Inténtalo de nuevo más tarde.',true);
+      }finally{button.disabled=false}
     });
     main.querySelector('#forgot-password').addEventListener('click',()=>{
       const form=main.querySelector('#reset-form');
@@ -129,7 +139,7 @@ export function mountConnected({app, services, supabase, authLinkIntent=null}) {
       const email=String(fields.get('email')||'').trim();
       const password=String(fields.get('password')||'');
       if(password!==fields.get('password_confirm'))return message('Las contraseñas no coinciden.',true);
-      if(password.length<8)return message('La contraseña debe tener al menos 8 caracteres.',true);
+      if(password.length<12)return message('La contraseña debe tener al menos 12 caracteres.',true);
       const submit=form.querySelector('[type=submit]');submit.disabled=true;
       const {error}=await supabase.auth.signUp({
         email,password,options:{data:{full_name:String(fields.get('full_name')||'').trim()}}
