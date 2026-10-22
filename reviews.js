@@ -221,7 +221,8 @@ export async function mountReviews(main,{supabase=null,session=null}={}){
   function showFeed(){
     if(!root.isConnected)return;
     const {html,count}=reviewFeedMarkup(real,filter,expanded);
-    feed.innerHTML=html;
+    feed.innerHTML=loadFailed && filter==='real' ?
+      '<p class="review-loading">No se pueden cargar las valoraciones reales en este momento.</p>' : html;
     root.querySelectorAll('[data-review-filter]').forEach(btn=>{
       const selected=btn.dataset.reviewFilter===filter;
       btn.classList.toggle('active',selected);
