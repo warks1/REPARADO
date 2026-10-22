@@ -126,4 +126,10 @@ with acting_as(ADM) as db:
 with acting_as(None,role="anon") as db:
     assert not db.execute("select has_table_privilege(current_user,'storage.objects','SELECT')").fetchone()[0]
 
+with connect() as db:
+    report=db.execute((ROOT/"supabase/auditoria-fotos-v12.sql").read_text(encoding="utf8")).fetchall()
+    assert len(report)==4,report
+    assert all(row[1]=="OK" for row in report),report
+    print("Auditoría fotos V12: 4 controles OK sin modificar objetos",flush=True)
+
 print("V12 OK: clientes aislados, operario asignado, admin, anon, subida propia y rutas inválidas",flush=True)
