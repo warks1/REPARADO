@@ -75,3 +75,11 @@ Estado 21/10/2026: web y APK beta generadas. **REPARADO Test** (París, UE) tien
 
 ## Criterio de publicación final
 La app estará lista para clientes solo cuando se hayan ejecutado y aprobado las comprobaciones de conexión, privacidad, roles, archivos, pagos/facturas (si se habilitan), notificaciones y distribución en dispositivos reales. Una compilación correcta por sí sola no garantiza esas comprobaciones.
+
+
+## V13 · Catálogo fotográfico y opiniones verificables (22/10/2026)
+- El catálogo incorpora una referencia visual para cada uno de los 37 servicios: conserva las 16 imágenes locales previas y utiliza 21 URLs ilustrativas externas de Pexels con créditos en `public/creditos-fotos-servicios.html`. Las fotos externas no están descargadas localmente ni hay garantía de permanencia; el navegador muestra un símbolo cuando no cargan.
+- La portada contiene 32 reseñas **ficticias de demostración**, etiquetadas una por una y como conjunto. No insertar esos ejemplos en Supabase, no asignarles autor real ni incluirlas en ninguna nota o promedio público.
+- La migración `supabase/migration-v13.sql` crea `customer_reviews` con RLS: lectura pública limitada a columnas no identificativas y a reseñas aprobadas; un cliente conectado solo puede enviar una reseña para una solicitud suya terminada, con puntuación 1–5 y texto de 12–1000 caracteres. La reseña queda pendiente de moderación. No se permite al cliente aprobar, editar ni borrar.
+- En el modo local, la sección permite probar el formulario sin escribir ni transmitir valoraciones. La web conectada necesita V13 aplicada. La publicación real de opiniones debe hacerse desde un administrador de bases autorizado tras evaluar el contenido, no por el cliente.
+- Antes de publicar en producción, comprobar la licencia/disponibilidad de los enlaces fotográficos, la carga móvil, una reseña pendiente propia y ajena, la ausencia de fugas de identificadores, la moderación administrativa y la presentación separada de ejemplos frente a testimonios auténticos.

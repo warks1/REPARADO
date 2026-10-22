@@ -1,3 +1,4 @@
+import { mountReviews } from './reviews.js';
 import {requestStorageKey,profileStorageKey,messageDraftStorageKey,safeReadJSON,localRequests,localProfile,localWrite,localAgenda,localSummary,localDateLabel,validLocalDate} from './local-data.js';
 import {localReceipt,localRequestBackup,localBackupName,historicalEvents,readableTimestamp} from './local-document.js';
 import {makeLocalCollection,restoreLocalCollection,localBackupLimit} from './local-backup.js';
@@ -17,6 +18,7 @@ export function mountLocal({app,services}){
   function home(){
     page='home';lastCategory=null;setActiveNav(app,'home');
     main.innerHTML=renderLanding(services);
+    mountReviews(main); // Modo local: formulario de prueba, nunca publica reseñas.
     const input=main.querySelector('#category-search');
     input?.addEventListener('input',()=>{
       const term=input.value.trim().toLocaleLowerCase('es-ES');

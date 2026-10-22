@@ -1,3 +1,4 @@
+import { mountReviews } from './reviews.js';
 import {appHeader,bottomNavigation,setActiveNav,renderLanding,renderCategory,serviceFormHeader,formPeriodPicker,serviceRow,matchServices,featuredServices,showAllCategories} from './customer-ui.js'
 import { operatorMaySetStatus } from './rules.js'
 import {jobFilters,filterJobs,jobCounters,vatIncluded,sameOperatorSlot,staffVisitGapMinutes,validateAdminJobUpdate} from './staff-workflows.js'
@@ -39,6 +40,7 @@ export function mountConnected({app, services, supabase, authLinkIntent=null}) {
       expand.innerHTML=opened?'Ver todos los servicios →':'Mostrar menos servicios ↑';
       return;
     }
+    if(event.target.closest('[data-review-login]')){pendingService=null;pendingView='home';showLogin();return;}
     const filterButton=event.target.closest('[data-toggle-filters]');
     if(filterButton){
       const panel=main.querySelector('#category-quick-filters');
@@ -198,6 +200,7 @@ export function mountConnected({app, services, supabase, authLinkIntent=null}) {
   function renderHome(){
     currentView='home';lastCategory=null;setActiveNav(app,'home');
     main.innerHTML=renderLanding(services);
+    mountReviews(main,{supabase,session}); // Opiniones reales solo desde solicitudes completadas.
     const search=main.querySelector('#category-search');
     search?.addEventListener('input',()=>{
       const term=search.value.trim().toLocaleLowerCase('es-ES');
