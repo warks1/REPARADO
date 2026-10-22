@@ -103,3 +103,24 @@ La app estará lista para clientes solo cuando se hayan ejecutado y aprobado las
 - La portada presenta únicamente opiniones de `customer_reviews` en estado `approved`, con puntuaciones reales de 1 a 5 estrellas. Si no las hay, muestra «Todavía no hay valoraciones reales publicadas», sin puntuación inventada.
 - El formulario permanece disponible en el modo conectado para servicios finalizados, con aprobación administrativa. En el modo demostración se puede probar el formulario, pero nunca se publican o guardan reseñas.
 - Las pruebas de navegador deben verificar que no existen tarjetas `review-demo` ni filtros de ejemplos y que las reseñas pendientes o rechazadas no se publican.
+
+## V19 · Refuerzo de seguridad contra acceso y borrado no autorizados (22/10/2026)
+
+**Aplicado primero en REPARADO Test, no en la producción real.** El objetivo es reducir permisos de PostgreSQL aunque alguien consiga credenciales de un cliente.
+
+- Las siete tablas de cliente mantienen RLS. El rol `authenticated` ya no debe tener permisos `TRUNCATE`, `TRIGGER`, `REFERENCES` ni `DELETE`. Importante: **RLS no se aplica a TRUNCATE**. El revocado de estos permisos es una protección efectiva adicional.
+- `messages`: insertar solo `customer_id, sender_id, body`; ningún cliente puede editar mensajes existentes ni falsificar `created_at`.
+- `device_tokens`: insertar/actualizar únicamente `user_id,token,platform` con RLS de propietario; sin capacidad de introducir `id` ni `created_at`.
+- `profiles`: el registro del perfil ocurre mediante trigger de Auth, no por `INSERT` directo de los clientes. Se mantiene actualización limitada a nombre y teléfono y lectura con RLS.
+- `customer_reviews`: la columna `status` continúa bajo RLS de moderación exclusiva del administrador.
+- La web usa mensaje genérico para errores de login, evita envío duplicado en el formulario, exige al menos 12 caracteres en registro opcional y establece `Referrer-Policy: no-referrer` mediante meta para no propagar URLs de recuperación/invitación a otros sitios.
+- Tests: PostgreSQL local para comprobar permisos y conservación de chat y push; Node para configuración; GitHub Pages en modo demo, independiente de REPARADO Test.
+
+**Configuración obligatoria fuera de SQL y GitHub (antes de atender clientes):**
+1. Supabase Test → Authentication → Providers: deshabilitar registros públicos si solo se usarán invitaciones. La interfaz oculta registro pero no protege el backend.
+2. Supabase Test → Authentication → Security / Attack Protection: habilitar protección de contraseñas filtradas si el plan la incluye; establecer contraseñas robustas y límites de intentos, y configurar CAPTCHA cuando haya flujos expuestos a bots.
+3. Asegurar MFA para todas las cuentas administradoras del Dashboard Supabase y GitHub; valorar MFA para administradores que entren a REPARADO (requerirá implementación de verificación de factor antes de autorizar acciones).
+4. Revisar copias de seguridad, política de retención de fotos y mensajes, registros de acceso, plan de respuesta a incidentes y obligaciones RGPD. Probar restauración antes de producción.
+5. GitHub Pages es un sitio estático: cabeceras HTTP adicionales como `Content-Security-Policy`, `X-Content-Type-Options` o `Strict-Transport-Security` deben ser controladas mediante un host/CDN apropiado o su infraestructura; un `<meta>` no las sustituye todas. No asumir que GitHub Pages permite configurarlas individualmente.
+
+Nunca poner credenciales `service_role` o secretos en archivos `VITE_*`, repositorios o código servido al navegador. Ninguna mejora impide al 100 % ataques o robo de dispositivos y contraseñas: son necesarias vigilancia, parches y gestión humana.
