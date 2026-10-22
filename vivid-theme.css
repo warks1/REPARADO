@@ -525,3 +525,34 @@ body,.shell,.customer-header,.customer-nav {background:#fff}
   overflow:hidden;
   border-radius:15px;
 }
+
+/* REPARADO V13 · Fotografías en todos los servicios, sin cambiar las tarjetas. */
+.service-thumb:has(.service-photo){position:relative;overflow:hidden;padding:0}
+.service-photo-fallback{position:absolute;inset:0;display:grid;place-items:center;font-size:31px}
+.service-thumb .service-photo{position:absolute;inset:0;display:block;width:100%;height:100%;object-fit:cover;border-radius:12px}
+.service-photo-credits{margin:10px 4px 14px;font-size:12px}
+.service-photo-credits a{color:#2369ae;text-decoration:underline;text-underline-offset:2px}
+.reparado-reviews{margin-top:28px;padding-bottom:28px}
+.reviews-disclaimer{font-size:13px;color:#53637d;line-height:1.55;margin:2px 0 12px}
+.demo-review-grid,.real-review-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:11px}
+.review-card{border-radius:16px;padding:14px;background:#fff;border:1px solid #e4eaf2;box-shadow:0 3px 14px rgba(24,68,116,.06);min-width:0}
+.review-demo{background:#f9fbfd}
+.review-card[hidden]{display:none!important}
+.review-card-top{display:flex;align-items:start;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.review-stars{font-size:16px;letter-spacing:1px;color:#f4ab1e;font-weight:900}
+.review-card small{font-size:11px;color:#687890}
+.review-example-label{font-weight:700;color:#64728a}
+.review-verified-label{color:#116e52!important;font-weight:700}
+.review-card p{font-size:13px;line-height:1.5;margin:10px 0 6px;color:#14274a;overflow-wrap:anywhere}
+.review-expand{margin:14px 0}
+.reviews-authentic,.review-write{margin:20px 0 0;padding:17px;border-radius:17px;background:#f4f8ff;border:1px solid #deebf9}
+.reviews-authentic h3,.review-write h3{margin:0 0 7px;color:#0b234d}
+.review-real-note,.review-write p{font-size:13px;line-height:1.5;color:#526781}
+.review-loading{font-size:13px;color:#53647c}
+.reparado-reviews form{display:grid;gap:11px;margin-top:14px}
+.reparado-reviews form[hidden],.reparado-reviews button[hidden]{display:none!important}
+.reparado-reviews form label{display:grid;gap:5px;font-size:13px;font-weight:700;color:#1b3158}
+.reparado-reviews select,.reparado-reviews textarea{width:100%;box-sizing:border-box;border:1px solid #cddbea;border-radius:12px;background:#fff;padding:12px;color:#172a48;font:inherit}
+.reparado-reviews [data-review-feedback]{font-weight:650;font-size:13px}
+@media (max-width:410px){.demo-review-grid,.real-review-grid{grid-template-columns:1fr}}
+@media(prefers-reduced-motion:reduce){.reparado-reviews *{animation:none!important;transition:none!important}}
