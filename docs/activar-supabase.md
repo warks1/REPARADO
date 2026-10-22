@@ -14,9 +14,9 @@ Antes de intentar producción:
 
 1. Crea un proyecto Supabase **de pruebas**, preferentemente en región UE, con datos totalmente ficticios y una copia/backup seguro de cualquier proyecto antiguo antes de migrar.
 2. En una instalación nueva, ejecuta `schema.sql` en el SQL Editor. En instalaciones antiguas, compara primero el esquema y evita repetir bloques que puedan sustituir políticas adaptadas sin revisión.
-3. Aplica **en orden** `supabase/migration-v4.sql`, `supabase/migration-v5.sql`, `supabase/migration-v6.sql`, `supabase/migration-v7.sql`, `supabase/migration-v8.sql`, `supabase/migration-v9.sql`, `supabase/migration-v10.sql` y `supabase/migration-v11.sql`. El esquema base ya contiene parte de V4–V6, por eso conviene revisar las diferencias y confirmar la compatibilidad.
+3. Aplica **en orden** `supabase/migration-v4.sql`, `supabase/migration-v5.sql`, `supabase/migration-v6.sql`, `supabase/migration-v7.sql`, `supabase/migration-v8.sql`, `supabase/migration-v9.sql`, `supabase/migration-v10.sql`, `supabase/migration-v11.sql` y `supabase/migration-v12.sql`. El esquema base ya contiene parte de V4–V6, por eso conviene revisar las diferencias y confirmar la compatibilidad.
 4. Si V7 o V9 rechazan la instalación por registros históricos incompatibles, **no fuerces la migración** ni elimines datos. Revisa en privado los duplicados de agenda o de numeración y sus propietarios.
-5. Aplica `supabase/storage-photos.sql` y confirma que el bucket `request-photos` es **privado**. Prueba la subida/lectura con clientes diferentes y con operarios asignados y no asignados.
+5. Aplica `supabase/storage-photos.sql` y, **después, `supabase/migration-v12.sql`**, para exigir coincidencia entre la carpeta del cliente, el ID de solicitud y su propietario. Confirma que el bucket `request-photos` es **privado**. Prueba la subida/lectura con clientes diferentes y con operarios asignados y no asignados.
 6. Ejecuta **`supabase/auditoria-readonly-v9.sql`** desde SQL Editor. Devuelve veinte filas con columnas `control`, `resultado` y `detalle`. Deben indicar **OK**; los resultados PENDIENTE deben revisarse antes de pasar a datos reales. El archivo es solo lectura y devuelve información agregada, no nombres ni direcciones.
 
 ## 3. Verificación de cuatro usuarios ficticios
@@ -90,3 +90,13 @@ Antes de probar con correos de prueba controlados:
 5. Con dos clientes, operario y administrador, comprueba que las políticas RLS impiden ver solicitudes, avisos o facturas ajenas. Las elevaciones de rol solo se realizan desde administración autorizada, nunca con el formulario web.
 
 **Límite confirmado:** la conexión de ChatGPT a Supabase no permite cambiar los ajustes del servicio Auth ni crear/invitar usuarios por el flujo administrativo. La prueba de login real debe realizarse tras autorizar las invitaciones desde Supabase. Los tests de navegador de este repositorio usan exclusivamente credenciales ficticias y no envían correos.
+
+
+## 9. Rutas y acceso privado a fotografías (V12)
+
+La política anterior permitía leer un objeto únicamente por el primer directorio de su ruta. En REPARADO Test, V12 exige siempre que exista la solicitud referida por el segundo directorio y que su propietario sea el cliente del primer directorio. Un operario solo puede consultar fotos de los servicios asignados; el administrador ve únicamente objetos coherentes con una solicitud existente. Se requieren exactamente dos carpetas antes del nombre de la imagen.
+
+- Ejecuta `supabase/migration-v12.sql` **después de V11 y `supabase/storage-photos.sql`**. Es repetible, no borra objetos, no altera el esquema interno de Storage y mantiene privado el bucket.
+- Ejecuta `supabase/auditoria-fotos-v12.sql`. Sus **4 controles de solo lectura** deben quedar en `OK`, además de los 20 controles de `supabase/auditoria-readonly-v9.sql`.
+- Los objetos antiguos con rutas incorrectas quedarán inaccesibles por seguridad. Comprueba en privado su procedencia antes de corregirlos utilizando exclusivamente la API de Storage, no escrituras SQL sobre `storage.objects`.
+- La prueba `tests/storage-rls-v12.py` se ejecuta solo contra PostgreSQL local efímero y recrea rutas falsificadas para comprobar que no son visibles. **No es una prueba de subida de archivos binarios con usuarios reales de Supabase Auth**; esta queda pendiente hasta disponer de un entorno cliente conectado y seguro.
