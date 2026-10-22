@@ -1,0 +1,46 @@
+name: Validar reseñas unificadas V14
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'reviews.js'
+      - 'customer-ui.js'
+      - 'vivid-theme.css'
+      - 'tests/reviews-v13.test.mjs'
+      - 'e2e/reviews-unified.spec.mjs'
+      - 'e2e-private/reviews-unified.spec.mjs'
+      - '.github/workflows/qa-reviews-v14.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'reviews.js'
+      - 'customer-ui.js'
+      - 'vivid-theme.css'
+      - 'tests/reviews-v13.test.mjs'
+      - 'e2e/reviews-unified.spec.mjs'
+      - 'e2e-private/reviews-unified.spec.mjs'
+      - '.github/workflows/qa-reviews-v14.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  review-ui:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Instalar dependencias
+        run: npm install --no-audit --no-fund
+      - name: Probar todas las reglas y reseñas
+        run: npm test
+      - name: Compilar web
+        run: npm run build
+      - name: Preparar navegadores móviles
+        run: npx playwright install --with-deps chromium webkit
+      - name: Verificar interfaz local iPhone y Android
+        run: npx playwright test e2e/reviews-unified.spec.mjs --project=iphone-390 --project=android-412
+      - name: Verificar valoraciones reales simuladas y acceso privado
+        run: npx playwright test --config playwright.invite.config.mjs e2e-private/reviews-unified.spec.mjs --project=iphone --project=android
