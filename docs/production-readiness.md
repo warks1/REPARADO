@@ -4,8 +4,8 @@ Estado 21/10/2026: web y APK beta generadas. **REPARADO Test** (París, UE) tien
 
 ## Base de datos y seguridad
 1. Crear un proyecto propio de Supabase en una región adecuada para operar en España/UE.
-2. Aplicar, en una base de pruebas, `schema.sql` y después `supabase/migration-v4.sql`, `supabase/migration-v5.sql`, `supabase/migration-v6.sql`, **`supabase/migration-v7.sql`, `supabase/migration-v8.sql`, `supabase/migration-v9.sql`, `supabase/migration-v10.sql` y `supabase/migration-v11.sql`** en ese orden. El esquema incorpora parte de v4; comprobar que las migraciones son repetibles antes de aplicarlas al entorno definitivo. La V7 instala la protección de reservas simultáneas en PostgreSQL y comprueba antes que no existan conflictos.
-3. Ejecutar `supabase/storage-photos.sql` para crear un bucket **privado** para imágenes.
+2. Aplicar, en una base de pruebas, `schema.sql` y después `supabase/migration-v4.sql`, `supabase/migration-v5.sql`, `supabase/migration-v6.sql`, **`supabase/migration-v7.sql`, `supabase/migration-v8.sql`, `supabase/migration-v9.sql`, `supabase/migration-v10.sql`, `supabase/migration-v11.sql` y `supabase/migration-v12.sql`** en ese orden. El esquema incorpora parte de v4; comprobar que las migraciones son repetibles antes de aplicarlas al entorno definitivo. La V7 instala la protección de reservas simultáneas en PostgreSQL y comprueba antes que no existan conflictos.
+3. Ejecutar `supabase/storage-photos.sql` para crear un bucket **privado** para imágenes y después `supabase/migration-v12.sql` para asegurar que las rutas pertenecen a la solicitud y al cliente correctos.
 4. Ejecutar `supabase/auditoria-readonly-v9.sql` y revisar sus veinte controles de solo lectura; todos deben estar en **OK** antes de recibir solicitudes reales. Instrucciones detalladas: `docs/activar-supabase.md`.
 5. Probar por separado **dos clientes**, `operator` y `admin`, así como las restricciones RLS: un cliente no puede ver solicitudes, avisos o facturas de otro; un operario únicamente ve los trabajos asignados y solo administración puede asignar personal y modificar precios. El test automático `tests/supabase-roles-rls.py` prueba este aislamiento en un PostgreSQL temporal, pero no equivale a haber probado tu Supabase real.
 6. **Acceso privado por invitación:** la pantalla conectada oculta el registro público por defecto. `VITE_REPARADO_ALLOW_PUBLIC_REGISTRATION=false` es solo una medida visual: desactivar también los nuevos registros en **Supabase Auth** mediante su panel de ajustes. Invitar las cuatro cuentas de pruebas desde Auth, nunca insertar usuarios mediante SQL. Verificar inicio de sesión, confirmación del correo, recuperación de acceso y presupuestos con usuarios reales de prueba.
@@ -13,6 +13,11 @@ Estado 21/10/2026: web y APK beta generadas. **REPARADO Test** (París, UE) tien
 
 
 **Control adicional de acceso (21/10/2026):** `supabase/auditoria-cuentas-test-v12.sql` verifica diez condiciones agregadas (4 perfiles y correos confirmados, 2 clientes, 1 operario, 1 administrador, RLS, anónimo sin permisos, fotos privadas y RPC autenticadas). Resultado en REPARADO Test: **10/10 OK**. Los permisos de los cuatro roles y la secuencia solicitud → presupuesto → asignación → aviso se comprobaron mediante suplantación SQL de JWT **dentro de una transacción revertida**; esto no sustituye probar Supabase Auth desde un navegador. **No consta invitación por correo** (`invited_at` sin fecha) ni está comprobado que el registro público de Auth esté deshabilitado.
+
+## Fotografías protegidas con V12
+- La política Storage anterior se basaba parcialmente en el nombre de la carpeta, sin exigir siempre que la solicitud le perteneciese al cliente. V12 exige cliente y solicitud coincidentes para todos los accesos, incluido personal interno.
+- Validar **24 controles de solo lectura**: los 20 generales de `supabase/auditoria-readonly-v9.sql` y los 4 de `supabase/auditoria-fotos-v12.sql`. Comprobar subida y lectura binaria reales solo tras conectar un entorno de pruebas protegido, con usuarios invitados.
+- Ejecutar `tests/storage-rls-v12.py` en PostgreSQL temporal tras `tests/supabase-roles-rls.py` para verificar que los objetos con rutas falsificadas no pueden verse.
 
 ## Conectar la app y el despliegue
 1. Configurar en GitHub Actions las variables `VITE_SUPABASE_URL` y `VITE_SUPABASE_ANON_KEY` como secretos de repositorio. La clave anónima/publicable puede exponerse en el cliente, pero **nunca** incluir la clave `service_role`, claves de administración o contraseñas en Vite ni en GitHub Pages.
