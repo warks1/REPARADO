@@ -48,3 +48,28 @@ test('las 12 fotografías de Manitas están publicadas y cargan sin errores',asy
  const file=await page.request.get(await credit.getAttribute('href'));
  expect(file.ok()).toBeTruthy();
 });
+
+
+test('la web pública distingue demostración de modo conectado y protege moderación',async({page},info)=>{
+ const testBackendRequests=[];
+ page.on('request',request=>{
+   if(request.url().includes('kpmmlzjvespenogqtujo.supabase.co')){
+     testBackendRequests.push(request.method()+' '+new URL(request.url()).pathname);
+   }
+ });
+ await page.goto('./',{waitUntil:'domcontentloaded'});
+ const section=page.locator('#reparado-reviews');
+ await expect(section).toBeVisible({timeout:20000});
+ await expect(section.locator('[data-review-filter="all"]')).toBeVisible();
+ await expect(section.locator('[data-review-filter="real"]')).toBeVisible();
+ await expect(section.locator('[data-review-filter="examples"]')).toBeVisible();
+ await expect(section.locator('.review-demo')).toHaveCount(32);
+ await expect(page.locator('[data-review-decision]')).toHaveCount(0);
+ await expect(page.locator('[data-view="review-moderation"]')).toHaveCount(0);
+ const mode=await section.locator('[data-review-mode-info]').innerText();
+ const demo=/Modo de demostración/.test(mode);
+ const connected=/Para escribir una opinión real|Para publicar una opinión auténtica|Solo puedes valorar/.test(mode);
+ expect(demo||connected, 'Mostrar un estado de conexión comprensible').toBeTruthy();
+ expect(testBackendRequests,'REPARADO Test no debe conectarse a GitHub Pages público').toEqual([]);
+ await info.attach('modo-publicado',{body:demo?'REPARADO público en modo local demostración':'Cliente conectado: comprobar que no sea REPARADO Test',contentType:'text/plain'});
+});
