@@ -7,6 +7,9 @@ on:
       - 'supabase/migration-v*.sql'
       - 'supabase/auditoria-readonly-v9.sql'
       - 'tests/supabase-roles-rls.py'
+      - 'tests/storage-rls-v12.py'
+      - 'supabase/storage-photos.sql'
+      - 'supabase/auditoria-fotos-v12.sql'
       - '.github/workflows/qa-supabase-roles.yml'
   pull_request:
     branches: [main]
@@ -15,6 +18,9 @@ on:
       - 'supabase/migration-v*.sql'
       - 'supabase/auditoria-readonly-v9.sql'
       - 'tests/supabase-roles-rls.py'
+      - 'tests/storage-rls-v12.py'
+      - 'supabase/storage-photos.sql'
+      - 'supabase/auditoria-fotos-v12.sql'
       - '.github/workflows/qa-supabase-roles.yml'
   workflow_dispatch:
 permissions:
@@ -45,8 +51,10 @@ jobs:
         with:
           python-version: '3.11'
       - run: python -m pip install --disable-pip-version-check 'psycopg[binary]>=3.2,<4'
-      - name: Probar migraciones V4–V9 y permisos de cuatro roles
+      - name: Probar migraciones V4–V11 y permisos de cuatro roles
         run: python -u tests/supabase-roles-rls.py
+      - name: Probar privacidad de fotografias V12 y regresion de rutas
+        run: python -u tests/storage-rls-v12.py
   build:
     runs-on: ubuntu-latest
     timeout-minutes: 10
