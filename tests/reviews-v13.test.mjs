@@ -114,3 +114,17 @@ test('se escapan comentarios de clientes y se descartan puntuaciones fraudulenta
  assert.ok(!shown.html.includes('<script>'));
  assert.equal(verifiedReviewSummary(input).average,5);
 });
+
+test('V17: solo las solicitudes completadas tienen botón de valoración y se preselecciona',()=>{
+ const connected=readFileSync(new URL('../connected.js',import.meta.url),'utf8');
+ const reviews=readFileSync(new URL('../reviews.js',import.meta.url),'utf8');
+ assert.ok(connected.includes('r.status==="completed"?`<div class="flex-actions"><button'));
+ assert.ok(connected.includes('data-rate-request="${esc(r.id)}"'));
+ assert.ok(connected.includes("row.id===requestId && row.status==='completed'"));
+ assert.ok(connected.includes('renderHome(requestId)'));
+ assert.ok(connected.includes('selectedRequestId:selectedReviewRequestId'));
+ assert.ok(reviews.includes(".select('id,service_name').eq('customer_id',session.user.id).eq('status','completed')"));
+ assert.ok(reviews.includes('const requested=data.find(row=>row.id===selectedRequestId)'));
+ assert.ok(reviews.includes('form.elements.request_id.value=requested.id'));
+ assert.ok(reviews.includes('escapeText(row.service_name'));
+});
