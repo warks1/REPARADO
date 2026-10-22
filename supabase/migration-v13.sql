@@ -38,3 +38,5 @@ create policy "reviews insert for completed own request" on public.customer_revi
 -- No otorgar UPDATE ni DELETE al cliente: aprobación exclusivamente administrativa.
 -- En el panel SQL, administrador autorizado:
 -- update public.customer_reviews set status='approved' where id='<uuid-reseña>';
+
+-- CI: verificar V13 junto a las fotografías y sus créditos en la revisión final.
