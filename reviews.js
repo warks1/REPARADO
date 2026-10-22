@@ -191,7 +191,7 @@ export function reviewFeedMarkup(approvedRows=[],filter='all',expanded=false){
 export function renderReviewsSection(){
   return '<section class="reparado-reviews" id="reparado-reviews" aria-label="Reseñas y valoraciones">'+
     '<div class="section-heading"><h2>Reseñas y valoraciones</h2></div>'+
-    '<p class="reviews-disclaimer"><strong>Importante:</strong> las 32 opiniones siguientes son ficticias y son ejemplos de diseño. Cuando existan valoraciones reales aprobadas aparecerán en esta misma lista, siempre antes de los ejemplos. No son testimonios reales ni cuentan para la nota de REPARADO.</p>'+
+    '<p class="reviews-disclaimer"><strong>Importante:</strong> las 32 opiniones marcadas como ejemplos son ficticias y son ejemplos de diseño. Cuando existan valoraciones reales aprobadas aparecerán en esta misma lista, siempre antes de los ejemplos. No son testimonios reales ni cuentan para la nota de REPARADO.</p>'+
     '<p class="reviews-summary" data-reviews-summary aria-live="polite">32 ejemplos ficticios · comprobando valoraciones reales…</p>'+
     '<div class="review-filters" role="group" aria-label="Filtrar reseñas">'+
       '<button type="button" class="review-filter active" data-review-filter="all" aria-pressed="true">Todas</button>'+
