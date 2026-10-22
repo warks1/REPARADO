@@ -56,7 +56,7 @@ async function prepare(page, role){
  });
  return moderationRequests;
 }
-test('administrador invitado puede aprobar una reseña pendiente sin exponer los ejemplos',async({page})=>{
+test('administrador invitado puede aprobar una reseña real pendiente',async({page})=>{
  const called=await prepare(page,'admin');
  await page.goto('/');
  await expect(page.locator('.customer-header')).toBeVisible();

@@ -60,10 +60,9 @@ test('la web pública distingue demostración de modo conectado y protege modera
  await page.goto('./',{waitUntil:'domcontentloaded'});
  const section=page.locator('#reparado-reviews');
  await expect(section).toBeVisible({timeout:20000});
- await expect(section.locator('[data-review-filter="all"]')).toBeVisible();
- await expect(section.locator('[data-review-filter="real"]')).toBeVisible();
- await expect(section.locator('[data-review-filter="examples"]')).toBeVisible();
- await expect(section.locator('.review-demo')).toHaveCount(32);
+ await expect(section.locator('[data-review-filter]')).toHaveCount(0);
+ await expect(section.locator('.review-demo')).toHaveCount(0);
+ await expect(section.locator('[data-review-feed]')).toContainText('Todavía no hay valoraciones reales publicadas.');
  await expect(page.locator('[data-review-decision]')).toHaveCount(0);
  await expect(page.locator('[data-view="review-moderation"]')).toHaveCount(0);
  const mode=await section.locator('[data-review-mode-info]').innerText();

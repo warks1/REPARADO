@@ -10,7 +10,7 @@ test('las decisiones válidas son aprobar o rechazar, no otros estados',()=>{
   assert.equal(validModerationDecision('deleted'),false);
   assert.equal(validModerationDecision(null),false);
 });
-test('el panel solo muestra reseñas pendientes y nunca ejemplos ficticios',()=>{
+test('el panel solo muestra reseñas reales pendientes y ninguna aprobada',()=>{
   const rows=[
     {id:'r1',rating:3,comment:'Mejorable pero correcto',status:'pending',created_at:'2026-10-22T13:00:00Z'},
     {id:'r2',rating:5,comment:'No pendiente ni editable',status:'approved'},

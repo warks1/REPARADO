@@ -1,22 +1,19 @@
 import {test,expect} from '@playwright/test';
 
-test('valoraciones agrupadas con filtros funcionales en móvil',async({page})=>{
-  await page.goto('/');
-  const reviews=page.locator('#reparado-reviews');
-  await expect(reviews).toBeVisible();
-  await expect(reviews.locator('.review-demo')).toHaveCount(32);
-  await expect(reviews.locator('.review-real')).toHaveCount(0);
-  await expect(reviews.locator('[data-reviews-summary]')).toContainText('32 ejemplos ficticios');
-  await reviews.locator('[data-review-filter="real"]').click();
-  await expect(reviews.locator('[data-review-feed]')).toContainText('Todavía no hay valoraciones reales aprobadas');
-  await expect(reviews.locator('[data-review-feed] .review-demo')).toHaveCount(0);
-  await reviews.locator('[data-review-filter="examples"]').click();
-  await expect(reviews.locator('[data-review-feed] .review-demo')).toHaveCount(32);
-  await expect(reviews.locator('.review-demo:visible')).toHaveCount(4);
-  await reviews.locator('[data-expand-reviews]').click();
-  await expect(reviews.locator('.review-demo:visible')).toHaveCount(32);
-  await reviews.locator('[data-review-filter="all"]').click();
-  await expect(reviews.locator('.review-demo:visible')).toHaveCount(4);
-  await expect(reviews.locator('[data-review-filter="all"]')).toHaveAttribute('aria-pressed','true');
-  await expect(reviews.locator('.reviews-disclaimer')).toContainText('No son testimonios reales');
+test('sin valoraciones reales la portada muestra un estado vacío, nunca reseñas inventadas',async({page})=>{
+ await page.goto('/');
+ const section=page.locator('#reparado-reviews');
+ await expect(section).toBeVisible();
+ await expect(section.locator('.review-real')).toHaveCount(0);
+ await expect(section.locator('.review-demo')).toHaveCount(0);
+ await expect(section.locator('[data-review-feed]')).toContainText('Todavía no hay valoraciones reales publicadas.');
+ await expect(section.locator('[data-reviews-summary]')).toContainText('Todavía no hay valoraciones reales publicadas.');
+ await expect(section.locator('[data-review-filter]')).toHaveCount(0);
+ await expect(section.locator('[data-expand-reviews]')).toBeHidden();
+ await expect(section.locator('#reparado-review-form')).toBeVisible();
+ await expect(section.locator('[data-review-mode-info]')).toContainText('Modo de demostración');
+ await section.locator('textarea[name=comment]').fill('Todo muy bien en la prueba del formulario.');
+ await section.getByRole('button',{name:'Enviar valoración'}).click();
+ await expect(section.locator('[data-review-feedback]')).toContainText('no se ha enviado a REPARADO');
+ await expect(section.locator('.review-card')).toHaveCount(0);
 });

@@ -1,5 +1,5 @@
 -- REPARADO V13: opiniones auténticas sobre servicios completados.
--- NO insertar las 32 reseñas ficticias de la interfaz en esta tabla.
+-- La tabla almacena solo valoraciones reales de trabajos completados; sin datos iniciales de reseñas.
 -- Requiere V4-V12. Aplicar primero en REPARADO Test.
 create table if not exists public.customer_reviews (
   id uuid primary key default gen_random_uuid(),

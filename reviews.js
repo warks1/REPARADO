@@ -1,142 +1,8 @@
-// Opiniones ficticias para revisar la interfaz: NO proceden de clientes reales.
-// No se insertan en Supabase, no generan una media pública ni se presentan como verificadas.
-const demoData=[
-  [
-    "Fontanería",
-    "El grifo dejó de gotear y quedó bien ajustado."
-  ],
-  [
-    "Fontanería",
-    "Una fuga pequeña parecía complicada; el resultado quedó limpio."
-  ],
-  [
-    "Fontanería",
-    "El desagüe vuelve a funcionar sin malos olores."
-  ],
-  [
-    "Fontanería",
-    "La cisterna descarga suavemente y no pierde agua."
-  ],
-  [
-    "Albañilería",
-    "Las baldosas nuevas combinan muy bien con las anteriores."
-  ],
-  [
-    "Albañilería",
-    "El alicatado quedó alineado y con juntas regulares."
-  ],
-  [
-    "Albañilería",
-    "El suelo de gres presenta un acabado uniforme."
-  ],
-  [
-    "Albañilería",
-    "El rejuntado renovó la apariencia del baño."
-  ],
-  [
-    "Albañilería",
-    "El tabique de pladur ha quedado recto y firme."
-  ],
-  [
-    "Albañilería",
-    "El falso techo se integra muy bien con la iluminación."
-  ],
-  [
-    "Albañilería",
-    "La reparación de pared dejó la superficie lisa."
-  ],
-  [
-    "Albañilería",
-    "El trasdosado mejoró el aspecto de toda la habitación."
-  ],
-  [
-    "Parquet",
-    "Las tablas encajan sin huecos apreciables."
-  ],
-  [
-    "Parquet",
-    "La reparación recuperó la uniformidad del suelo."
-  ],
-  [
-    "Parquet",
-    "Tras el lijado la madera se ve mucho más clara."
-  ],
-  [
-    "Parquet",
-    "El barniz tiene un tono natural y agradable."
-  ],
-  [
-    "Parquet",
-    "El rodapié sigue el contorno de las paredes con precisión."
-  ],
-  [
-    "Parquet",
-    "Retirar el suelo antiguo facilitó mucho la reforma."
-  ],
-  [
-    "Reformas integrales",
-    "El baño se ve más amplio y mejor aprovechado."
-  ],
-  [
-    "Reformas integrales",
-    "La distribución de la cocina resulta mucho más práctica."
-  ],
-  [
-    "Reformas integrales",
-    "La reforma de la vivienda quedó coherente de principio a fin."
-  ],
-  [
-    "Manitas",
-    "La estantería está nivelada y bien anclada."
-  ],
-  [
-    "Manitas",
-    "El soporte del televisor quedó firme y a la altura adecuada."
-  ],
-  [
-    "Manitas",
-    "Las puertas vuelven a cerrar sin rozar."
-  ],
-  [
-    "Manitas",
-    "La cinta de la persiana corre sin atascarse."
-  ],
-  [
-    "Manitas",
-    "La silicona de la ducha presenta un acabado uniforme."
-  ],
-  [
-    "Manitas",
-    "La lámpara queda centrada y bien fijada."
-  ],
-  [
-    "Manitas",
-    "Los cuadros quedaron equilibrados y a la misma altura."
-  ],
-  [
-    "Manitas",
-    "El mueble en kit quedó estable y sin holguras."
-  ],
-  [
-    "Manitas",
-    "La barra de cortina se sostiene correctamente."
-  ],
-  [
-    "Manitas",
-    "Los accesorios del baño quedaron colocados con cuidado."
-  ],
-  [
-    "Manitas",
-    "La manilla abre y cierra con suavidad."
-  ]
-];
-export const demoReviews=Object.freeze(demoData.map(([service,comment],i)=>Object.freeze({
-  id:'demo-'+(i+1),service,comment,rating:5,fictional:true
-})));
-
-// Las valoraciones auténticas se muestran antes que los ejemplos ficticios.
-// Nunca se añaden las demostraciones a Supabase ni al promedio de estrellas.
-const escapeText=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+// Reseñas publicadas: exclusivamente comentarios reales, aprobados por administración.
+// Nunca se crean opiniones ni puntuaciones de demostración para la portada.
+const escapeText=value=>String(value??'').replace(/[&<>"']/g,c=>({
+  '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+}[c]));
 const stars=n=>'<span class="review-stars" aria-label="'+n+' de 5 estrellas">'+('★'.repeat(n))+'</span>';
 
 export function validateReview({rating,comment}){
@@ -152,54 +18,41 @@ export function combineReviews(approvedRows=[]){
     seen.add(String(row.id));
     return true;
   }).map(row=>({
-    id:String(row.id),rating:Number(row.rating),
-    comment:String(row.comment).trim(),
-    created_at:row.created_at,fictional:false
+    id:String(row.id),rating:Number(row.rating),comment:String(row.comment).trim(),
+    created_at:row.created_at
   }));
   real.sort((a,b)=>(Date.parse(b.created_at)||0)-(Date.parse(a.created_at)||0));
-  return [...real,...demoReviews];
+  return real;
 }
 
 export function verifiedReviewSummary(approvedRows=[]){
-  const real=combineReviews(approvedRows).filter(review=>!review.fictional);
+  const real=combineReviews(approvedRows);
   return {count:real.length,average:real.length?
     Math.round(real.reduce((sum,r)=>sum+r.rating,0)/real.length*10)/10:null};
 }
 
 function reviewCard(review,index){
-  const demo=review.fictional===true;
-  const n=Math.min(5,Math.max(1,Math.round(Number(review.rating)||1)));
-  const label=demo?'Ejemplo ficticio':'Valoración real · servicio completado';
-  return '<article class="review-card'+(demo?' review-demo':' review-real')+'"'+(index>=4?' hidden':'')+'>'+
+  const n=Number(review.rating);
+  return '<article class="review-card review-real"'+(index>=4?' hidden':'')+'>'+
     '<div class="review-card-top">'+stars(n)+
-    '<small class="'+(demo?'review-example-label':'review-verified-label')+'">'+label+'</small></div>'+
+    '<small class="review-verified-label">Valoración real · servicio completado</small></div>'+
     '<p>'+escapeText(review.comment)+'</p>'+
-    '<small>'+escapeText(demo?review.service:'Cliente con servicio completado')+'</small></article>';
+    '<small>Cliente con servicio completado</small></article>';
 }
 
-export function reviewFeedMarkup(approvedRows=[],filter='all',expanded=false){
-  const list=combineReviews(approvedRows).filter(row=>
-    filter==='real'?!row.fictional:filter==='examples'?row.fictional:true);
-  const cards=list.map((row,index)=>reviewCard(row,expanded?0:index)).join('');
-  return {
-    count:list.length,
-    html:cards || '<p class="review-loading">'+
-      (filter==='real'?'Todavía no hay valoraciones reales aprobadas.':
-        'No hay reseñas para este filtro.')+'</p>'
-  };
+export function reviewFeedMarkup(approvedRows=[],expanded=false){
+  const list=combineReviews(approvedRows);
+  return {count:list.length,html:list.length?
+    list.map((row,index)=>reviewCard(row,expanded?0:index)).join(''):
+    '<p class="review-loading">Todavía no hay valoraciones reales publicadas.</p>'};
 }
+
 export function renderReviewsSection(){
   return '<section class="reparado-reviews" id="reparado-reviews" aria-label="Reseñas y valoraciones">'+
     '<div class="section-heading"><h2>Reseñas y valoraciones</h2></div>'+
-    '<p class="reviews-disclaimer"><strong>Importante:</strong> las 32 opiniones marcadas como ejemplos son ficticias y son ejemplos de diseño. Cuando existan valoraciones reales aprobadas aparecerán en esta misma lista, siempre antes de los ejemplos. No son testimonios reales ni cuentan para la nota de REPARADO.</p>'+
-    '<p class="reviews-summary" data-reviews-summary aria-live="polite">32 ejemplos ficticios · comprobando valoraciones reales…</p>'+
-    '<div class="review-filters" role="group" aria-label="Filtrar reseñas">'+
-      '<button type="button" class="review-filter active" data-review-filter="all" aria-pressed="true">Todas</button>'+
-      '<button type="button" class="review-filter" data-review-filter="real" aria-pressed="false">Valoraciones reales</button>'+
-      '<button type="button" class="review-filter" data-review-filter="examples" aria-pressed="false">Ejemplos</button>'+
-    '</div>'+
+    '<p class="reviews-summary" data-reviews-summary aria-live="polite">Consultando valoraciones reales…</p>'+
     '<div class="review-feed-grid" data-review-feed>'+reviewFeedMarkup().html+'</div>'+
-    '<button class="services-expand review-expand" type="button" data-expand-reviews aria-expanded="false">Ver todas las reseñas (32) ↓</button>'+
+    '<button class="services-expand review-expand" type="button" data-expand-reviews aria-expanded="false" hidden>Ver más valoraciones ↓</button>'+
     '<div class="review-write"><h3>Valora tu servicio</h3>'+
     '<p data-review-mode-info>Para publicar una opinión auténtica hay que iniciar sesión y tener un servicio finalizado.</p>'+
     '<button type="button" class="primary-cta" data-review-login hidden>Iniciar sesión para valorar</button>'+
@@ -214,37 +67,27 @@ export function renderReviewsSection(){
 export async function mountReviews(main,{supabase=null,session=null,selectedRequestId=null}={}){
   const root=main.querySelector('#reparado-reviews');
   if(!root)return;
-  let real=[],filter='all',expanded=false,loaded=!supabase,loadFailed=false;
+  let real=[],expanded=false,loaded=!supabase,loadFailed=false;
   const feed=root.querySelector('[data-review-feed]');
   const expand=root.querySelector('[data-expand-reviews]');
   const summary=root.querySelector('[data-reviews-summary]');
-  function showFeed(){
+  const showFeed=()=>{
     if(!root.isConnected)return;
-    const {html,count}=reviewFeedMarkup(real,filter,expanded);
-    feed.innerHTML=loadFailed && filter==='real' ?
-      '<p class="review-loading">No se pueden cargar las valoraciones reales en este momento.</p>' : html;
-    root.querySelectorAll('[data-review-filter]').forEach(btn=>{
-      const selected=btn.dataset.reviewFilter===filter;
-      btn.classList.toggle('active',selected);
-      btn.setAttribute('aria-pressed',String(selected));
-    });
-    expand.hidden=count<=4;
+    const {html,count}=reviewFeedMarkup(real,expanded);
+    feed.innerHTML=loadFailed?
+      '<p class="review-loading">No se pudieron cargar las valoraciones reales. Vuelve a intentarlo más tarde.</p>':html;
+    expand.hidden=loadFailed||count<=4;
     expand.setAttribute('aria-expanded',String(expanded));
-    expand.textContent=expanded?'Mostrar menos reseñas ↑':'Ver todas las reseñas ('+count+') ↓';
-    if(!loaded)summary.textContent='Cargando valoraciones reales… · 32 ejemplos ficticios';
-    else if(loadFailed)summary.textContent='No se han podido consultar las valoraciones reales · 32 ejemplos ficticios';
+    expand.textContent=expanded?'Mostrar menos valoraciones ↑':'Ver todas las valoraciones ('+count+') ↓';
+    if(!loaded)summary.textContent='Consultando valoraciones reales…';
+    else if(loadFailed)summary.textContent='Las valoraciones reales no están disponibles en este momento.';
     else {
       const stats=verifiedReviewSummary(real);
       summary.textContent=stats.count?
-        stats.count+' valoraciones reales · '+stats.average.toLocaleString('es-ES')+'/5 de media real · 32 ejemplos ficticios':
-        (supabase?'Aún no hay valoraciones reales aprobadas':'Modo local: sin valoraciones reales conectadas')+' · 32 ejemplos ficticios';
+        stats.count+' valoraciones reales · '+stats.average.toLocaleString('es-ES')+'/5 de media':
+        'Todavía no hay valoraciones reales publicadas.';
     }
-  }
-  root.querySelectorAll('[data-review-filter]').forEach(btn=>{
-    btn.addEventListener('click',()=>{
-      filter=btn.dataset.reviewFilter;expanded=false;showFeed();
-    });
-  });
+  };
   expand.addEventListener('click',()=>{expanded=!expanded;showFeed()});
   showFeed();
   const note=root.querySelector('[data-review-mode-info]');
