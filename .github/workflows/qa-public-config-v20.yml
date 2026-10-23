@@ -1,0 +1,41 @@
+name: Validar despliegue público seguro V20
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'scripts/check-public-config.mjs'
+      - 'tests/public-connection-v16.test.mjs'
+      - 'tests/public-connection-v20.test.mjs'
+      - '.github/workflows/qa-public-config-v20.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'scripts/check-public-config.mjs'
+      - 'tests/public-connection-v16.test.mjs'
+      - 'tests/public-connection-v20.test.mjs'
+      - '.github/workflows/qa-public-config-v20.yml'
+permissions:
+  contents: read
+jobs:
+  public-backend-guard:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Probar guardia V16 y V20
+        run: node --test tests/public-connection-v16.test.mjs tests/public-connection-v20.test.mjs
+      - name: Modo público demo sin secretos
+        run: node scripts/check-public-config.mjs
+        env:
+          VITE_SUPABASE_URL: ''
+          VITE_SUPABASE_ANON_KEY: ''
+      - name: Rechazar servidor malicioso
+        shell: bash
+        run: |
+          if VITE_SUPABASE_URL=https://evil.example VITE_SUPABASE_ANON_KEY=sb_publishable_FICTICIA node scripts/check-public-config.mjs; then
+            echo 'ERROR: se ha aceptado un backend no autorizado'
+            exit 1
+          fi
