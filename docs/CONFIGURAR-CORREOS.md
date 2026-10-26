@@ -49,3 +49,15 @@ Si no se dispone de dominio propio ni API de correo, no activar el worker. La co
 - **Google Play Console:** crear la cuenta desde [play.google.com/console/signup](https://play.google.com/console/signup) utilizando la cuenta de Google del propietario. Existe una cuota única de registro de **25 USD** y Google exige seleccionar cuenta personal u organización y verificar identidad/datos. Algunas cuentas personales nuevas tienen que superar una prueba cerrada antes de publicar. Documentación oficial: https://support.google.com/googleplay/android-developer/answer/6112435?hl=es.
 - Al crear la ficha en Play Console, usar `reparado_soporte@outlook.es` para asistencia sobre la app, y mantener `reparado_clientes@outlook.es` en los flujos de solicitudes, no como correo de asistencia técnica.
 - Nunca compartir contraseñas de Apple, Outlook, Google, certificados o claves privadas en el chat ni en el repositorio público.
+
+## Incidencias registradas desde «Mi perfil»
+
+Ahora un cliente que haya iniciado sesión puede rellenar el formulario **Comunicar un problema** con sección, resumen y explicación. Una migración nueva (`supabase/migration-support-reports.sql`) guarda la incidencia en `public.support_reports` y crea un aviso en `support_email_outbox`. Esas tablas usan RLS:
+
+- El cliente solo puede insertar informes con su identificador autenticado y consultar los suyos.
+- Otro cliente y un operario no pueden leerlos; administración puede consultarlos en **Perfil → Incidencias de clientes**, marcar «En revisión» o «Resuelta» y ver los detalles en el panel privado.
+- Ningún cliente puede editar, borrar ni consultar la cola de correo.
+- El worker `reparado-mail-worker` atiende también estas incidencias y notifica a `reparado_soporte@outlook.es`, enviando únicamente la referencia y sección. El texto completo permanece privado en Supabase.
+- **Sin proveedor, remitente y Cron configurados no se envían emails automáticamente.** La incidencia sí puede quedar registrada en la base conectada; en demostración el cliente conserva el enlace para escribir al soporte desde su gestor de correo.
+- Migraciones de las dos colas, worker y tareas Cron **deben aplicarse en el mismo proyecto de producción**. No configurar Cron hasta probar ambas colas y los accesos. El worker atiende primero avisos de incidencias, después nuevas solicitudes; programarlo periódicamente y vigilar la cola `failed`.
+- Las incidencias pueden contener datos personales introducidos por clientes: no incorporar descripciones completas en notificaciones, logs de acceso ni herramientas de analítica, y definir plazos de retención bajo RGPD.
