@@ -394,7 +394,7 @@ export function mountConnected({app, services, supabase, authLinkIntent=null}) {
       if(!session)return;
       const expected=session.user.id;
       const {data,error}=await supabase.from('account_deletion_requests')
-        .select('id,status,requested_at').eq('user_id',expected).maybeSingle();
+        .select('id,status,requested_at').maybeSingle();
       if(!deletionStatus.isConnected || !session || session.user.id!==expected)return;
       if(error){
         deletionStatus.textContent='No se puede consultar el estado de eliminación en este momento.';
