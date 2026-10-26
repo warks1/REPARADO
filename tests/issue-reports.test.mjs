@@ -12,7 +12,7 @@ test('clientes conectados pueden denunciar fallos, con límites y sin introducir
  assert.ok(src.includes('submitSupportIssue({'));
  assert.ok(submit.includes(".from('support_reports').insert({"));
  assert.ok(submit.includes('user_id:userId,subject,description,context,client_report_id:reportId'));
- assert.ok(src.includes('reparado_soporte@outlook.es'));
+ assert.ok(submit.includes('reparado_soporte@outlook.es'));
  assert.ok(src.includes('Si') || src.includes('Comunicar')); // Cuenta conectada.
 });
 test('solo administración ve y tramita informes; cambios de estado limitados',()=>{
