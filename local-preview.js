@@ -1,3 +1,4 @@
+import {contactLinksMarkup} from './contact-emails.js';
 import { mountReviews } from './reviews.js';
 import {requestStorageKey,profileStorageKey,messageDraftStorageKey,safeReadJSON,localRequests,localProfile,localWrite,localAgenda,localSummary,localDateLabel,validLocalDate} from './local-data.js';
 import {localReceipt,localRequestBackup,localBackupName,historicalEvents,readableTimestamp} from './local-document.js';
@@ -13,7 +14,7 @@ export function mountLocal({app,services}){
   const profile=()=>localProfile(localStorage);
   const persist=items=>localWrite(localStorage,storeKey,items);
   let page='home',lastCategory=null,detailOrigin='requests';
-  app.innerHTML='<div class="shell">'+appHeader({name:profile().name})+'<main id="main"></main><footer>© Reparado · Servicios para tu hogar</footer></div>'+bottomNavigation();
+  app.innerHTML='<div class="shell">'+appHeader({name:profile().name})+'<main id="main"></main><footer>© Reparado · Servicios para tu hogar ${contactLinksMarkup()}</footer></div>'+bottomNavigation();
   const main=app.querySelector('#main');
   function home(){
     page='home';lastCategory=null;setActiveNav(app,'home');
@@ -226,7 +227,7 @@ export function mountLocal({app,services}){
       '<label>Número, piso y puerta<input name="address_number" value="'+esc(p.address_number||'')+'" maxlength="80"></label>'+
       '<div class="row"><label>Código postal<input name="postal_code" value="'+esc(p.postal_code||'')+'" inputmode="numeric" pattern="[0-9]{5}" maxlength="5"></label>'+
       '<label>Municipio<input name="city" value="'+esc(p.city||'Barcelona')+'" maxlength="90"></label></div>'+
-      '<button type="submit">Guardar perfil</button></form><p data-feedback role="status"></p>'+
+      '<button type="submit">Guardar perfil</button></form>'+contactLinksMarkup()+'<p data-feedback role="status"></p>'+
       '<p class="notice">El perfil solo se guarda en este dispositivo. Se utilizará para rellenar futuras solicitudes.</p></section>';
     main.querySelector('#local-profile').onsubmit=e=>{
       e.preventDefault();const d=new FormData(e.currentTarget);
