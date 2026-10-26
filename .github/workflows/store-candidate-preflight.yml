@@ -91,11 +91,38 @@ jobs:
           npx cap add android
           npx cap sync android
           npx @capacitor/assets generate --android --iconBackgroundColor '#fff9f5' --splashBackgroundColor '#ffffff'
-      - name: Comprobar API objetivo y generar AAB de prueba NO firmado
+      - name: Probar AAB con firma efímera (nunca distribuir)
         run: |
-          node --input-type=module -e "import {readFileSync} from 'node:fs'; import {androidApiLevel} from './scripts/configure-android-release.mjs'; if(androidApiLevel(readFileSync('android/variables.gradle','utf8'))!==36)process.exit(1)"
+          set -euo pipefail
+          export REPARADO_ANDROID_KEYSTORE_PATH="$RUNNER_TEMP/ci-only.jks"
+          export REPARADO_ANDROID_KEYSTORE_PASSWORD="CiTestingOnly1234"
+          export REPARADO_ANDROID_KEY_ALIAS="ci-only"
+          export REPARADO_ANDROID_KEY_PASSWORD="CiTestingOnly1234"
+          keytool -genkeypair -keystore "$REPARADO_ANDROID_KEYSTORE_PATH" -storepass "$REPARADO_ANDROID_KEYSTORE_PASSWORD" -keypass "$REPARADO_ANDROID_KEY_PASSWORD" -alias "$REPARADO_ANDROID_KEY_ALIAS" -keyalg RSA -keysize 3072 -validity 2 -dname "CN=REPARADO CI ONLY" -noprompt
+          node scripts/configure-android-release.mjs
           cd android
           chmod +x gradlew
           ./gradlew bundleRelease --no-daemon
           test -s app/build/outputs/bundle/release/app-release.aab
-          echo 'AAB de prueba generado. NO subir a Google Play: requiere firma y producción.'
+          jarsigner -verify app/build/outputs/bundle/release/app-release.aab
+          echo 'AAB de test firmado con clave descartable: NO PUBLICAR'
+
+  ios-native-archive:
+    runs-on: macos-26-intel
+    timeout-minutes: 50
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: {node-version: '22'}
+      - name: Generar proyecto iOS
+        run: |
+          npm install --no-audit --no-fund
+          npm run build
+          npx cap add ios
+          npx cap sync ios
+      - name: Probar archivo iOS sin firma comercial
+        run: |
+          xcodebuild -version
+          xcodebuild archive -project ios/App/App.xcodeproj -scheme App -configuration Release -destination 'generic/platform=iOS' -archivePath "$RUNNER_TEMP/Reparado-Test.xcarchive" CODE_SIGNING_ALLOWED=NO
+          test -d "$RUNNER_TEMP/Reparado-Test.xcarchive/Products/Applications/App.app"
+          echo 'Archivo iOS sin firma para CI: NO DISTRIBUIR'
