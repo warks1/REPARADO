@@ -614,3 +614,21 @@ body,.shell,.customer-header,.customer-nav {background:#fff}
 #reparado-support-admin .support-ticket small{color:#647894}
 #reparado-support-admin .support-ticket button{border:1px solid #d7dff1;border-radius:11px;padding:9px 12px;background:#f2f7fe;color:#225a96}
 @media (max-width:460px){#reparado-support-admin .flex-actions{flex-wrap:wrap}#reparado-support-admin .flex-actions button{flex:1;min-width:130px}}
+
+/* V22 · Seguimiento accesible y privado de incidencias. */
+#customer-support-history{margin-top:14px}
+#customer-support-history .support-history-head{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
+#customer-support-history .support-history-head h3{margin:0}
+#customer-support-history [data-refresh-support]{border-radius:999px;background:#fff;color:#175780;border:1px solid #9bc4e1;min-height:40px;padding:8px 12px;font-size:12px;font-weight:800}
+#customer-support-history [data-refresh-support]:focus-visible{outline:3px solid #277dc9;outline-offset:2px}
+#customer-support-history [data-support-history-status]{font-size:12px;color:#4c5e72;margin:8px 0}
+.support-history-card{border:1px solid #e1e7f1;border-radius:12px;background:white;margin:8px 0;padding:12px 13px;overflow-wrap:anywhere}
+.support-history-card strong{font-size:13px;color:#26384e}
+.support-history-card small{font-size:12px;color:#63768a}
+.support-history-card .support-history-head{display:flex;align-items:start;justify-content:space-between;gap:8px}
+.support-state{display:inline-block;flex-shrink:0;border-radius:999px;font-size:11px;font-weight:800;padding:5px 9px}
+.support-state-open{background:#eaf3ff;color:#175f9b}
+.support-state-reviewing{background:#fff2d9;color:#79520a}
+.support-state-resolved{background:#e5f6ea;color:#23643b}
+.support-state-unknown{background:#f1f3f6;color:#555}
+@media(max-width:390px){.support-history-card .support-history-head{flex-wrap:wrap}}
