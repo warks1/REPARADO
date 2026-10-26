@@ -639,12 +639,13 @@ export function mountConnected({app, services, supabase, authLinkIntent=null}) {
       const phone=String(fields.get('phone')||'').trim();
       if(full_name.length>100 || phone.length>25)return message('Los datos son demasiado largos.',true);
       const userId=session?.user?.id;
-      const button=event.currentTarget.querySelector('[type=submit]');
+      const profileForm=event.currentTarget;
+      const button=profileForm.querySelector('[type=submit]');
       if(!userId||button.disabled)return;
       button.disabled=true;
       try{
         const {error}=await supabase.from('profiles').update({full_name,phone}).eq('id',userId);
-        if(!isCurrentUser(userId)||!event.currentTarget.isConnected||currentView!=='profile')return;
+        if(!isCurrentUser(userId)||!profileForm.isConnected||currentView!=='profile')return;
         if(error)throw error;
         profile={...profile,full_name,phone};message('Perfil actualizado.');
       }catch{
@@ -912,8 +913,14 @@ export function mountConnected({app, services, supabase, authLinkIntent=null}) {
         });
       });
     }
+    const staffSaves=new Set();
     main.querySelectorAll('form[data-job-id]').forEach(form=>form.addEventListener('submit',async e=>{
       e.preventDefault();
+      const jobId=form.dataset.jobId,saveButton=form.querySelector('[type=submit]');
+      if(!isCurrentUser(staffUserId)||!form.isConnected||staffSaves.has(jobId))return;
+      staffSaves.add(jobId);
+      if(saveButton)saveButton.disabled=true;
+      try{
       const fields=new FormData(form);
       const status=String(fields.get('status'));
       if(!admin){
@@ -979,6 +986,13 @@ export function mountConnected({app, services, supabase, authLinkIntent=null}) {
       }
       await renderAdmin(filter);
       message('Solicitud actualizada.');
+      }catch{
+        if(isCurrentUser(staffUserId)&&currentView==='admin')
+          message('No se pudo confirmar el cambio. Revisa el estado del trabajo antes de volver a guardar.',true);
+      }finally{
+        staffSaves.delete(jobId);
+        if(saveButton?.isConnected)saveButton.disabled=false;
+      }
     }));
     // Los documentos se generan solo a partir de los trabajos consultados con
     // los permisos actuales. No se envían, firman ni insertan en facturación.
@@ -1009,20 +1023,28 @@ export function mountConnected({app, services, supabase, authLinkIntent=null}) {
     main.querySelectorAll('[data-staff-chat]').forEach(button=>button.addEventListener('click',()=>loadStaffChat(button.dataset.staffChat,button.dataset.chatService)));
     main.querySelectorAll('[data-photos]').forEach(button=>button.addEventListener('click',async()=>{
       const out=main.querySelector(`[data-photo-output="${button.dataset.photos}"]`);
-      if(!out)return;
+      if(!out||button.disabled||!isCurrentUser(staffUserId))return;
+      button.disabled=true;
       out.textContent='Buscando fotografías…';
       const folder=`${button.dataset.owner}/${button.dataset.photos}`;
-      const {data,error}=await supabase.storage.from('request-photos').list(folder,{limit:50});
-      if(error){out.textContent='No se pudieron consultar las fotos: '+error.message;return}
-      out.replaceChildren();
-      if(!data?.length){out.textContent='Sin fotos disponibles.';return}
-      for(const photo of data){
-        if(!photo.name || photo.name.startsWith('.'))continue;
-        const signed=await supabase.storage.from('request-photos').createSignedUrl(`${folder}/${photo.name}`,120);
-        if(signed.error)continue;
-        const a=document.createElement('a');a.href=signed.data.signedUrl;a.target='_blank';a.rel='noopener noreferrer';a.textContent='📷 Ver fotografía';out.append(a);
-      }
-      if(!out.children.length)out.textContent='No hay fotos accesibles.';
+      try{
+        const {data,error}=await supabase.storage.from('request-photos').list(folder,{limit:50});
+        if(!isCurrentUser(staffUserId)||currentView!=='admin'||!out.isConnected)return;
+        if(error)throw error;
+        out.replaceChildren();
+        if(!data?.length){out.textContent='Sin fotos disponibles.';return}
+        for(const photo of data){
+          if(!photo.name || photo.name.startsWith('.'))continue;
+          const signed=await supabase.storage.from('request-photos').createSignedUrl(`${folder}/${photo.name}`,120);
+          if(!isCurrentUser(staffUserId)||currentView!=='admin'||!out.isConnected)return;
+          if(signed.error||!signed.data?.signedUrl)continue;
+          const a=document.createElement('a');a.href=signed.data.signedUrl;a.target='_blank';a.rel='noopener noreferrer';a.textContent='📷 Ver fotografía';out.append(a);
+        }
+        if(!out.children.length)out.textContent='No hay fotos accesibles.';
+      }catch{
+        if(isCurrentUser(staffUserId)&&currentView==='admin'&&out.isConnected)
+          out.textContent='No se pudieron consultar las fotografías. Comprueba la conexión.';
+      }finally{button.disabled=false}
     }));
   }
   supabase.auth.onAuthStateChange((event)=>{
