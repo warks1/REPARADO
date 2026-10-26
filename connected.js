@@ -1,4 +1,5 @@
 import {supportHistoryMarkup} from './support-ticket-ui.js';
+import {createPushSessionManager} from './push-session.js';
 import {contactLinksMarkup} from './contact-emails.js';
 import { mountReviewModeration } from './review-moderation.js';
 import { mountReviews } from './reviews.js';
@@ -21,8 +22,12 @@ export function mountConnected({app, services, supabase, authLinkIntent=null}) {
   const iconFor = name => ({'Fontanería':'🚰','Albañilería':'🧱','Parquet':'🪵','Reformas integrales':'🏠'})[name] || '🛠️';
   const statusLabels = {new:'Nueva', quoted:'Presupuesto',accepted:'Aceptada',scheduled:'Programada',in_progress:'En curso',completed:'Terminada',cancelled:'Cancelada'};
   const validStatus = Object.keys(statusLabels);
-  let session=null, profile=null, pushReady=false, currentView='home', adminFilter='all', lastCategory=null, pendingService=null, pendingView=null;
+  let session=null, profile=null, currentView='home', adminFilter='all', lastCategory=null, pendingService=null, pendingView=null;
   let passwordSetupPending=authLinkIntent==='invite'||authLinkIntent==='recovery';
+  const pushManager=createPushSessionManager({
+    supabase,Capacitor,PushNotifications,
+    onError:()=>console.warn('REPARADO: registro seguro de notificaciones no disponible')
+  });
   app.innerHTML = `<div class="shell">${appHeader()}<main id="main"></main><footer>© Reparado · Servicios para tu hogar ${contactLinksMarkup()} <button type="button" id="logout" class="hidden" hidden>Cerrar sesión</button></footer></div>${bottomNavigation()}`;
   const main=app.querySelector('#main');
   const message = (text, error=false) => {
@@ -75,11 +80,26 @@ export function mountConnected({app, services, supabase, authLinkIntent=null}) {
       else renderHome();
     }
   });
-  app.querySelector('#logout').addEventListener('click', async () => {
-    const {error}=await supabase.auth.signOut();
-    if(error){message(error.message,true);return}
-    session=null;profile=null;pendingService=null;pendingView=null;renderHome();
-  });
+  async function safeSignOut(){
+    const oldId=session?.user?.id;
+    if(oldId && !await pushManager.deactivate(oldId)){
+      message('No se pudo desconectar de forma segura este móvil. Comprueba la conexión e inténtalo otra vez.',true);
+      return false;
+    }
+    try{
+      const {error}=await supabase.auth.signOut();
+      if(error)throw error;
+      session=null;profile=null;pendingService=null;pendingView=null;
+      renderHome();
+      return true;
+    }catch{
+      // Si falla cerrar sesión, reactivar el registro del usuario original.
+      if(oldId)void pushManager.activate(oldId);
+      message('No se pudo cerrar la sesión. Vuelve a intentarlo.',true);
+      return false;
+    }
+  }
+  app.querySelector('#logout').addEventListener('click',safeSignOut);
   function showLogin(){
     currentView='login';setActiveNav(app,'profile');session=null;profile=null;
     app.querySelector('#logout').classList.add('hidden');
@@ -170,10 +190,7 @@ export function mountConnected({app, services, supabase, authLinkIntent=null}) {
     setActiveNav(app,'profile');
     const invited=authLinkIntent==='invite';
     main.innerHTML=`<section class="auth card"><h2>${invited?'Completar invitación':'Restablecer contraseña'}</h2><p>Establece una contraseña nueva para entrar en REPARADO desde cualquier dispositivo.</p><form id="password-setup-form"><label>Nueva contraseña<input name="password" type="password" autocomplete="new-password" minlength="12" required></label><label>Repetir contraseña<input name="confirm" type="password" autocomplete="new-password" minlength="12" required></label><button type="submit">Guardar contraseña</button></form><button type="button" class="link" id="password-setup-logout">Cerrar sesión</button><p data-feedback class="feedback" role="status"></p></section>`;
-    main.querySelector('#password-setup-logout').addEventListener('click',async()=>{
-      const {error}=await supabase.auth.signOut();
-      if(error)message('No se pudo cerrar sesión: '+error.message,true);
-    });
+    main.querySelector('#password-setup-logout').addEventListener('click',safeSignOut);
     main.querySelector('#password-setup-form').addEventListener('submit',async event=>{
       event.preventDefault();
       const form=event.currentTarget;
@@ -220,17 +237,9 @@ export function mountConnected({app, services, supabase, authLinkIntent=null}) {
     else renderHome();
     registerNativePush();
   }
-  async function registerNativePush(){
-    if(pushReady || !Capacitor.isNativePlatform() || !session)return;
-    try {
-      const permission=await PushNotifications.requestPermissions();
-      if(permission.receive!=='granted')return;
-      pushReady=true;
-      await PushNotifications.addListener('registration',async({value})=>{
-        if(session)await supabase.from('device_tokens').upsert({user_id:session.user.id,token:value,platform:Capacitor.getPlatform()},{onConflict:'token'});
-      });
-      await PushNotifications.register();
-    }catch(error){console.warn('Push nativo no disponible:',error)}
+  function registerNativePush(){
+    if(!session)return;
+    void pushManager.activate(session.user.id);
   }
   function renderHome(selectedReviewRequestId=null){
     currentView='home';lastCategory=null;setActiveNav(app,'home');
@@ -292,31 +301,50 @@ export function mountConnected({app, services, supabase, authLinkIntent=null}) {
     form.addEventListener('submit',async event=>{
       event.preventDefault();
       const button=form.querySelector('[type=submit]');
+      if(button.disabled)return;
       button.disabled=true;
-      const fields=new FormData(form);
-      const images=[...(form.elements.photos.files||[])];
-      if(images.length>4 || images.some(f=>f.size>8388608 || !['image/jpeg','image/png','image/webp','image/heic'].includes(f.type))){
-        message('Selecciona hasta 4 imágenes JPG, PNG, WEBP o HEIC de 8 MB como máximo.',true);button.disabled=false;return;
+      let recorded=false;
+      try{
+        const fields=new FormData(form);
+        const images=[...(form.elements.photos.files||[])];
+        if(images.length>4 || images.some(f=>f.size>8388608 ||
+            !['image/jpeg','image/png','image/webp','image/heic'].includes(f.type))){
+          message('Selecciona hasta 4 imágenes JPG, PNG, WEBP o HEIC de 8 MB como máximo.',true);
+          return;
+        }
+        const payload={
+          customer_id:session.user.id,service_name:service[1],category:service[0],
+          street:String(fields.get('street')).trim(),
+          address_number:String(fields.get('address_number')).trim(),postal_code:String(fields.get('postal_code')).trim(),
+          city:String(fields.get('city')).trim(),phone:String(fields.get('phone')).trim(),
+          preferred_date:fields.get('preferred_date')||null,
+          description:String(fields.get('description')).trim()+'\nHorario preferido: '+String(fields.get('preferred_period')||'Indiferente')
+        };
+        const {data,error}=await supabase.from('service_requests').insert(payload).select('id').single();
+        if(error || !data?.id)throw new Error('No se ha confirmado el registro de la solicitud');
+        recorded=true;
+        let failures=0;
+        for(const file of images){
+          try{
+            const ext=({'image/jpeg':'jpg','image/png':'png','image/webp':'webp','image/heic':'heic'})[file.type];
+            const path=session.user.id+'/'+data.id+'/'+crypto.randomUUID()+'.'+ext;
+            const uploaded=await supabase.storage.from('request-photos')
+              .upload(path,file,{contentType:file.type,upsert:false});
+            if(uploaded.error)failures++;
+          }catch{failures++}
+        }
+        form.remove();
+        main.querySelector('.request-screen .card').insertAdjacentHTML('beforeend',
+          '<div class="request-confirm"><h2>Solicitud recibida</h2><p>Hemos registrado tu solicitud. Puedes consultar su estado en Mis solicitudes.</p><button type="button" class="primary-cta" data-view="requests">Ver mis solicitudes →</button></div>');
+        message(failures?'La solicitud se guardó, pero '+failures+' fotografía(s) no se pudieron subir.':
+          'Solicitud enviada correctamente.',Boolean(failures));
+      }catch{
+        message(recorded?
+          'La solicitud puede estar registrada. Revisa Mis solicitudes antes de volver a enviarla.':
+          'No se pudo confirmar la solicitud. Comprueba Mis solicitudes antes de reintentar.',true);
+      }finally{
+        if(button.isConnected)button.disabled=false;
       }
-      const payload={
-        customer_id:session.user.id,service_name:service[1],category:service[0],
-        street:String(fields.get('street')).trim(),
-        address_number:String(fields.get('address_number')).trim(),postal_code:String(fields.get('postal_code')).trim(),
-        city:String(fields.get('city')).trim(),phone:String(fields.get('phone')).trim(),
-        preferred_date:fields.get('preferred_date')||null,description:String(fields.get('description')).trim()+'\nHorario preferido: '+String(fields.get('preferred_period')||'Indiferente')
-      };
-      const {data,error}=await supabase.from('service_requests').insert(payload).select('id').single();
-      if(error){message('No se pudo guardar la solicitud: '+error.message,true);button.disabled=false;return}
-      let failures=0;
-      for(const file of images){
-        const ext=({'image/jpeg':'jpg','image/png':'png','image/webp':'webp','image/heic':'heic'})[file.type];
-        const path=`${session.user.id}/${data.id}/${crypto.randomUUID()}.${ext}`;
-        const uploaded=await supabase.storage.from('request-photos').upload(path,file,{contentType:file.type,upsert:false});
-        if(uploaded.error)failures++;
-      }
-      form.remove();
-      main.querySelector('.request-screen .card').insertAdjacentHTML('beforeend','<div class="request-confirm"><h2>Solicitud recibida</h2><p>Hemos registrado tu solicitud. Puedes consultar su estado en Mis solicitudes.</p><button type="button" class="primary-cta" data-view="requests">Ver mis solicitudes →</button></div>');
-      message(failures?`La solicitud se registró, pero ${failures} foto(s) no se pudieron subir.`:'Solicitud enviada correctamente.',Boolean(failures));
     });
   }
   async function loadRequests(){
@@ -886,6 +914,7 @@ export function mountConnected({app, services, supabase, authLinkIntent=null}) {
   }
   supabase.auth.onAuthStateChange((event)=>{
     if(event==='SIGNED_OUT'){
+      void pushManager.discard();
       session=null;profile=null;passwordSetupPending=false;
       pendingService=null;pendingView=null;renderHome();
     }else if(event==='PASSWORD_RECOVERY'){
