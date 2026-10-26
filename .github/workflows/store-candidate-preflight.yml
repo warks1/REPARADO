@@ -1,0 +1,131 @@
+name: REPARADO · Comprobación previa a tiendas
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'scripts/store-preflight.mjs'
+      - 'scripts/configure-android-release.mjs'
+      - '.github/workflows/store-release.yml'
+      - '.github/workflows/store-candidate-preflight.yml'
+      - 'supabase/migration-store-account-deletion.sql'
+      - 'tests/store-release.test.mjs'
+      - 'tests/account-deletion-store-rls.py'
+      - 'connected.js'
+      - 'vivid-theme.css'
+  push:
+    branches: [main]
+    paths:
+      - 'scripts/store-preflight.mjs'
+      - 'scripts/configure-android-release.mjs'
+      - '.github/workflows/store-release.yml'
+      - '.github/workflows/store-candidate-preflight.yml'
+      - 'supabase/migration-store-account-deletion.sql'
+      - 'tests/store-release.test.mjs'
+      - 'tests/account-deletion-store-rls.py'
+      - 'connected.js'
+      - 'vivid-theme.css'
+permissions:
+  contents: read
+jobs:
+  code-and-store-gates:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm install --no-audit --no-fund
+      - run: npm test
+      - run: npm run build
+      - name: Verificar rechazo de paquete sin producción
+        run: |
+          if node scripts/store-preflight.mjs; then
+            echo 'FALLO DE SEGURIDAD: permitida versión demo en tienda'
+            exit 1
+          fi
+  account-deletion-rls:
+    runs-on: ubuntu-latest
+    timeout-minutes: 14
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: reparado_test
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U postgres -d reparado_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+    env:
+      REPARADO_TEST_DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/reparado_test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: python -m pip install --disable-pip-version-check 'psycopg[binary]>=3.2,<4'
+      - name: Preparar cuentas ficticias y RLS
+        run: python -u tests/supabase-roles-rls.py
+      - name: Verificar borrado de cuentas sin permisos excesivos
+        run: python -u tests/account-deletion-store-rls.py
+
+  android-native-bundle:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    env:
+      REPARADO_BUILD_NUMBER: '1'
+      REPARADO_VERSION_NAME: '1.0.0'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: {node-version: '22'}
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - run: npm install --no-audit --no-fund
+      - name: Compilar y sincronizar Capacitor 8
+        run: |
+          npm run build
+          npx cap add android
+          npx cap sync android
+          npx @capacitor/assets generate --android --iconBackgroundColor '#fff9f5' --splashBackgroundColor '#ffffff'
+      - name: Probar AAB con firma efímera (nunca distribuir)
+        run: |
+          set -euo pipefail
+          export REPARADO_ANDROID_KEYSTORE_PATH="$RUNNER_TEMP/ci-only.jks"
+          export REPARADO_ANDROID_KEYSTORE_PASSWORD="CiTestingOnly1234"
+          export REPARADO_ANDROID_KEY_ALIAS="ci-only"
+          export REPARADO_ANDROID_KEY_PASSWORD="CiTestingOnly1234"
+          keytool -genkeypair -keystore "$REPARADO_ANDROID_KEYSTORE_PATH" -storepass "$REPARADO_ANDROID_KEYSTORE_PASSWORD" -keypass "$REPARADO_ANDROID_KEY_PASSWORD" -alias "$REPARADO_ANDROID_KEY_ALIAS" -keyalg RSA -keysize 3072 -validity 2 -dname "CN=REPARADO CI ONLY" -noprompt
+          node scripts/configure-android-release.mjs
+          cd android
+          chmod +x gradlew
+          ./gradlew bundleRelease --no-daemon
+          test -s app/build/outputs/bundle/release/app-release.aab
+          jarsigner -verify app/build/outputs/bundle/release/app-release.aab
+          echo 'AAB de test firmado con clave descartable: NO PUBLICAR'
+
+  ios-native-archive:
+    runs-on: macos-26-intel
+    timeout-minutes: 50
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: {node-version: '22'}
+      - name: Generar proyecto iOS
+        run: |
+          npm install --no-audit --no-fund
+          npm run build
+          npx cap add ios
+          npx cap sync ios
+      - name: Probar archivo iOS sin firma comercial
+        run: |
+          xcodebuild -version
+          xcodebuild archive -project ios/App/App.xcodeproj -scheme App -configuration Release -destination 'generic/platform=iOS' -archivePath "$RUNNER_TEMP/Reparado-Test.xcarchive" CODE_SIGNING_ALLOWED=NO
+          test -d "$RUNNER_TEMP/Reparado-Test.xcarchive/Products/Applications/App.app"
+          echo 'Archivo iOS sin firma para CI: NO DISTRIBUIR'

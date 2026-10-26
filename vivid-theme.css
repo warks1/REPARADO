@@ -582,3 +582,11 @@ body,.shell,.customer-header,.customer-nav {background:#fff}
 .customer-review-action{border-radius:13px!important;background:#fff0dc!important;color:#864414!important;border:1px solid #f4bf7d!important;font-weight:800!important;min-height:42px;box-shadow:0 4px 10px rgba(154,91,24,.07)}
 .customer-review-action:focus-visible{outline:3px solid #2986d5;outline-offset:3px}
 @media(prefers-reduced-motion:reduce){.customer-review-action{animation:none!important;transition:none!important}}
+
+/* Publicación en tiendas: privacidad sin alterar el menú o las categorías. */
+.account-deletion{margin-top:18px;padding:15px;border-radius:16px;background:#fff6f3;border:1px solid #efdad5}
+.account-deletion h3{margin:0 0 8px;color:#7e3c31}
+.account-deletion p{font-size:13px;line-height:1.55;color:#584b4a}
+.account-deletion button{border:1px solid #cc7470;background:white;border-radius:13px;color:#983d37;padding:12px 14px;min-height:42px;font-weight:750}
+.account-deletion button:disabled{opacity:.6;cursor:default}
+.account-deletion button:focus-visible{outline:3px solid #2283db;outline-offset:2px}
