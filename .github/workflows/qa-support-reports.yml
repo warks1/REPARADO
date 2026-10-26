@@ -4,6 +4,8 @@ on:
     branches: [main]
     paths:
       - 'connected.js'
+      - 'support-ticket-ui.js'
+      - 'tests/support-history-v22.test.mjs'
       - 'vivid-theme.css'
       - 'supabase/migration-support-reports.sql'
       - 'supabase/functions/reparado-mail-worker/**'
@@ -14,6 +16,8 @@ on:
     branches: [main]
     paths:
       - 'connected.js'
+      - 'support-ticket-ui.js'
+      - 'tests/support-history-v22.test.mjs'
       - 'vivid-theme.css'
       - 'supabase/migration-support-reports.sql'
       - 'supabase/functions/reparado-mail-worker/**'

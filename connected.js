@@ -1,3 +1,4 @@
+import {supportHistoryMarkup} from './support-ticket-ui.js';
 import {contactLinksMarkup} from './contact-emails.js';
 import { mountReviewModeration } from './review-moderation.js';
 import { mountReviews } from './reviews.js';
@@ -398,6 +399,10 @@ export function mountConnected({app, services, supabase, authLinkIntent=null}) {
           <p data-issue-feedback role="status" aria-live="polite"></p>
         </form>
         <p>También puedes escribir directamente:</p>${contactLinksMarkup()}</section>
+      ${!userIsStaff()?'<section class="reparado-help" id="customer-support-history" aria-label="Mis incidencias">'+
+        '<div class="support-history-head"><h3>Mis incidencias</h3><button type="button" data-refresh-support>Actualizar estados</button></div>'+
+        '<p data-support-history-status role="status" aria-live="polite">Consultando incidencias…</p>'+
+        '<div data-support-history-list></div></section>':''}
       <section class="account-deletion">
         <h3>Privacidad de la cuenta</h3>
         <p>Puedes solicitar la eliminación de tu cuenta y de tus datos personales, salvo aquellos que debamos conservar por obligación legal.</p>
@@ -406,6 +411,29 @@ export function mountConnected({app, services, supabase, authLinkIntent=null}) {
       </section>
       <p data-feedback class="feedback" role="status"></p></section>`;
     main.querySelector('#view-invoices').addEventListener('click',loadInvoices);
+    const historyPanel=main.querySelector('#customer-support-history');
+    const refreshSupportHistory=async()=>{
+      if(!historyPanel||!session)return;
+      const uid=session.user.id;
+      const list=historyPanel.querySelector('[data-support-history-list]');
+      const note=historyPanel.querySelector('[data-support-history-status]');
+      note.textContent='Consultando incidencias…';
+      try{
+        // RLS devuelve solo las incidencias del cliente, no las de otros usuarios.
+        const {data,error}=await supabase.from('support_reports')
+          .select('id,subject,status,created_at')
+          .order('created_at',{ascending:false}).limit(15);
+        if(!historyPanel.isConnected||currentView!=='profile'||!session||session.user.id!==uid)return;
+        if(error)throw error;
+        list.innerHTML=supportHistoryMarkup(data);
+        note.textContent=(data?.length||0)+' incidencias registradas en esta cuenta.';
+      }catch{
+        if(historyPanel.isConnected&&currentView==='profile')
+          note.textContent='No se pueden consultar las incidencias. Comprueba la conexión y pulsa Actualizar estados.';
+      }
+    };
+    historyPanel?.querySelector('[data-refresh-support]')?.addEventListener('click',refreshSupportHistory);
+    refreshSupportHistory();
     const issueForm=main.querySelector('#reparado-issue-report');
     issueForm.addEventListener('submit',async event=>{
       event.preventDefault();
@@ -433,6 +461,7 @@ export function mountConnected({app, services, supabase, authLinkIntent=null}) {
         }else{
           feedback.textContent='Incidencia registrada. El equipo podrá revisarla desde el panel privado.';
           issueForm.reset();
+          refreshSupportHistory();
         }
       }catch{
         if(feedback.isConnected)feedback.textContent='No se ha podido conectar. Puedes utilizar el correo de soporte.';

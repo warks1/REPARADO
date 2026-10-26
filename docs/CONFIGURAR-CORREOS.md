@@ -61,3 +61,9 @@ Ahora un cliente que haya iniciado sesión puede rellenar el formulario **Comuni
 - **Sin proveedor, remitente y Cron configurados no se envían emails automáticamente.** La incidencia sí puede quedar registrada en la base conectada; en demostración el cliente conserva el enlace para escribir al soporte desde su gestor de correo.
 - Migraciones de las dos colas, worker y tareas Cron **deben aplicarse en el mismo proyecto de producción**. No configurar Cron hasta probar ambas colas y los accesos. El worker atiende primero avisos de incidencias, después nuevas solicitudes; programarlo periódicamente y vigilar la cola `failed`.
 - Las incidencias pueden contener datos personales introducidos por clientes: no incorporar descripciones completas en notificaciones, logs de acceso ni herramientas de analítica, y definir plazos de retención bajo RGPD.
+
+## Seguimiento de incidencias por el cliente (V22)
+- Desde **Mi perfil → Mis incidencias**, el cliente conectado ve los últimos 15 informes propios, fecha, resumen y estado («Recibida», «En revisión» o «Resuelta»). Puede pulsar **Actualizar estados** para consultar los cambios realizados por administración.
+- El historial es de solo lectura y no expone el texto completo del problema en el listado. Los informes ajenos quedan ocultos por RLS de `support_reports`, no por controles visuales. Un administrador gestiona los casos desde la bandeja privada.
+- Si la consulta falla, se muestra un mensaje de error; no se inventan estados ni se afirma que un correo haya llegado.
+- El historial no requiere alterar tablas ni migraciones existentes y no implica que el correo automático esté activado.
