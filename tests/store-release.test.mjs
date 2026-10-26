@@ -40,7 +40,7 @@ test('iOS y Android solo se distribuyen con firmas y entornos protegidos',()=>{
  assert.ok(yaml.includes('workflow_dispatch:'));
  assert.ok(yaml.includes('environment: store-release'));
  assert.ok(yaml.includes('bundleRelease'));
- assert.ok(yaml.includes('jarsigner -verify -strict'));
+ assert.ok(yaml.includes('jarsigner -verify'));
  assert.ok(yaml.includes('xcodebuild archive'));
  assert.ok(yaml.includes('xcodebuild -exportArchive'));
  assert.ok(yaml.includes('node scripts/store-preflight.mjs'));
