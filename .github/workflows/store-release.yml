@@ -1,0 +1,178 @@
+name: REPARADO · Paquetes firmados para Apple y Google
+on:
+  workflow_dispatch:
+    inputs:
+      plataforma:
+        description: Tienda para compilar
+        type: choice
+        required: true
+        options: [android, ios, ambas]
+        default: android
+      version:
+        description: Versión comercial (ej. 1.0.0)
+        required: true
+        default: '1.0.0'
+        type: string
+      compilacion:
+        description: Número de compilación incremental (ej. 1)
+        required: true
+        default: '1'
+        type: string
+permissions:
+  contents: read
+concurrency:
+  group: reparado-store-signing
+  cancel-in-progress: false
+
+jobs:
+  google-play:
+    if: inputs.plataforma == 'android' || inputs.plataforma == 'ambas'
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+    environment: store-release
+    env:
+      VITE_SUPABASE_URL: ${{ secrets.REPARADO_STORE_SUPABASE_URL }}
+      VITE_SUPABASE_ANON_KEY: ${{ secrets.REPARADO_STORE_SUPABASE_PUBLISHABLE_KEY }}
+      VITE_REPARADO_ALLOW_PUBLIC_REGISTRATION: 'false'
+      REPARADO_PRIVACY_URL: ${{ vars.REPARADO_PRIVACY_URL }}
+      REPARADO_SUPPORT_URL: ${{ vars.REPARADO_SUPPORT_URL }}
+      REPARADO_DELETE_ACCOUNT_URL: ${{ vars.REPARADO_DELETE_ACCOUNT_URL }}
+      REPARADO_PRODUCTION_APPROVED: ${{ vars.REPARADO_PRODUCTION_APPROVED }}
+      REPARADO_VERSION_NAME: ${{ inputs.version }}
+      REPARADO_BUILD_NUMBER: ${{ inputs.compilacion }}
+      REPARADO_ANDROID_KEYSTORE_PASSWORD: ${{ secrets.REPARADO_ANDROID_KEYSTORE_PASSWORD }}
+      REPARADO_ANDROID_KEY_ALIAS: ${{ secrets.REPARADO_ANDROID_KEY_ALIAS }}
+      REPARADO_ANDROID_KEY_PASSWORD: ${{ secrets.REPARADO_ANDROID_KEY_PASSWORD }}
+      ANDROID_KEYSTORE_BASE64: ${{ secrets.REPARADO_ANDROID_KEYSTORE_BASE64 }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: {node-version: '22'}
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - name: Comprobar datos de producción y autorización
+        run: |
+          node scripts/store-preflight.mjs
+          [[ "$REPARADO_BUILD_NUMBER" =~ ^[1-9][0-9]*$ ]] || { echo 'Número de compilación inválido'; exit 1; }
+          [[ "$REPARADO_VERSION_NAME" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo 'Versión inválida'; exit 1; }
+          test -n "$ANDROID_KEYSTORE_BASE64" && test -n "$REPARADO_ANDROID_KEYSTORE_PASSWORD" && test -n "$REPARADO_ANDROID_KEY_ALIAS" && test -n "$REPARADO_ANDROID_KEY_PASSWORD" || { echo 'Faltan credenciales de firma Android'; exit 1; }
+      - name: Instalar y probar aplicación
+        run: |
+          npm install --no-audit --no-fund
+          npm test
+          npm run build
+      - name: Crear Android nativo
+        run: |
+          npx cap add android
+          npx cap sync android
+          npx @capacitor/assets generate --android --iconBackgroundColor '#fff9f5' --splashBackgroundColor '#ffffff'
+      - name: Firmar AAB para Play Console
+        shell: bash
+        run: |
+          set -euo pipefail
+          export REPARADO_ANDROID_KEYSTORE_PATH="$RUNNER_TEMP/reparado-upload.jks"
+          printf %s "$ANDROID_KEYSTORE_BASE64" | base64 --decode > "$REPARADO_ANDROID_KEYSTORE_PATH"
+          chmod 600 "$REPARADO_ANDROID_KEYSTORE_PATH"
+          node scripts/configure-android-release.mjs
+          cd android
+          chmod +x gradlew
+          ./gradlew bundleRelease --no-daemon
+          test -s app/build/outputs/bundle/release/app-release.aab
+          jarsigner -verify -strict app/build/outputs/bundle/release/app-release.aab
+          mkdir -p "$GITHUB_WORKSPACE/store-artifacts"
+          cp app/build/outputs/bundle/release/app-release.aab "$GITHUB_WORKSPACE/store-artifacts/Reparado-Android-Play.aab"
+      - name: Conservar AAB firmado para subir a Google Play
+        uses: actions/upload-artifact@v4
+        with:
+          name: Reparado-Google-Play-AAB-firmado
+          path: store-artifacts/Reparado-Android-Play.aab
+          if-no-files-found: error
+          retention-days: 7
+
+  app-store:
+    if: inputs.plataforma == 'ios' || inputs.plataforma == 'ambas'
+    runs-on: macos-26-intel
+    timeout-minutes: 65
+    environment: store-release
+    env:
+      VITE_SUPABASE_URL: ${{ secrets.REPARADO_STORE_SUPABASE_URL }}
+      VITE_SUPABASE_ANON_KEY: ${{ secrets.REPARADO_STORE_SUPABASE_PUBLISHABLE_KEY }}
+      VITE_REPARADO_ALLOW_PUBLIC_REGISTRATION: 'false'
+      REPARADO_PRIVACY_URL: ${{ vars.REPARADO_PRIVACY_URL }}
+      REPARADO_SUPPORT_URL: ${{ vars.REPARADO_SUPPORT_URL }}
+      REPARADO_DELETE_ACCOUNT_URL: ${{ vars.REPARADO_DELETE_ACCOUNT_URL }}
+      REPARADO_PRODUCTION_APPROVED: ${{ vars.REPARADO_PRODUCTION_APPROVED }}
+      APPLE_TEAM_ID: ${{ secrets.REPARADO_APPLE_TEAM_ID }}
+      APPLE_P12_BASE64: ${{ secrets.REPARADO_APPLE_DISTRIBUTION_P12_BASE64 }}
+      APPLE_P12_PASSWORD: ${{ secrets.REPARADO_APPLE_DISTRIBUTION_P12_PASSWORD }}
+      APPLE_PROFILE_BASE64: ${{ secrets.REPARADO_APPLE_PROFILE_BASE64 }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: {node-version: '22'}
+      - name: Comprobar producción y certificados
+        shell: bash
+        run: |
+          set -euo pipefail
+          node scripts/store-preflight.mjs
+          [[ "${{ inputs.compilacion }}" =~ ^[1-9][0-9]*$ ]] || { echo 'Número de compilación inválido'; exit 1; }
+          [[ "${{ inputs.version }}" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo 'Versión inválida'; exit 1; }
+          test -n "$APPLE_TEAM_ID" && test -n "$APPLE_P12_BASE64" && test -n "$APPLE_P12_PASSWORD" && test -n "$APPLE_PROFILE_BASE64" || { echo 'Falta firma o provisioning profile de Apple'; exit 1; }
+          xcodebuild -version
+      - name: Instalar, probar y compilar aplicación
+        run: |
+          npm install --no-audit --no-fund
+          npm test
+          npm run build
+          npx cap add ios
+          npx cap sync ios
+          npx @capacitor/assets generate --ios --iconBackgroundColor '#fff9f5' --splashBackgroundColor '#ffffff'
+      - name: Preparar certificado y perfil Apple sin exponerlos
+        shell: bash
+        run: |
+          set -euo pipefail
+          printf %s "$APPLE_P12_BASE64" | base64 --decode > "$RUNNER_TEMP/reparado-distribution.p12"
+          printf %s "$APPLE_PROFILE_BASE64" | base64 --decode > "$RUNNER_TEMP/reparado.mobileprovision"
+          security create-keychain -p '' "$RUNNER_TEMP/reparado.keychain-db"
+          security unlock-keychain -p '' "$RUNNER_TEMP/reparado.keychain-db"
+          security list-keychains -d user -s "$RUNNER_TEMP/reparado.keychain-db"
+          security default-keychain -s "$RUNNER_TEMP/reparado.keychain-db"
+          security import "$RUNNER_TEMP/reparado-distribution.p12" -k "$RUNNER_TEMP/reparado.keychain-db" -P "$APPLE_P12_PASSWORD" -T /usr/bin/codesign
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k '' "$RUNNER_TEMP/reparado.keychain-db"
+          security cms -D -i "$RUNNER_TEMP/reparado.mobileprovision" > "$RUNNER_TEMP/reparado-profile.plist"
+          PROFILE_UUID=$(/usr/libexec/PlistBuddy -c 'Print :UUID' "$RUNNER_TEMP/reparado-profile.plist")
+          PROFILE_NAME=$(/usr/libexec/PlistBuddy -c 'Print :Name' "$RUNNER_TEMP/reparado-profile.plist")
+          PROFILE_TEAM=$(/usr/libexec/PlistBuddy -c 'Print :TeamIdentifier:0' "$RUNNER_TEMP/reparado-profile.plist")
+          test "$PROFILE_TEAM" = "$APPLE_TEAM_ID" || { echo 'Perfil Apple de otro equipo'; exit 1; }
+          mkdir -p "$HOME/Library/MobileDevice/Provisioning Profiles"
+          cp "$RUNNER_TEMP/reparado.mobileprovision" "$HOME/Library/MobileDevice/Provisioning Profiles/$PROFILE_UUID.mobileprovision"
+          echo "PROFILE_NAME=$PROFILE_NAME" >> "$GITHUB_ENV"
+          echo "PROFILE_UUID=$PROFILE_UUID" >> "$GITHUB_ENV"
+      - name: Generar archivo y IPA firmados para App Store Connect
+        shell: bash
+        run: |
+          set -euo pipefail
+          xcodebuild archive -project ios/App/App.xcodeproj -scheme App -configuration Release -destination 'generic/platform=iOS' -archivePath "$RUNNER_TEMP/Reparado.xcarchive" DEVELOPMENT_TEAM="$APPLE_TEAM_ID" CODE_SIGN_STYLE=Manual PROVISIONING_PROFILE_SPECIFIER="$PROFILE_NAME" CODE_SIGN_IDENTITY="Apple Distribution" MARKETING_VERSION="${{ inputs.version }}" CURRENT_PROJECT_VERSION="${{ inputs.compilacion }}"
+          cat > "$RUNNER_TEMP/ExportOptions.plist" <<EOF
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0"><dict>
+            <key>method</key><string>app-store-connect</string>
+            <key>signingStyle</key><string>manual</string>
+            <key>teamID</key><string>$APPLE_TEAM_ID</string>
+            <key>provisioningProfiles</key><dict><key>com.ams.reparado</key><string>$PROFILE_UUID</string></dict>
+          </dict></plist>
+          EOF
+          xcodebuild -exportArchive -archivePath "$RUNNER_TEMP/Reparado.xcarchive" -exportOptionsPlist "$RUNNER_TEMP/ExportOptions.plist" -exportPath "$RUNNER_TEMP/reparado-ipa"
+          test -s "$RUNNER_TEMP/reparado-ipa/App.ipa"
+          mkdir -p store-artifacts
+          cp "$RUNNER_TEMP/reparado-ipa/App.ipa" store-artifacts/Reparado-iOS-AppStore.ipa
+      - name: Conservar IPA firmado para subir a App Store Connect
+        uses: actions/upload-artifact@v4
+        with:
+          name: Reparado-Apple-AppStore-IPA-firmado
+          path: store-artifacts/Reparado-iOS-AppStore.ipa
+          if-no-files-found: error
+          retention-days: 7
