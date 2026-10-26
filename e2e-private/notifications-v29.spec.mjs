@@ -35,7 +35,8 @@ async function setup(page){
    if(path==='/rest/v1/notifications'){
      if(request.method()==='GET'){
        reads++;
-       if(reads===1)return reply({message:'INTERNAL_SECRET_DO_NOT_SHOW'},503);
+       // Error funcional 400 sin reintentos automáticos del SDK: comprueba el aviso y el botón Reintentar.
+       if(reads===1)return reply({message:'INTERNAL_SECRET_DO_NOT_SHOW'},400);
        return reply([{id:noticeId,user_id:userId,title:'Aviso de reparación',
          body:'Tu solicitud se ha actualizado.',read:false,created_at:'2026-10-26T12:00:00Z'}]);
      }
