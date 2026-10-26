@@ -74,3 +74,10 @@ Una compilación satisfactoria no garantiza la aprobación. Los certificados, pe
 - [ ] Firma AAB/IPA y cuentas de desarrollador activas.
 - [ ] Capturas reales y formularios de datos/edad completados.
 - [ ] Prueba interna/testflight terminada y revisión satisfactoria.
+
+## Correos oficiales para las fichas de las tiendas
+
+- **Soporte y problemas de la aplicación:** `reparado_soporte@outlook.es`. Usar como dirección de soporte pública en App Store Connect y Google Play Console.
+- **Consultas y solicitudes de servicios:** `reparado_clientes@outlook.es`. Este es el buzón comercial. En una app conectada, las solicitudes se registran primero en Supabase; el email automático depende de configurar el worker seguro de `docs/CONFIGURAR-CORREOS.md`.
+- Los enlaces `mailto:` abren el programa de correo del cliente, pero **no envían nada hasta que la persona pulse Enviar**. No afirmar que se ha recibido un aviso mientras no exista un servicio de envío activado y comprobado.
+- La cuenta de Apple Developer ya está disponible; **Google Play Console todavía no**. Alta oficial: https://play.google.com/console/signup (25 USD de pago único, elección de tipo de cuenta y verificación). La cuenta de Google Play deberá crearla el titular con sus credenciales propias, no introducirlas en GitHub.
