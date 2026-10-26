@@ -516,12 +516,21 @@ export function mountConnected({app, services, supabase, authLinkIntent=null}) {
   async function loadNotifications(){
     setActiveNav(app,'profile');
     currentView='notifications';
-    await renderNotifications({main,supabase,session,backButton,onRefresh:()=>currentView==='notifications',isStaff:userIsStaff()});
+    const userId=session?.user?.id;
+    if(!userId)return showLogin();
+    await renderNotifications({
+      main,supabase,session,onRefresh:()=>currentView==='notifications'&&isCurrentUser(userId),
+      isStaff:userIsStaff()
+    });
   }
   async function loadInvoices(){
     setActiveNav(app,'profile');
     currentView='invoices';
-    await renderInvoices({main,supabase,session,onRefresh:()=>currentView==='invoices'});
+    const userId=session?.user?.id;
+    if(!userId)return showLogin();
+    await renderInvoices({
+      main,supabase,session,onRefresh:()=>currentView==='invoices'&&isCurrentUser(userId)
+    });
   }
   function loadProfile(){
     setActiveNav(app,'profile');
