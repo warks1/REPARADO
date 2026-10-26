@@ -38,7 +38,7 @@ create policy "support admin moderate" on public.support_reports
 create or replace function public.reparado_limit_support_reports()
 returns trigger language plpgsql security definer
 set search_path=pg_catalog,public
-as $
+as $limit_support$
 begin
   if (select count(*) from public.support_reports s
         where s.user_id=new.user_id and s.created_at>=now()-interval '1 hour')>=3
@@ -47,7 +47,7 @@ begin
   then raise exception 'REPARADO_SUPPORT_RATE_LIMIT'; end if;
   return new;
 end;
-$;
+$limit_support$;
 revoke all on function public.reparado_limit_support_reports()
   from public,anon,authenticated;
 drop trigger if exists reparado_support_rate_limit on public.support_reports;
