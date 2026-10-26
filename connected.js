@@ -1,4 +1,5 @@
 import {supportHistoryMarkup} from './support-ticket-ui.js';
+import {submitSupportIssue,supportIssueFailureMessage} from './support-submission.js';
 import {readOwnDeletionStatus,submitOwnDeletionRequest,ownDeletionLabel} from './account-deletion.js';
 import {createPushSessionManager} from './push-session.js';
 import {validateRequestPhotos,getRequestPhotoCount,uploadRequestPhotos} from './request-photos.js';
@@ -570,9 +571,11 @@ export function mountConnected({app, services, supabase, authLinkIntent=null}) {
       <p data-feedback class="feedback" role="status"></p></section>`;
     main.querySelector('#view-invoices').addEventListener('click',loadInvoices);
     const historyPanel=main.querySelector('#customer-support-history');
+    const supportOwnerId=session.user.id;
+    let historyRequestSeq=0;
     const refreshSupportHistory=async()=>{
-      if(!historyPanel||!session)return;
-      const uid=session.user.id;
+      if(!historyPanel||!isCurrentUser(supportOwnerId)||currentView!=='profile')return;
+      const uid=supportOwnerId,requestSeq=++historyRequestSeq;
       const list=historyPanel.querySelector('[data-support-history-list]');
       const note=historyPanel.querySelector('[data-support-history-status]');
       note.textContent='Consultando incidencias…';
@@ -581,18 +584,19 @@ export function mountConnected({app, services, supabase, authLinkIntent=null}) {
         const {data,error}=await supabase.from('support_reports')
           .select('id,subject,status,created_at')
           .order('created_at',{ascending:false}).limit(15);
-        if(!historyPanel.isConnected||currentView!=='profile'||!session||session.user.id!==uid)return;
+        if(!historyPanel.isConnected||currentView!=='profile'||!isCurrentUser(uid)||requestSeq!==historyRequestSeq)return;
         if(error)throw error;
         list.innerHTML=supportHistoryMarkup(data);
-        note.textContent=(data?.length||0)+' incidencias registradas en esta cuenta.';
+        note.textContent=(data?.length||0)+' incidencias visibles en esta cuenta.';
       }catch{
-        if(historyPanel.isConnected&&currentView==='profile')
+        if(historyPanel.isConnected&&currentView==='profile'&&isCurrentUser(uid)&&requestSeq===historyRequestSeq)
           note.textContent='No se pueden consultar las incidencias. Comprueba la conexión y pulsa Actualizar estados.';
       }
     };
     historyPanel?.querySelector('[data-refresh-support]')?.addEventListener('click',refreshSupportHistory);
     refreshSupportHistory();
     const issueForm=main.querySelector('#reparado-issue-report');
+    let issueReportId=crypto.randomUUID(),previousIssuePayload=null;
     issueForm.addEventListener('submit',async event=>{
       event.preventDefault();
       if(!session?.user?.id)return;
@@ -607,22 +611,36 @@ export function mountConnected({app, services, supabase, authLinkIntent=null}) {
       }
       if(button.disabled)return;
       const userId=session.user.id;
+      if(!isCurrentUser(supportOwnerId))return;
+      const payloadSnapshot=JSON.stringify({subject,description,context});
+      if(previousIssuePayload!==null&&previousIssuePayload!==payloadSnapshot){
+        feedback.textContent='Has modificado la incidencia después de un intento. Consulta Mis incidencias antes de enviar una nueva.';
+        return;
+      }
+      previousIssuePayload=payloadSnapshot;
       button.disabled=true;
       feedback.textContent='Registrando tu incidencia…';
       try{
-        const {error}=await supabase.from('support_reports').insert({
-          user_id:userId,subject,description,context
+        const result=await submitSupportIssue({
+          supabase,userId,subject,description,context,reportId:issueReportId
         });
-        if(!feedback.isConnected||!session||session.user.id!==userId)return;
-        if(error){
-          feedback.textContent='No hemos podido registrar la incidencia. Escríbenos a reparado_soporte@outlook.es.';
+        if(!feedback.isConnected||!isCurrentUser(userId)||currentView!=='profile')return;
+        if(!result.ok){
+          feedback.textContent=supportIssueFailureMessage(result.code);
+          // Permitir corregir/redactar otra incidencia cuando es un límite confirmado.
+          if(result.code==='limit'){previousIssuePayload=null;issueReportId=crypto.randomUUID();}
         }else{
-          feedback.textContent='Incidencia registrada. El equipo podrá revisarla desde el panel privado.';
+          feedback.textContent=result.recovered?
+            'La incidencia ya estaba registrada; la hemos recuperado. Consulta su estado en Mis incidencias.':
+            'Incidencia registrada. El equipo podrá revisarla desde el panel privado.';
           issueForm.reset();
-          refreshSupportHistory();
+          previousIssuePayload=null;
+          issueReportId=crypto.randomUUID();
+          void refreshSupportHistory();
         }
       }catch{
-        if(feedback.isConnected)feedback.textContent='No se ha podido conectar. Puedes utilizar el correo de soporte.';
+        if(feedback.isConnected&&isCurrentUser(userId)&&currentView==='profile')
+          feedback.textContent='No se pudo confirmar el registro. Consulta Mis incidencias antes de reintentar.';
       }finally{if(button.isConnected)button.disabled=false;}
     });
 
