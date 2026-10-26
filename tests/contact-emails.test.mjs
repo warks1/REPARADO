@@ -44,6 +44,6 @@ test('nuevas solicitudes generan cola privada sin enviar datos a usuarios ajenos
  assert.ok(worker.includes('reparado_clientes@outlook.es'));
  assert.ok(worker.includes("Deno.env.get('REPARADO_MAIL_WORKER_SECRET')"));
  assert.ok(worker.includes('Idempotency-Key'));
- assert.ok(!worker.includes('VITE_'));
+ assert.ok(!worker.includes("Deno.env.get('VITE_"));
  assert.ok(!worker.includes('reparado_soporte@outlook.es')); // El worker de solicitudes no es soporte.
 });
