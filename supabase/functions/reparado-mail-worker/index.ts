@@ -30,6 +30,54 @@ Deno.serve(async(request:Request)=>{
   if(!apiKey||!sender||!url||!roleKey)return json({error:'mail_delivery_not_configured'},503);
 
   const db=createClient(url,roleKey,{auth:{persistSession:false}});
+  // Primero avisar de los problemas reportados por los clientes.
+  // Solo una referencia y la sección; la descripción privada se lee en administración.
+  const supportClaim=await db.rpc('reparado_claim_support_email');
+  if(supportClaim.error)return json({error:'support_claim_failed'},503);
+  const ticket=supportClaim.data?.[0];
+  if(ticket){
+    const id=String(ticket.outbox_id),reportId=String(ticket.report_id);
+    const attempt=Number(ticket.try_number)||1;
+    const failSupport=async(reason:string)=>{
+      await db.from('support_email_outbox').update({
+        state:attempt<5?'pending':'failed',
+        next_attempt_at:new Date(Date.now()+Math.min(attempt*attempt*120000,1800000)).toISOString(),
+        claimed_at:null,last_error:reason.slice(0,180)
+      }).eq('id',id).eq('state','sending');
+      return json({processed:0,error:reason,retry:attempt<5},502);
+    };
+    const {data:report,error:reportError}=await db.from('support_reports')
+      .select('id,context').eq('id',reportId).maybeSingle();
+    if(reportError||!report)return failSupport('support_report_not_available');
+    try{
+      const res=await fetch('https://api.resend.com/emails',{
+        method:'POST',
+        headers:{
+          'Authorization':'Bearer '+apiKey,
+          'Content-Type':'application/json',
+          'Idempotency-Key':'reparado-support-'+reportId
+        },
+        body:JSON.stringify({
+          from:sender,to:['reparado_soporte@outlook.es'],
+          subject:'REPARADO · Nueva incidencia comunicada por un cliente',
+          text:[
+            'Se ha recibido un informe de problema en la app.',
+            'Referencia: '+reportId,
+            'Sección: '+String(report.context||'general').slice(0,80),
+            'Revisa los detalles privados en el panel de administración de REPARADO.',
+            'Este mensaje no contiene el nombre, email ni la descripción del cliente.'
+          ].join('\\n')
+        })
+      });
+      if(!res.ok)return failSupport('support_provider_http_'+res.status);
+      const {error:updated}=await db.from('support_email_outbox').update({
+        state:'sent',sent_at:new Date().toISOString(),claimed_at:null,last_error:null
+      }).eq('id',id).eq('state','sending');
+      if(updated)return json({processed:1,warning:'support_status_update_failed'},202);
+      return json({processed:1,type:'support'});
+    }catch{return failSupport('support_provider_unreachable')}
+  }
+
   const claim=await db.rpc('reparado_claim_request_email');
   if(claim.error)return json({error:'claim_failed'},503);
   const item=claim.data?.[0];
