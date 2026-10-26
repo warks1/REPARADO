@@ -70,6 +70,7 @@ export function mountConnected({app, services, supabase, authLinkIntent=null}) {
       else if(view==='notifications')loadNotifications();
       else if(view==='admin')renderAdmin();
       else if(view==='review-moderation')openReviewModeration();
+      else if(view==='support-admin')loadSupportReports();
       else renderHome();
     }
   });
@@ -380,8 +381,23 @@ export function mountConnected({app, services, supabase, authLinkIntent=null}) {
     if(!session){showLogin();return}
     currentView='profile';
     main.innerHTML=`<section class="card">${backButton}<h2>Mi perfil</h2><p>${esc(session.user.email)}</p><p>Tipo de cuenta: ${esc(profile?.role||'customer')}</p>
-      <form id="profile-form"><label>Nombre completo<input name="full_name" autocomplete="name" maxlength="100" value="${esc(profile?.full_name||'')}"></label><label>Teléfono<input name="phone" type="tel" autocomplete="tel" maxlength="25" value="${esc(profile?.phone||'')}"></label><button type="submit">Guardar perfil</button></form><div class="flex-actions"><button type="button" data-logout>Cerrar sesión</button><button type="button" id="view-invoices">🧾 Mis facturas</button>${userIsStaff()?'<button type="button" data-view="admin">🧰 Gestión interna</button>':''}${profile?.role==='admin'?'<button type="button" data-view="review-moderation">⭐ Moderar reseñas</button>':''}</div>
-      <section class="reparado-help" aria-label="Ayuda y atención al cliente"><h3>Atención y ayuda</h3>${contactLinksMarkup()}</section>
+      <form id="profile-form"><label>Nombre completo<input name="full_name" autocomplete="name" maxlength="100" value="${esc(profile?.full_name||'')}"></label><label>Teléfono<input name="phone" type="tel" autocomplete="tel" maxlength="25" value="${esc(profile?.phone||'')}"></label><button type="submit">Guardar perfil</button></form><div class="flex-actions"><button type="button" data-logout>Cerrar sesión</button><button type="button" id="view-invoices">🧾 Mis facturas</button>${userIsStaff()?'<button type="button" data-view="admin">🧰 Gestión interna</button>':''}${profile?.role==='admin'?'<button type="button" data-view="review-moderation">⭐ Moderar reseñas</button><button type="button" data-view="support-admin">🐞 Incidencias de clientes</button>':''}</div>
+      <section class="reparado-help" aria-label="Ayuda y atención al cliente"><h3>Atención y ayuda</h3>
+        <form id="reparado-issue-report"><label>¿En qué parte de la app ha ocurrido?
+          <select name="context" required>
+            <option value="general">General</option>
+            <option value="solicitud">Solicitudes</option>
+            <option value="agenda">Agenda</option>
+            <option value="chat">Chat</option>
+            <option value="facturacion">Facturación</option>
+            <option value="cuenta">Cuenta y acceso</option>
+          </select></label>
+          <label>Resumen del fallo<input name="subject" maxlength="140" minlength="5" required placeholder="¿Qué no funciona?"></label>
+          <label>Descripción<textarea name="description" maxlength="2000" minlength="12" rows="4" required placeholder="¿Qué ocurrió y qué esperabas que sucediera? Evita incluir contraseñas o datos de otras personas."></textarea></label>
+          <button type="submit">Enviar incidencia a soporte</button>
+          <p data-issue-feedback role="status" aria-live="polite"></p>
+        </form>
+        <p>También puedes escribir directamente:</p>${contactLinksMarkup()}</section>
       <section class="account-deletion">
         <h3>Privacidad de la cuenta</h3>
         <p>Puedes solicitar la eliminación de tu cuenta y de tus datos personales, salvo aquellos que debamos conservar por obligación legal.</p>
@@ -390,6 +406,39 @@ export function mountConnected({app, services, supabase, authLinkIntent=null}) {
       </section>
       <p data-feedback class="feedback" role="status"></p></section>`;
     main.querySelector('#view-invoices').addEventListener('click',loadInvoices);
+    const issueForm=main.querySelector('#reparado-issue-report');
+    issueForm.addEventListener('submit',async event=>{
+      event.preventDefault();
+      if(!session?.user?.id)return;
+      const fields=new FormData(issueForm);
+      const subject=String(fields.get('subject')||'').trim();
+      const description=String(fields.get('description')||'').trim();
+      const context=String(fields.get('context')||'').trim();
+      const button=issueForm.querySelector('[type="submit"]');
+      const feedback=issueForm.querySelector('[data-issue-feedback]');
+      if(subject.length<5||subject.length>140||description.length<12||description.length>2000||!['general','solicitud','agenda','chat','facturacion','cuenta'].includes(context)){
+        feedback.textContent='Revisa el asunto, la sección y la descripción del problema.';return;
+      }
+      if(button.disabled)return;
+      const userId=session.user.id;
+      button.disabled=true;
+      feedback.textContent='Registrando tu incidencia…';
+      try{
+        const {error}=await supabase.from('support_reports').insert({
+          user_id:userId,subject,description,context
+        });
+        if(!feedback.isConnected||!session||session.user.id!==userId)return;
+        if(error){
+          feedback.textContent='No hemos podido registrar la incidencia. Escríbenos a reparado_soporte@outlook.es.';
+        }else{
+          feedback.textContent='Incidencia registrada. El equipo podrá revisarla desde el panel privado.';
+          issueForm.reset();
+        }
+      }catch{
+        if(feedback.isConnected)feedback.textContent='No se ha podido conectar. Puedes utilizar el correo de soporte.';
+      }finally{if(button.isConnected)button.disabled=false;}
+    });
+
     const deletionButton=main.querySelector('#request-account-deletion');
     const deletionStatus=main.querySelector('#account-deletion-status');
     const renderDeletionStatus=async()=>{
@@ -492,6 +541,48 @@ export function mountConnected({app, services, supabase, authLinkIntent=null}) {
       if(error){feedback.textContent='No se pudo enviar: '+error.message;send.disabled=false;return}
       await loadStaffChat(customerId,serviceName);
     });
+  }
+
+  async function loadSupportReports(){
+    if(!session||profile?.role!=='admin'){if(!session)showLogin();else renderHome();return;}
+    currentView='support-admin';setActiveNav(app,'profile');
+    main.innerHTML='<section class="card" id="reparado-support-admin">'+backButton+
+      '<h2>Incidencias de clientes</h2><p class="notice">Solo administración. Los detalles son privados; no los envíes por correo ni los compartas fuera del panel.</p>'+
+      '<p data-issues-status role="status">Cargando…</p><div data-issues-list></div></section>';
+    const root=main.querySelector('#reparado-support-admin'),status=root.querySelector('[data-issues-status]'),list=root.querySelector('[data-issues-list]');
+    const available=()=>root.isConnected&&currentView==='support-admin'&&session&&profile?.role==='admin';
+    async function refresh(){
+      try{
+        const {data,error}=await supabase.from('support_reports')
+          .select('id,subject,description,context,status,created_at')
+          .in('status',['open','reviewing']).order('created_at',{ascending:false}).limit(100);
+        if(!available())return;
+        if(error)throw error;
+        status.textContent=(data?.length||0)+' incidencias abiertas o en revisión.';
+        list.innerHTML=(data||[]).map(item=>'<article class="support-ticket" data-support-ticket="'+esc(item.id)+'">'+
+          '<strong>'+esc(item.subject)+'</strong> <small>'+esc(item.context)+' · '+esc(item.status)+'</small>'+
+          '<p>'+esc(item.description)+'</p>'+
+          '<div class="flex-actions"><button type="button" data-support-status="reviewing" data-ticket-id="'+esc(item.id)+'">En revisión</button>'+
+          '<button type="button" data-support-status="resolved" data-ticket-id="'+esc(item.id)+'">Marcar resuelta</button></div></article>').join('')||
+          '<p>No hay incidencias pendientes.</p>';
+      }catch{if(available())status.textContent='No se pueden cargar las incidencias. Revisa conexión y permisos.';}
+    }
+    root.addEventListener('click',async event=>{
+      const b=event.target.closest('[data-support-status]');
+      if(!b||b.disabled||!available())return;
+      const next=b.dataset.supportStatus,id=b.dataset.ticketId;
+      if(!['reviewing','resolved'].includes(next)||!list.querySelector('[data-support-ticket="'+CSS.escape(id)+'"]'))return;
+      b.disabled=true;
+      try{
+        const {data,error}=await supabase.from('support_reports').update({status:next})
+          .eq('id',id).in('status',['open','reviewing']).select('id,status');
+        if(!available())return;
+        if(error||!data?.length){status.textContent='No se pudo cambiar el estado. Actualiza la pantalla.';return;}
+        await refresh();
+      }catch{if(available())status.textContent='No se ha podido guardar el cambio.';}
+      finally{if(b.isConnected)b.disabled=false;}
+    });
+    await refresh();
   }
 
   async function openReviewModeration(){
