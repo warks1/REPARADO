@@ -5,7 +5,8 @@ import {readFileSync} from 'node:fs';
 test('el panel de personal solo se presenta a usuarios de administración u operario',()=>{
  const code=readFileSync(new URL('../connected.js',import.meta.url),'utf8');
  assert.ok(code.includes("if(!userIsStaff()){renderHome();return}"));
- assert.ok(code.includes("baseJobs.eq('operator_id',session.user.id)"));
+ assert.ok(code.includes("baseJobs.eq('operator_id',staffUserId)"));
+ assert.ok(code.includes('!isCurrentUser(staffUserId)'));
  assert.ok(code.includes('operatorMaySetStatus(original.status,status)'));
 });
 test('no se pierden asignaciones cuando falla la consulta del personal',()=>{
@@ -33,5 +34,5 @@ test('la aplicación identifica conflictos transaccionales de PostgreSQL V7',()=
  assert.ok(code.includes('REPARADO_SCHEDULE_OPERATOR_REQUIRED'));
  assert.ok(code.includes('REPARADO_SCHEDULE_INVALID_OPERATOR'));
  assert.ok(code.includes('No se ha programado: otro administrador'));
- assert.ok(code.includes('No se han guardado los cambios:'));
+ assert.ok(code.includes('No se han podido confirmar los cambios. Revisa los datos y tu conexión.'));
 });
