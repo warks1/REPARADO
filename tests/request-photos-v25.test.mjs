@@ -23,23 +23,23 @@ test('cuenta fotografías reales sin confundir placeholders de carpeta',()=>{
 });
 test('consulta las fotografías en carpeta exacta cliente/solicitud',async()=>{
   const seen=[];
-  const api={storage:()=>({list:async(folder,opts)=>{seen.push({folder,opts});return {data:[{name:'a.jpg'},{name:'b.webp'}],error:null}}})};
+  const api={storage:{from:()=>({list:async(folder,opts)=>{seen.push({folder,opts});return {data:[{name:'a.jpg'},{name:'b.webp'}],error:null}}})}};
   assert.equal(await getRequestPhotoCount(api,'user-id','request-id'),2);
   assert.deepEqual(seen,[{folder:'user-id/request-id',opts:{limit:100}}]);
 });
 test('subida parcial deja la solicitud intacta, cuenta fallos y no hace upsert',async()=>{
   const paths=[];
-  const api={storage:name=>{assert.equal(name,'request-photos');return {upload:async(path,file,options)=>{
+  const api={storage:{from:name=>{assert.equal(name,'request-photos');return {upload:async(path,file,options)=>{
     paths.push({path,options});
     return {error:file.name==='fallo.png'?new Error('network'):null};
-  }}}};
+  }}}}};
   const result=await uploadRequestPhotos({supabase:api,userId:'u',requestId:'r',files:[photo(),photo('fallo.png','image/png')],existing:0});
   assert.deepEqual(result,{uploaded:1,failed:1,error:null});
   assert.equal(paths.length,2);
   assert.ok(paths.every(x=>x.options.upsert===false && x.path.startsWith('u/r/')));
 });
 test('no intenta subir si la solicitud ya tiene 4 imágenes',async()=>{
-  const api={storage:()=>{throw Error('No debe tocar el servidor')}};
+  const api={storage:{from:()=>{throw Error('No debe tocar el servidor')}}};
   const r=await uploadRequestPhotos({supabase:api,userId:'u',requestId:'r',files:[photo()],existing:4});
   assert.equal(r.uploaded,0);assert.ok(r.error);
 });
