@@ -14,7 +14,7 @@ export function mountLocal({app,services}){
   const profile=()=>localProfile(localStorage);
   const persist=items=>localWrite(localStorage,storeKey,items);
   let page='home',lastCategory=null,detailOrigin='requests';
-  app.innerHTML='<div class="shell">'+appHeader({name:profile().name})+'<main id="main"></main><footer>© Reparado · Servicios para tu hogar ${contactLinksMarkup()}</footer></div>'+bottomNavigation();
+  app.innerHTML='<div class="shell">'+appHeader({name:profile().name})+'<main id="main"></main><footer>© Reparado · Servicios para tu hogar '+contactLinksMarkup()+'</footer></div>'+bottomNavigation();
   const main=app.querySelector('#main');
   function home(){
     page='home';lastCategory=null;setActiveNav(app,'home');
