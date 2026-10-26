@@ -25,6 +25,9 @@ export function mountConnected({app, services, supabase, authLinkIntent=null}) {
   const validStatus = Object.keys(statusLabels);
   let session=null, profile=null, currentView='home', adminFilter='all', lastCategory=null, pendingService=null, pendingView=null;
   let passwordSetupPending=authLinkIntent==='invite'||authLinkIntent==='recovery';
+  // Cada lectura asíncrona queda asociada a la sesión y a su pantalla original.
+  let authEpoch=0;
+  const isCurrentUser=(userId)=>Boolean(userId && session?.user?.id===userId);
   const pushManager=createPushSessionManager({
     supabase,Capacitor,PushNotifications,
     onError:()=>console.warn('REPARADO: registro seguro de notificaciones no disponible')
@@ -218,11 +221,23 @@ export function mountConnected({app, services, supabase, authLinkIntent=null}) {
     });
   }
   async function boot(){
+    const epoch=++authEpoch;
     const {data,error}=await supabase.auth.getSession();
+    if(epoch!==authEpoch)return;
     if(error || !data?.session){session=null;profile=null;renderHome();return}
+    const userId=data.session.user.id;
     session=data.session;
     if(passwordSetupPending){showPasswordSetup();return}
-    const result=await supabase.from('profiles').select('id,full_name,phone,role').eq('id',session.user.id).maybeSingle();
+    const result=await supabase.from('profiles').select('id,full_name,phone,role').eq('id',userId).maybeSingle();
+    if(epoch!==authEpoch || !isCurrentUser(userId))return;
+    if(result.error){
+      profile=null;renderHome();
+      const note=document.createElement('p');
+      note.className='notice';
+      note.textContent='No se pudo cargar tu perfil. Comprueba la conexión antes de utilizar las funciones privadas.';
+      main.prepend(note);
+      return;
+    }
     profile=result.data || {role:'customer',full_name:''};
     app.querySelector('#logout').classList.add('hidden');
     const avatar=app.querySelector('.round-profile');
@@ -344,11 +359,13 @@ export function mountConnected({app, services, supabase, authLinkIntent=null}) {
   async function loadRequests(){
     setActiveNav(app,'requests');
     currentView='requests';main.innerHTML=`<section class="card">${backButton}<h2>Mis solicitudes</h2><p>Cargando…</p></section>`;
+    const userId=session?.user?.id, loadingScreen=main.firstElementChild;
+    if(!userId)return showLogin();
     let data,error;
     try{
-      ({data,error}=await supabase.from('service_requests').select('id,service_name,status,price,street,address_number,city,preferred_date,scheduled_at,operator_name').eq('customer_id',session.user.id).order('created_at',{ascending:false}));
+      ({data,error}=await supabase.from('service_requests').select('id,service_name,status,price,street,address_number,city,preferred_date,scheduled_at,operator_name').eq('customer_id',userId).order('created_at',{ascending:false}));
     }catch{error=new Error('No se pudieron cargar tus solicitudes. Comprueba la conexión.');}
-    if(currentView!=='requests')return;
+    if(currentView!=='requests'||!isCurrentUser(userId)||main.firstElementChild!==loadingScreen)return;
     if(error){main.innerHTML=`<section class="card">${backButton}<h2>Mis solicitudes</h2><p>No se pudieron cargar tus solicitudes. Comprueba la conexión.</p><button type="button" data-view="requests">Reintentar</button></section>`;return}
     main.innerHTML=`<section class="card">${backButton}<h2>Mis solicitudes</h2><p data-feedback class="feedback" role="status"></p>${data?.length?data.map(r=>`<article class="request"><strong>${esc(r.service_name)}</strong><span>${esc(statusLabels[r.status]||r.status)}</span><p>${esc(r.street)}, ${esc(r.address_number)} · ${esc(r.city)}</p>${staffProgressMarkup(r.status)}${r.price!=null?`<p>Importe confirmado: <b>${money(r.price)}</b> (IVA incluido)</p>`:''}<small>${r.scheduled_at?'Visita: '+esc(safeTime(r.scheduled_at)):'Fecha preferida: '+esc(r.preferred_date||'No indicada')}</small><div class="flex-actions"><button type="button" data-customer-photos="${esc(r.id)}">📷 Mis fotos</button></div><div class="request-photo-retry"><label>Añadir fotografías a esta solicitud (máximo 4 en total)<input type="file" data-upload-request-photos="${esc(r.id)}" accept="image/jpeg,image/png,image/webp,image/heic" multiple></label><p role="status" aria-live="polite" data-upload-photo-result="${esc(r.id)}"></p></div>${r.status==="completed"?`<div class="flex-actions"><button type="button" class="customer-review-action" data-rate-request="${esc(r.id)}" aria-label="Valorar ${esc(r.service_name)}">⭐ Valorar este trabajo</button></div>`:""}<div class="photo-links" data-customer-photo-output="${esc(r.id)}"></div>${r.status==="quoted" && r.price!==null ? `<div class="flex-actions"><p class="quote-acceptance-summary">Presupuesto: ${money(r.price)} IVA incluido (21 %). Base: ${money(vatIncluded(r.price).base)} · IVA: ${money(vatIncluded(r.price).vat)}. Revisa el importe antes de aceptarlo.</p><button type="button" data-accept-quote="${esc(r.id)}" data-accept-total="${esc(r.price)}">Aceptar presupuesto de ${money(r.price)}</button></div>` : ""}</article>`).join(''):'<p>Todavía no tienes solicitudes.</p>'}</section>`;
     main.querySelectorAll('[data-rate-request]').forEach(button=>button.addEventListener('click',()=>{
@@ -433,21 +450,25 @@ export function mountConnected({app, services, supabase, authLinkIntent=null}) {
   async function loadAgenda(){
     setActiveNav(app,'agenda');
     currentView='agenda';main.innerHTML=`<section class="card">${backButton}<h2>Mi agenda</h2><p>Cargando…</p></section>`;
+    const userId=session?.user?.id,loadingScreen=main.firstElementChild;
+    if(!userId)return showLogin();
     let data,error;
     try{
-      ({data,error}=await supabase.from('service_requests').select('service_name,scheduled_at,status,operator_name').eq('customer_id',session.user.id).in('status',['scheduled','in_progress']).order('scheduled_at'));
+      ({data,error}=await supabase.from('service_requests').select('service_name,scheduled_at,status,operator_name').eq('customer_id',userId).in('status',['scheduled','in_progress']).order('scheduled_at'));
     }catch{error=new Error('No se pudo cargar la agenda. Comprueba la conexión.');}
-    if(currentView!=='agenda')return;
+    if(currentView!=='agenda'||!isCurrentUser(userId)||main.firstElementChild!==loadingScreen)return;
     main.innerHTML=`<section class="card">${backButton}<h2>Mi agenda</h2>${error?'<p>No se pudo consultar la agenda. Comprueba la conexión.</p><button type="button" data-view="agenda">Reintentar</button>':data?.length?data.map(r=>`<article class="request"><b>${esc(r.service_name)}</b><p>${esc(safeTime(r.scheduled_at))}</p><small>${esc(statusLabels[r.status])} · Operario: ${esc(r.operator_name||'Por asignar')}</small></article>`).join(''):'<p>No hay visitas programadas.</p>'}</section>`;
   }
   async function loadChat(){
     setActiveNav(app,'chat');
     currentView='chat';main.innerHTML=`<section class="card">${backButton}<h2>Chat con Reparado</h2><p>Cargando…</p></section>`;
+    const userId=session?.user?.id,loadingScreen=main.firstElementChild;
+    if(!userId)return showLogin();
     let data,error;
     try{
-      ({data,error}=await supabase.from('messages').select('sender_id,body,created_at').eq('customer_id',session.user.id).order('created_at'));
+      ({data,error}=await supabase.from('messages').select('sender_id,body,created_at').eq('customer_id',userId).order('created_at'));
     }catch{error=new Error('No se pudo cargar el chat. Comprueba la conexión.');}
-    if(currentView!=='chat')return;
+    if(currentView!=='chat'||!isCurrentUser(userId)||main.firstElementChild!==loadingScreen)return;
     main.innerHTML=`<section class="card">${backButton}<h2>Chat con Reparado</h2>${error?'<p>No se pudo abrir el chat. Comprueba la conexión.</p><button type="button" data-view="chat">Reintentar</button>':`<div id="messages">${(data||[]).map(r=>`<p class="${r.sender_id===session.user.id?'me':''}">${esc(r.body)}</p>`).join('')||'<p>Sin mensajes todavía.</p>'}</div><form id="chat-form"><label>Mensaje<input name="body" maxlength="2000" required placeholder="Escribe aquí…"></label><button type="submit">Enviar</button></form><p data-feedback role="status"></p>`}</section>`;
     const form=main.querySelector('#chat-form');
     if(form)form.addEventListener('submit',async e=>{
@@ -965,13 +986,18 @@ export function mountConnected({app, services, supabase, authLinkIntent=null}) {
   }
   supabase.auth.onAuthStateChange((event)=>{
     if(event==='SIGNED_OUT'){
+      authEpoch++;
       void pushManager.discard();
       session=null;profile=null;passwordSetupPending=false;
       pendingService=null;pendingView=null;renderHome();
     }else if(event==='PASSWORD_RECOVERY'){
+      authEpoch++;
       passwordSetupPending=true;
       queueMicrotask(()=>boot());
-    }else if(event==='SIGNED_IN')queueMicrotask(()=>boot());
+    }else if(event==='SIGNED_IN'){
+      authEpoch++;
+      queueMicrotask(()=>boot());
+    }
   });
   // Mostrar la portada inmediatamente, incluso si la sesión tarda o no hay red.
   renderHome();
