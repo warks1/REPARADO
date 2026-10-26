@@ -94,8 +94,14 @@ with user(C2) as db:
         "update public.customer_reviews set status='approved' where id=%s returning id",
         (PENDING,)).fetchall()==[],'Cliente pudo aprobar reseña propia'
 with user(ADM) as db:
-    assert db.execute(
-        "update public.customer_reviews set status='approved' where id=%s and status='pending' returning id",
-        (PENDING,)).fetchone()[0]==PENDING,'Admin perdió moderación'
+    print('V33 diagnóstico temporal',db.execute(
+      "select current_user,public.is_reparado_admin(),has_column_privilege('authenticated','public.customer_reviews','status','UPDATE')").fetchone(),
+      db.execute("select id,status from public.customer_reviews where id=%s",(PENDING,)).fetchall(),
+      flush=True)
+    result=db.execute(
+        "update public.customer_reviews set status='approved' where id=%s and status='pending' returning id,status",
+        (PENDING,)).fetchall()
+    print('V33 resultado de aprobación',result,flush=True)
+    assert result and result[0][0]==PENDING,'Admin perdió moderación'
 assert PENDING in view_rows(None,'anon'),'Reseña aprobada no visible públicamente'
 print('V33 OK: igual visibilidad para clientes A/B, operario, admin y anon; moderación y columnas privadas intactas.',flush=True)
