@@ -8,8 +8,10 @@ test('clientes conectados pueden denunciar fallos, con límites y sin introducir
  assert.ok(src.includes('id="reparado-issue-report"'));
  assert.ok(src.includes("name=\"subject\" maxlength=\"140\" minlength=\"5\""));
  assert.ok(src.includes("name=\"description\" maxlength=\"2000\" minlength=\"12\""));
- assert.ok(src.includes(".from('support_reports').insert({"));
- assert.ok(src.includes('user_id:userId,subject,description,context'));
+ const submit=load('support-submission.js');
+ assert.ok(src.includes('submitSupportIssue({'));
+ assert.ok(submit.includes(".from('support_reports').insert({"));
+ assert.ok(submit.includes('user_id:userId,subject,description,context,client_report_id:reportId'));
  assert.ok(src.includes('reparado_soporte@outlook.es'));
  assert.ok(src.includes('Si') || src.includes('Comunicar')); // Cuenta conectada.
 });
