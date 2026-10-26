@@ -81,3 +81,21 @@ test('móvil: nunca registra tokens si Supabase rechaza la RPC',async()=>{
   assert.equal(errors.length,1);
   assert.equal(d.tokens.size,0);
 });
+
+test('móvil: cerrar sesión durante el permiso impide registro tardío',async()=>{
+  const d=fakeDevice();
+  let allow;
+  d.PushNotifications.requestPermissions=()=>new Promise(resolve=>{allow=resolve});
+  const manager=createPushSessionManager(d);
+  d.setUser('A');
+  const activating=manager.activate('A');
+  // Esperar un microturno a que la API de permisos sea consultada.
+  await Promise.resolve();
+  await Promise.resolve();
+  const leaving=manager.deactivate('A');
+  allow({receive:'granted'});
+  assert.equal(await activating,false);
+  assert.equal(await leaving,true);
+  assert.equal(d.listeners.size,0);
+  assert.equal(d.calls.length,0);
+});
