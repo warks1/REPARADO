@@ -124,3 +124,9 @@ La app estará lista para clientes solo cuando se hayan ejecutado y aprobado las
 5. GitHub Pages es un sitio estático: cabeceras HTTP adicionales como `Content-Security-Policy`, `X-Content-Type-Options` o `Strict-Transport-Security` deben ser controladas mediante un host/CDN apropiado o su infraestructura; un `<meta>` no las sustituye todas. No asumir que GitHub Pages permite configurarlas individualmente.
 
 Nunca poner credenciales `service_role` o secretos en archivos `VITE_*`, repositorios o código servido al navegador. Ninguna mejora impide al 100 % ataques o robo de dispositivos y contraseñas: son necesarias vigilancia, parches y gestión humana.
+
+## Candidato para tiendas — 26 de octubre de 2026
+- La publicación por GitHub Pages continúa separada de la versión de tiendas. `scripts/store-preflight.mjs` BLOQUEA compilar para Apple/Google con modo demo, URL del Supabase de pruebas, claves de servidor, falta de política de privacidad, enlace de eliminación de cuenta, asistencia o sin confirmación explícita de producción.
+- `.github/workflows/store-release.yml` permite solicitar compilaciones firmadas AAB y/o IPA desde GitHub Actions, **solo con credenciales de las cuentas de desarrollador**. No envía nada automáticamente a las tiendas ni puede garantizar aprobación. `scripts/configure-android-release.mjs` exige API 36 o superior.
+- `supabase/migration-store-account-deletion.sql` ofrece un mecanismo autenticado y privado para que los usuarios soliciten eliminación desde Mi perfil. El borrado efectivo debe ejecutarlo personal autorizado tras revisar obligaciones fiscales y retirar datos, fotos y comentarios. No basta con dejar solicitudes sin procesar: **hay que operar ese procedimiento** y publicar un enlace web de solicitud de borrado.
+- Los requisitos específicos, variables seguras y acciones del titular están en `docs/PUBLICAR-EN-TIENDAS.md`. **No presentar una beta local a las tiendas como servicio en producción**.
