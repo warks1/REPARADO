@@ -638,15 +638,26 @@ export function mountConnected({app, services, supabase, authLinkIntent=null}) {
       const full_name=String(fields.get('full_name')||'').trim();
       const phone=String(fields.get('phone')||'').trim();
       if(full_name.length>100 || phone.length>25)return message('Los datos son demasiado largos.',true);
-      const {error}=await supabase.from('profiles').update({full_name,phone}).eq('id',session.user.id);
-      if(error){message('No se pudo guardar: '+error.message,true);return;}
-      profile={...profile,full_name,phone};message('Perfil actualizado.');
+      const userId=session?.user?.id;
+      const button=event.currentTarget.querySelector('[type=submit]');
+      if(!userId||button.disabled)return;
+      button.disabled=true;
+      try{
+        const {error}=await supabase.from('profiles').update({full_name,phone}).eq('id',userId);
+        if(!isCurrentUser(userId)||!event.currentTarget.isConnected||currentView!=='profile')return;
+        if(error)throw error;
+        profile={...profile,full_name,phone};message('Perfil actualizado.');
+      }catch{
+        if(isCurrentUser(userId)&&currentView==='profile')
+          message('No se pudo guardar el perfil. Comprueba tu conexión e inténtalo de nuevo.',true);
+      }finally{button.disabled=false}
     });
   }
 
   async function loadStaffChat(customerId, serviceName){
     if(!userIsStaff() || !session)return renderHome();
     currentView='staff-chat';
+    const staffUserId=session.user.id;
     const box=document.createElement('section');
     box.className='card';
     const back=document.createElement('button');
@@ -659,17 +670,23 @@ export function mountConnected({app, services, supabase, authLinkIntent=null}) {
     history.textContent='Cargando mensajes…';
     box.append(back,heading,history);
     main.replaceChildren(box);
-    const result=await supabase.from('messages').select('sender_id,body,created_at')
-      .eq('customer_id',customerId).order('created_at',{ascending:true}).limit(300);
-    if(currentView!=='staff-chat')return;
+    let result;
+    try{
+      result=await supabase.from('messages').select('sender_id,body,created_at')
+        .eq('customer_id',customerId).order('created_at',{ascending:true}).limit(300);
+    }catch{result={error:new Error('Fallo de conexión')};}
+    if(currentView!=='staff-chat'||!isCurrentUser(staffUserId)||!box.isConnected)return;
     history.replaceChildren();
     if(result.error){
-      history.textContent='No se pudieron cargar los mensajes: '+result.error.message;
+      history.textContent='No se pudieron cargar los mensajes. Comprueba la conexión.';
+      const retry=document.createElement('button');
+      retry.type='button';retry.textContent='Reintentar';retry.addEventListener('click',()=>loadStaffChat(customerId,serviceName));
+      box.append(retry);
       return;
     }
     for(const row of result.data||[]){
       const p=document.createElement('p');
-      p.className=row.sender_id===session.user.id?'me':'';
+      p.className=row.sender_id===staffUserId?'me':'';
       p.textContent=row.body;
       history.append(p);
     }
@@ -691,13 +708,19 @@ export function mountConnected({app, services, supabase, authLinkIntent=null}) {
     form.addEventListener('submit',async event=>{
       event.preventDefault();
       const body=input.value.trim();
-      if(!body || !session)return;
+      if(!body||!isCurrentUser(staffUserId)||send.disabled)return;
       send.disabled=true;
-      const {error}=await supabase.from('messages').insert({
-        customer_id:customerId,sender_id:session.user.id,body
-      });
-      if(error){feedback.textContent='No se pudo enviar: '+error.message;send.disabled=false;return}
-      await loadStaffChat(customerId,serviceName);
+      try{
+        const {error}=await supabase.from('messages').insert({
+          customer_id:customerId,sender_id:staffUserId,body
+        });
+        if(!isCurrentUser(staffUserId)||!box.isConnected||currentView!=='staff-chat')return;
+        if(error)throw error;
+        await loadStaffChat(customerId,serviceName);
+      }catch{
+        if(isCurrentUser(staffUserId)&&box.isConnected)
+          feedback.textContent='No se pudo confirmar el mensaje. Revisa el chat antes de reenviarlo.';
+      }finally{send.disabled=false}
     });
   }
 
@@ -708,7 +731,8 @@ export function mountConnected({app, services, supabase, authLinkIntent=null}) {
       '<h2>Incidencias de clientes</h2><p class="notice">Solo administración. Los detalles son privados; no los envíes por correo ni los compartas fuera del panel.</p>'+
       '<p data-issues-status role="status">Cargando…</p><div data-issues-list></div></section>';
     const root=main.querySelector('#reparado-support-admin'),status=root.querySelector('[data-issues-status]'),list=root.querySelector('[data-issues-list]');
-    const available=()=>root.isConnected&&currentView==='support-admin'&&session&&profile?.role==='admin';
+    const adminUserId=session.user.id;
+    const available=()=>root.isConnected&&currentView==='support-admin'&&isCurrentUser(adminUserId)&&profile?.role==='admin';
     async function refresh(){
       try{
         const {data,error}=await supabase.from('support_reports')
@@ -764,17 +788,25 @@ export function mountConnected({app, services, supabase, authLinkIntent=null}) {
     currentView='admin';adminFilter=filter;
     main.innerHTML=`<section class="card">${backButton}<h2>Panel interno</h2><p>Cargando solicitudes…</p></section>`;
     const admin=profile?.role==='admin';
+    const staffUserId=session.user.id, loadingScreen=main.firstElementChild;
     const baseJobs=supabase.from('service_requests')
       .select('id,customer_id,service_name,street,address_number,city,phone,description,status,scheduled_at,operator_id,operator_name,price')
       .order('created_at',{ascending:false}).limit(150);
-    const [jobs,team]=await Promise.all([
-      admin ? baseJobs : baseJobs.eq('operator_id',session.user.id),
-      admin ? supabase.from('profiles').select('id,full_name,role').eq('role','operator') : Promise.resolve({data:[],error:null})
-    ]);
-    if(currentView!=='admin')return;
-    if(jobs.error){main.innerHTML=`<section class="card">${backButton}<h2>Panel interno</h2><p>${esc(jobs.error.message)}</p></section>`;return}
+    let jobs,team;
+    try{
+      [jobs,team]=await Promise.all([
+        admin ? baseJobs : baseJobs.eq('operator_id',staffUserId),
+        admin ? supabase.from('profiles').select('id,full_name,role').eq('role','operator') : Promise.resolve({data:[],error:null})
+      ]);
+    }catch{jobs={data:null,error:new Error('Error de conexión')};team={data:[],error:null};}
+    if(currentView!=='admin'||!isCurrentUser(staffUserId)||main.firstElementChild!==loadingScreen)return;
+    if(jobs.error){
+      main.innerHTML=`<section class="card">${backButton}<h2>Panel interno</h2><p>No se pudieron cargar los trabajos. Comprueba la conexión.</p><button type="button" data-reload-staff>Reintentar</button></section>`;
+      main.querySelector('[data-reload-staff]')?.addEventListener('click',()=>renderAdmin(filter));
+      return;
+    }
     if(admin && team.error){
-      main.innerHTML=`<section class="card">${backButton}<h2>Panel interno</h2><p>No se pudo consultar el personal. No se permiten asignaciones hasta recuperar la lista de operarios.</p><p>${esc(team.error.message)}</p><button type="button" data-reload-staff>Reintentar</button></section>`;
+      main.innerHTML=`<section class="card">${backButton}<h2>Panel interno</h2><p>No se pudo consultar el personal. No se permiten asignaciones hasta recuperar la lista de operarios.</p><button type="button" data-reload-staff>Reintentar</button></section>`;
       main.querySelector('[data-reload-staff]')?.addEventListener('click',()=>renderAdmin(filter));
       return;
     }
