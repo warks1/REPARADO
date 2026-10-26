@@ -386,23 +386,32 @@ export function mountConnected({app, services, supabase, authLinkIntent=null}) {
     main.querySelectorAll('[data-customer-photos]').forEach(button=>button.addEventListener('click',async()=>{
       const requestId=button.dataset.customerPhotos;
       const out=main.querySelector('[data-customer-photo-output="'+requestId+'"]');
-      if(!out)return;
+      const uid=session?.user?.id;
+      if(!out||!uid||button.disabled)return;
       button.disabled=true;out.textContent='Cargando imágenes…';
-      const folder=session.user.id+'/'+requestId;
-      const {data,error}=await supabase.storage.from('request-photos').list(folder,{limit:30});
-      out.replaceChildren();button.disabled=false;
-      if(error){out.textContent='No se pudieron obtener las fotos: '+error.message;return}
-      if(!data?.length){out.textContent='No hay fotografías adjuntas.';return}
-      for(const photo of data){
-        if(!photo.name || photo.name.startsWith('.'))continue;
-        const {data:signed,error:signError}=await supabase.storage.from('request-photos').createSignedUrl(folder+'/'+photo.name,120);
-        if(signError || !signed?.signedUrl)continue;
-        const link=document.createElement('a');link.href=signed.signedUrl;link.target='_blank';
-        link.rel='noopener noreferrer';link.textContent='📷 Abrir fotografía';out.append(link);
-      }
-      if(!out.children.length)out.textContent='No hay fotos disponibles.';
+      const folder=uid+'/'+requestId;
+      try{
+        const {data,error}=await supabase.storage.from('request-photos').list(folder,{limit:30});
+        if(error)throw error;
+        if(!out.isConnected||currentView!=='requests'||session?.user?.id!==uid)return;
+        out.replaceChildren();
+        if(!data?.length){out.textContent='No hay fotografías adjuntas.';return}
+        for(const photo of data){
+          if(!photo.name || photo.name.startsWith('.'))continue;
+          const {data:signed,error:signError}=await supabase.storage.from('request-photos').createSignedUrl(folder+'/'+photo.name,120);
+          if(!out.isConnected||currentView!=='requests'||session?.user?.id!==uid)return;
+          if(signError || !signed?.signedUrl)continue;
+          const link=document.createElement('a');link.href=signed.signedUrl;link.target='_blank';
+          link.rel='noopener noreferrer';link.textContent='📷 Abrir fotografía';out.append(link);
+        }
+        if(!out.children.length)out.textContent='No hay fotos disponibles.';
+      }catch{
+        if(out.isConnected&&currentView==='requests')
+          out.textContent='No se pudieron consultar las fotos. Comprueba la conexión y vuelve a intentarlo.';
+      }finally{button.disabled=false}
     }));
     main.querySelectorAll('[data-accept-quote]').forEach(button=>button.addEventListener('click',async()=>{
+      if(button.disabled)return;
       const total=Number(button.dataset.acceptTotal);
       const valid=vatIncluded(total);
       if(!valid){message('No se pudo verificar el importe. Actualiza la solicitud.',true);return;}
@@ -410,11 +419,15 @@ export function mountConnected({app, services, supabase, authLinkIntent=null}) {
         ' (IVA del 21 % incluido) para esta reparación? Esta acción se registrará en Reparado.');
       if(!confirmed)return;
       button.disabled=true;
-      const {data:accepted,error}=await supabase.rpc('accept_reparado_quote',{p_request_id:button.dataset.acceptQuote});
-      if(error){message('No se pudo aceptar el presupuesto: '+error.message,true);button.disabled=false;return}
-      if(!accepted){message('Este presupuesto ya no está disponible. Actualiza la solicitud.',true);button.disabled=false;return}
-      await loadRequests();
-      message('Presupuesto aceptado. Reparado podrá programar la visita.');
+      try{
+        const {data:accepted,error}=await supabase.rpc('accept_reparado_quote',{p_request_id:button.dataset.acceptQuote});
+        if(error)throw error;
+        if(!accepted){message('Este presupuesto ya no está disponible. Actualiza la solicitud.',true);return}
+        await loadRequests();
+        message('Presupuesto aceptado. Reparado podrá programar la visita.');
+      }catch{
+        message('No se pudo confirmar la aceptación. Revisa Mis solicitudes antes de volver a intentarlo.',true);
+      }finally{if(button.isConnected)button.disabled=false}
     }));
   }
   async function loadAgenda(){
