@@ -8,7 +8,7 @@ const draft={userId:'owner-A',subject:'No puedo abrir el chat',
   description:'El chat se queda bloqueado al responder a soporte.',context:'chat',reportId:KEY};
 function testBackend(){
  const rows=new Map(),operations=[];
- let loseResponse=false,offline=false,limit=false;
+ let loseResponse=false,offline=false,limit=false,actor='owner-A';
  const client={from(table){
    assert.equal(table,'support_reports');
    return {
@@ -22,26 +22,18 @@ function testBackend(){
        if(loseResponse)throw Error('response-lost');
        return {error:null};
      },
-     select(columns){
-       assert.equal(columns,'id');
-       let owner,key;
-       return {
-         eq(column,val){
-           if(column==='user_id')owner=val;
-           else if(column==='client_report_id')key=val;
-           else assert.fail('Untrusted filter '+column);
-           operations.push({method:'filter',column,val});return this;
-         },
-         async maybeSingle(){
-           if(offline)throw Error('offline');
-           const found=rows.get(owner+'/'+key);
-           return {data:found?{id:found.id}:null,error:null};
-         }
-       };
-     }
+ 
    };
+ },
+ async rpc(name,args){
+   assert.equal(name,'reparado_find_own_support_report');
+   operations.push({method:'rpc',actor,reportId:args.p_client_report_id});
+   if(offline)throw Error('offline');
+   const found=rows.get(actor+'/'+args.p_client_report_id);
+   return {data:found?.id||null,error:null};
  }};
- return {client,rows,operations,setDrop:v=>{loseResponse=v},setOffline:v=>{offline=v},setLimit:v=>{limit=v}};
+ return {client,rows,operations,setActor:id=>{actor=id},
+   setDrop:v=>{loseResponse=v},setOffline:v=>{offline=v},setLimit:v=>{limit=v}};
 }
 test('incidencia registrada correctamente una sola vez',async()=>{
  const x=testBackend();
@@ -55,8 +47,8 @@ test('respuesta perdida: recuperar la incidencia por cliente e identificador',as
  const again=await submitSupportIssue({supabase:x.client,...draft});
  assert.deepEqual(again,{ok:true,recovered:true,code:null});
  assert.equal(x.rows.size,1);
- assert.ok(x.operations.some(o=>o.method==='filter'&&o.column==='user_id'&&o.val==='owner-A'));
- assert.ok(x.operations.some(o=>o.method==='filter'&&o.column==='client_report_id'&&o.val===KEY));
+ assert.ok(x.operations.some(o=>o.method==='rpc'&&o.actor==='owner-A'&&o.reportId===KEY));
+ assert.ok(!x.operations.some(o=>o.method==='filter'));
 });
 test('caída real: no declara éxito ni crea registro al repetir con la misma clave',async()=>{
  const x=testBackend();x.setOffline(true);
@@ -75,6 +67,7 @@ test('límite de informes: advertir sin divulgar detalles internos',async()=>{
 test('cuentas diferentes no recuperan sus respectivos informes',async()=>{
  const x=testBackend();x.setDrop(true);
  await submitSupportIssue({supabase:x.client,...draft});
+ x.setActor('owner-B');
  await submitSupportIssue({supabase:x.client,...draft,userId:'owner-B'});
  assert.equal(x.rows.size,2);
 });
