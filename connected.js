@@ -1,5 +1,6 @@
 import {supportHistoryMarkup} from './support-ticket-ui.js';
 import {createPushSessionManager} from './push-session.js';
+import {validateRequestPhotos,getRequestPhotoCount,uploadRequestPhotos} from './request-photos.js';
 import {contactLinksMarkup} from './contact-emails.js';
 import { mountReviewModeration } from './review-moderation.js';
 import { mountReviews } from './reviews.js';
@@ -307,11 +308,8 @@ export function mountConnected({app, services, supabase, authLinkIntent=null}) {
       try{
         const fields=new FormData(form);
         const images=[...(form.elements.photos.files||[])];
-        if(images.length>4 || images.some(f=>f.size>8388608 ||
-            !['image/jpeg','image/png','image/webp','image/heic'].includes(f.type))){
-          message('Selecciona hasta 4 imágenes JPG, PNG, WEBP o HEIC de 8 MB como máximo.',true);
-          return;
-        }
+        const photoError=images.length?validateRequestPhotos(images):null;
+        if(photoError){message(photoError,true);return;}
         const payload={
           customer_id:session.user.id,service_name:service[1],category:service[0],
           street:String(fields.get('street')).trim(),
@@ -323,16 +321,12 @@ export function mountConnected({app, services, supabase, authLinkIntent=null}) {
         const {data,error}=await supabase.from('service_requests').insert(payload).select('id').single();
         if(error || !data?.id)throw new Error('No se ha confirmado el registro de la solicitud');
         recorded=true;
-        let failures=0;
-        for(const file of images){
-          try{
-            const ext=({'image/jpeg':'jpg','image/png':'png','image/webp':'webp','image/heic':'heic'})[file.type];
-            const path=session.user.id+'/'+data.id+'/'+crypto.randomUUID()+'.'+ext;
-            const uploaded=await supabase.storage.from('request-photos')
-              .upload(path,file,{contentType:file.type,upsert:false});
-            if(uploaded.error)failures++;
-          }catch{failures++}
-        }
+        const photosResult=images.length
+          ?await uploadRequestPhotos({supabase,userId:payload.customer_id,requestId:data.id,files:images})
+          :{uploaded:0,failed:0,error:null};
+        const failures=photosResult.failed;
+        photoUrls.forEach(URL.revokeObjectURL);
+        photoUrls=[];
         form.remove();
         main.querySelector('.request-screen .card').insertAdjacentHTML('beforeend',
           '<div class="request-confirm"><h2>Solicitud recibida</h2><p>Hemos registrado tu solicitud. Puedes consultar su estado en Mis solicitudes.</p><button type="button" class="primary-cta" data-view="requests">Ver mis solicitudes →</button></div>');
@@ -350,13 +344,44 @@ export function mountConnected({app, services, supabase, authLinkIntent=null}) {
   async function loadRequests(){
     setActiveNav(app,'requests');
     currentView='requests';main.innerHTML=`<section class="card">${backButton}<h2>Mis solicitudes</h2><p>Cargando…</p></section>`;
-    const {data,error}=await supabase.from('service_requests').select('id,service_name,status,price,street,address_number,city,preferred_date,scheduled_at,operator_name').eq('customer_id',session.user.id).order('created_at',{ascending:false});
+    let data,error;
+    try{
+      ({data,error}=await supabase.from('service_requests').select('id,service_name,status,price,street,address_number,city,preferred_date,scheduled_at,operator_name').eq('customer_id',session.user.id).order('created_at',{ascending:false}));
+    }catch{error=new Error('No se pudieron cargar tus solicitudes. Comprueba la conexión.');}
     if(currentView!=='requests')return;
     if(error){main.innerHTML=`<section class="card">${backButton}<h2>Mis solicitudes</h2><p>${esc(error.message)}</p></section>`;return}
-    main.innerHTML=`<section class="card">${backButton}<h2>Mis solicitudes</h2><p data-feedback class="feedback" role="status"></p>${data?.length?data.map(r=>`<article class="request"><strong>${esc(r.service_name)}</strong><span>${esc(statusLabels[r.status]||r.status)}</span><p>${esc(r.street)}, ${esc(r.address_number)} · ${esc(r.city)}</p>${staffProgressMarkup(r.status)}${r.price!=null?`<p>Importe confirmado: <b>${money(r.price)}</b> (IVA incluido)</p>`:''}<small>${r.scheduled_at?'Visita: '+esc(safeTime(r.scheduled_at)):'Fecha preferida: '+esc(r.preferred_date||'No indicada')}</small><div class="flex-actions"><button type="button" data-customer-photos="${esc(r.id)}">📷 Mis fotos</button></div>${r.status==="completed"?`<div class="flex-actions"><button type="button" class="customer-review-action" data-rate-request="${esc(r.id)}" aria-label="Valorar ${esc(r.service_name)}">⭐ Valorar este trabajo</button></div>`:""}<div class="photo-links" data-customer-photo-output="${esc(r.id)}"></div>${r.status==="quoted" && r.price!==null ? `<div class="flex-actions"><p class="quote-acceptance-summary">Presupuesto: ${money(r.price)} IVA incluido (21 %). Base: ${money(vatIncluded(r.price).base)} · IVA: ${money(vatIncluded(r.price).vat)}. Revisa el importe antes de aceptarlo.</p><button type="button" data-accept-quote="${esc(r.id)}" data-accept-total="${esc(r.price)}">Aceptar presupuesto de ${money(r.price)}</button></div>` : ""}</article>`).join(''):'<p>Todavía no tienes solicitudes.</p>'}</section>`;
+    main.innerHTML=`<section class="card">${backButton}<h2>Mis solicitudes</h2><p data-feedback class="feedback" role="status"></p>${data?.length?data.map(r=>`<article class="request"><strong>${esc(r.service_name)}</strong><span>${esc(statusLabels[r.status]||r.status)}</span><p>${esc(r.street)}, ${esc(r.address_number)} · ${esc(r.city)}</p>${staffProgressMarkup(r.status)}${r.price!=null?`<p>Importe confirmado: <b>${money(r.price)}</b> (IVA incluido)</p>`:''}<small>${r.scheduled_at?'Visita: '+esc(safeTime(r.scheduled_at)):'Fecha preferida: '+esc(r.preferred_date||'No indicada')}</small><div class="flex-actions"><button type="button" data-customer-photos="${esc(r.id)}">📷 Mis fotos</button></div><div class="request-photo-retry"><label>Añadir fotografías a esta solicitud (máximo 4 en total)<input type="file" data-upload-request-photos="${esc(r.id)}" accept="image/jpeg,image/png,image/webp,image/heic" multiple></label><p role="status" aria-live="polite" data-upload-photo-result="${esc(r.id)}"></p></div>${r.status==="completed"?`<div class="flex-actions"><button type="button" class="customer-review-action" data-rate-request="${esc(r.id)}" aria-label="Valorar ${esc(r.service_name)}">⭐ Valorar este trabajo</button></div>`:""}<div class="photo-links" data-customer-photo-output="${esc(r.id)}"></div>${r.status==="quoted" && r.price!==null ? `<div class="flex-actions"><p class="quote-acceptance-summary">Presupuesto: ${money(r.price)} IVA incluido (21 %). Base: ${money(vatIncluded(r.price).base)} · IVA: ${money(vatIncluded(r.price).vat)}. Revisa el importe antes de aceptarlo.</p><button type="button" data-accept-quote="${esc(r.id)}" data-accept-total="${esc(r.price)}">Aceptar presupuesto de ${money(r.price)}</button></div>` : ""}</article>`).join(''):'<p>Todavía no tienes solicitudes.</p>'}</section>`;
     main.querySelectorAll('[data-rate-request]').forEach(button=>button.addEventListener('click',()=>{
       const requestId=button.dataset.rateRequest;
       if(data.some(row=>row.id===requestId && row.status==='completed'))renderHome(requestId);
+    }));
+    // Adjuntar fotos después de registrar el trabajo (p.ej. si se perdió la red).
+    main.querySelectorAll('[data-upload-request-photos]').forEach(input=>input.addEventListener('change',async()=>{
+      const requestId=input.dataset.uploadRequestPhotos;
+      const feedback=main.querySelector('[data-upload-photo-result="'+requestId+'"]');
+      const uid=session?.user?.id;
+      if(!feedback||!uid)return;
+      const selected=Array.from(input.files||[]);
+      if(!selected.length)return;
+      input.disabled=true;
+      feedback.textContent='Comprobando fotografías adjuntas…';
+      try{
+        const existing=await getRequestPhotoCount(supabase,uid,requestId);
+        if(!session||session.user.id!==uid)throw new Error('Sesión cambiada');
+        const validation=validateRequestPhotos(selected,existing);
+        if(validation){feedback.textContent=validation;return}
+        feedback.textContent='Subiendo fotografías…';
+        const result=await uploadRequestPhotos({supabase,userId:uid,requestId,files:selected,existing});
+        if(!input.isConnected||currentView!=='requests')return;
+        feedback.textContent=result.error||(
+          result.failed
+            ?result.uploaded+' fotos añadidas; '+result.failed+' no se pudieron subir. Puedes reintentarlo.'
+            :result.uploaded+' fotografías añadidas correctamente.'
+        );
+      }catch{
+        if(input.isConnected && currentView==='requests')
+          feedback.textContent='No se pudieron comprobar o adjuntar las fotografías. Revisa la conexión antes de reintentar.';
+      }finally{input.value='';input.disabled=false}
     }));
     main.querySelectorAll('[data-customer-photos]').forEach(button=>button.addEventListener('click',async()=>{
       const requestId=button.dataset.customerPhotos;
@@ -395,14 +420,20 @@ export function mountConnected({app, services, supabase, authLinkIntent=null}) {
   async function loadAgenda(){
     setActiveNav(app,'agenda');
     currentView='agenda';main.innerHTML=`<section class="card">${backButton}<h2>Mi agenda</h2><p>Cargando…</p></section>`;
-    const {data,error}=await supabase.from('service_requests').select('service_name,scheduled_at,status,operator_name').eq('customer_id',session.user.id).in('status',['scheduled','in_progress']).order('scheduled_at');
+    let data,error;
+    try{
+      ({data,error}=await supabase.from('service_requests').select('service_name,scheduled_at,status,operator_name').eq('customer_id',session.user.id).in('status',['scheduled','in_progress']).order('scheduled_at'));
+    }catch{error=new Error('No se pudo cargar la agenda. Comprueba la conexión.');}
     if(currentView!=='agenda')return;
     main.innerHTML=`<section class="card">${backButton}<h2>Mi agenda</h2>${error?`<p>${esc(error.message)}</p>`:data?.length?data.map(r=>`<article class="request"><b>${esc(r.service_name)}</b><p>${esc(safeTime(r.scheduled_at))}</p><small>${esc(statusLabels[r.status])} · Operario: ${esc(r.operator_name||'Por asignar')}</small></article>`).join(''):'<p>No hay visitas programadas.</p>'}</section>`;
   }
   async function loadChat(){
     setActiveNav(app,'chat');
     currentView='chat';main.innerHTML=`<section class="card">${backButton}<h2>Chat con Reparado</h2><p>Cargando…</p></section>`;
-    const {data,error}=await supabase.from('messages').select('sender_id,body,created_at').eq('customer_id',session.user.id).order('created_at');
+    let data,error;
+    try{
+      ({data,error}=await supabase.from('messages').select('sender_id,body,created_at').eq('customer_id',session.user.id).order('created_at'));
+    }catch{error=new Error('No se pudo cargar el chat. Comprueba la conexión.');}
     if(currentView!=='chat')return;
     main.innerHTML=`<section class="card">${backButton}<h2>Chat con Reparado</h2>${error?`<p>${esc(error.message)}</p>`:`<div id="messages">${(data||[]).map(r=>`<p class="${r.sender_id===session.user.id?'me':''}">${esc(r.body)}</p>`).join('')||'<p>Sin mensajes todavía.</p>'}</div><form id="chat-form"><label>Mensaje<input name="body" maxlength="2000" required placeholder="Escribe aquí…"></label><button type="submit">Enviar</button></form><p data-feedback role="status"></p>`}</section>`;
     const form=main.querySelector('#chat-form');
@@ -410,9 +441,16 @@ export function mountConnected({app, services, supabase, authLinkIntent=null}) {
       e.preventDefault();
       const body=String(new FormData(form).get('body')||'').trim();
       if(!body)return;
-      const {error}=await supabase.from('messages').insert({customer_id:session.user.id,sender_id:session.user.id,body});
-      if(error){message(error.message,true);return}
-      await loadChat();
+      const button=form.querySelector('[type=submit]');
+      if(button.disabled)return;
+      button.disabled=true;
+      try{
+        const {error}=await supabase.from('messages').insert({customer_id:session.user.id,sender_id:session.user.id,body});
+        if(error)throw error;
+        await loadChat();
+      }catch{
+        message('No se pudo confirmar el envío. Revisa el chat antes de reintentar.',true);
+      }finally{button.disabled=false}
     });
   }
   async function loadNotifications(){
