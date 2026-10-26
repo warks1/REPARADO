@@ -4,7 +4,7 @@ import {fetchOwnNotifications,markOwnNotificationRead} from './notifications-dat
 export async function renderNotifications({main,supabase,session,onRefresh,isStaff=false}) {
   const userId=session?.user?.id;
   if(!userId||!onRefresh())return;
-  main.innerHTML='<section class="card"><h2>Mis avisos</h2><p>Cargando…</p></section>';
+  main.innerHTML='<section class="card"><button type="button" class="back" data-back>← Volver</button><h2>Mis avisos</h2><p>Cargando…</p></section>';
   const loading=main.firstElementChild;
   const {rows,error}=await fetchOwnNotifications(supabase,userId);
   if(!onRefresh()||main.firstElementChild!==loading||!loading.isConnected)return;
