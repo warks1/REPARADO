@@ -808,12 +808,14 @@ export function mountConnected({app, services, supabase, authLinkIntent=null}) {
     const root=main.querySelector('#reparado-support-admin'),status=root.querySelector('[data-issues-status]'),list=root.querySelector('[data-issues-list]');
     const adminUserId=session.user.id;
     const available=()=>root.isConnected&&currentView==='support-admin'&&isCurrentUser(adminUserId)&&profile?.role==='admin';
+    let refreshSeq=0;
     async function refresh(){
+      const seq=++refreshSeq;
       try{
         const {data,error}=await supabase.from('support_reports')
           .select('id,subject,description,context,status,created_at')
           .in('status',['open','reviewing']).order('created_at',{ascending:false}).limit(100);
-        if(!available())return;
+        if(!available()||seq!==refreshSeq)return;
         if(error)throw error;
         status.textContent=(data?.length||0)+' incidencias abiertas o en revisión.';
         list.innerHTML=(data||[]).map(item=>'<article class="support-ticket" data-support-ticket="'+esc(item.id)+'">'+
@@ -822,14 +824,18 @@ export function mountConnected({app, services, supabase, authLinkIntent=null}) {
           '<div class="flex-actions"><button type="button" data-support-status="reviewing" data-ticket-id="'+esc(item.id)+'">En revisión</button>'+
           '<button type="button" data-support-status="resolved" data-ticket-id="'+esc(item.id)+'">Marcar resuelta</button></div></article>').join('')||
           '<p>No hay incidencias pendientes.</p>';
-      }catch{if(available())status.textContent='No se pueden cargar las incidencias. Revisa conexión y permisos.';}
+      }catch{if(available()&&seq===refreshSeq)status.textContent='No se pueden cargar las incidencias. Revisa conexión y permisos.';}
     }
+    const savingReports=new Set();
     root.addEventListener('click',async event=>{
       const b=event.target.closest('[data-support-status]');
       if(!b||b.disabled||!available())return;
       const next=b.dataset.supportStatus,id=b.dataset.ticketId;
-      if(!['reviewing','resolved'].includes(next)||!list.querySelector('[data-support-ticket="'+CSS.escape(id)+'"]'))return;
-      b.disabled=true;
+      if(!['reviewing','resolved'].includes(next)||!list.querySelector('[data-support-ticket="'+CSS.escape(id)+'"]')||savingReports.has(id))return;
+      savingReports.add(id);
+      const reportCard=list.querySelector('[data-support-ticket="'+CSS.escape(id)+'"]');
+      const buttons=[...reportCard.querySelectorAll('[data-support-status]')];
+      for(const button of buttons)button.disabled=true;
       try{
         const {data,error}=await supabase.from('support_reports').update({status:next})
           .eq('id',id).in('status',['open','reviewing']).select('id,status');
@@ -837,7 +843,10 @@ export function mountConnected({app, services, supabase, authLinkIntent=null}) {
         if(error||!data?.length){status.textContent='No se pudo cambiar el estado. Actualiza la pantalla.';return;}
         await refresh();
       }catch{if(available())status.textContent='No se ha podido guardar el cambio.';}
-      finally{if(b.isConnected)b.disabled=false;}
+      finally{
+        savingReports.delete(id);
+        for(const button of buttons)if(button.isConnected)button.disabled=false;
+      }
     });
     await refresh();
   }
