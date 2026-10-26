@@ -590,3 +590,13 @@ body,.shell,.customer-header,.customer-nav {background:#fff}
 .account-deletion button{border:1px solid #cc7470;background:white;border-radius:13px;color:#983d37;padding:12px 14px;min-height:42px;font-weight:750}
 .account-deletion button:disabled{opacity:.6;cursor:default}
 .account-deletion button:focus-visible{outline:3px solid #2283db;outline-offset:2px}
+
+/* Contacto REPARADO: dos buzones diferenciados, sin alterar las categorías. */
+.reparado-contact-links{display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:center;margin:12px auto 5px}
+.reparado-contact-links a{display:inline-flex;align-items:center;gap:5px;border:1px solid #eedfd8;border-radius:999px;padding:8px 12px;font-size:12px;font-weight:700;background:#fff;color:#934d30;text-decoration:none;line-height:1.4}
+.reparado-contact-links a:hover{text-decoration:underline}
+.reparado-contact-links a:focus-visible{outline:3px solid #2b83d0;outline-offset:3px}
+.reparado-help{border:1px solid #e6e8ee;border-radius:16px;background:#fff;padding:15px;margin-top:16px}
+.reparado-help h3{margin:0 0 8px;color:#26364c}
+.reparado-help .reparado-contact-links{justify-content:flex-start}
+@media(max-width:460px){.reparado-contact-links{flex-direction:column;align-items:stretch}.reparado-contact-links a{justify-content:center}}
