@@ -1,6 +1,7 @@
 import {supportHistoryMarkup} from './support-ticket-ui.js';
 import {createPushSessionManager} from './push-session.js';
 import {validateRequestPhotos,getRequestPhotoCount,uploadRequestPhotos} from './request-photos.js';
+import {submitRepairRequest} from './request-submission.js';
 import {contactLinksMarkup} from './contact-emails.js';
 import { mountReviewModeration } from './review-moderation.js';
 import { mountReviews } from './reviews.js';
@@ -314,6 +315,8 @@ export function mountConnected({app, services, supabase, authLinkIntent=null}) {
       }
     });
     const form=main.querySelector('#new-request');
+    const submissionId=crypto.randomUUID();
+    let firstAttemptPayload=null;
     form.addEventListener('submit',async event=>{
       event.preventDefault();
       const button=form.querySelector('[type=submit]');
@@ -333,11 +336,23 @@ export function mountConnected({app, services, supabase, authLinkIntent=null}) {
           preferred_date:fields.get('preferred_date')||null,
           description:String(fields.get('description')).trim()+'\nHorario preferido: '+String(fields.get('preferred_period')||'Indiferente')
         };
-        const {data,error}=await supabase.from('service_requests').insert(payload).select('id').single();
-        if(error || !data?.id)throw new Error('No se ha confirmado el registro de la solicitud');
+        // Si la conexión se corta, repetir la misma operación, no crear otra.
+        // Impedir que un usuario cambie el formulario y reutilice una clave
+        // de un envío previo que pudiera haberse registrado.
+        const payloadText=JSON.stringify(payload);
+        if(firstAttemptPayload!==null&&firstAttemptPayload!==payloadText){
+          message('Has cambiado los datos después de un intento. Revisa Mis solicitudes antes de crear otra.',true);
+          return;
+        }
+        firstAttemptPayload=payloadText;
+        const created=await submitRepairRequest({supabase,payload,submissionId});
+        if(created.error){message(created.error,true);return}
         recorded=true;
-        const photosResult=images.length
-          ?await uploadRequestPhotos({supabase,userId:payload.customer_id,requestId:data.id,files:images})
+        if(!isCurrentUser(payload.customer_id)||main.querySelector('#new-request')!==form)return;
+        // Ante recuperación de un trabajo ya registrado, no repetir fotos:
+        // podrían haberse subido parcialmente. Se completan en Mis solicitudes.
+        const photosResult=images.length&&!created.recovered
+          ?await uploadRequestPhotos({supabase,userId:payload.customer_id,requestId:created.id,files:images})
           :{uploaded:0,failed:0,error:null};
         const failures=photosResult.failed;
         photoUrls.forEach(URL.revokeObjectURL);
@@ -347,7 +362,9 @@ export function mountConnected({app, services, supabase, authLinkIntent=null}) {
         form.remove();
         main.querySelector('.request-screen .card').insertAdjacentHTML('beforeend',
           '<div class="request-confirm"><h2>Solicitud recibida</h2><p>Hemos registrado tu solicitud. Puedes consultar su estado en Mis solicitudes.</p><button type="button" class="primary-cta" data-view="requests">Ver mis solicitudes →</button></div>');
-        message(failures?'La solicitud se guardó, pero '+failures+' fotografía(s) no se pudieron subir.':
+        message(created.recovered?
+          'La solicitud ya estaba registrada. Comprueba sus fotografías en Mis solicitudes y añade las que falten.':
+          failures?'La solicitud se guardó, pero '+failures+' fotografía(s) no se pudieron subir.':
           'Solicitud enviada correctamente.',Boolean(failures));
       }catch{
         message(recorded?
