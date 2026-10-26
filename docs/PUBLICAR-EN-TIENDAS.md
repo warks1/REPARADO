@@ -81,3 +81,18 @@ Una compilación satisfactoria no garantiza la aprobación. Los certificados, pe
 - **Consultas y solicitudes de servicios:** `reparado_clientes@outlook.es`. Este es el buzón comercial. En una app conectada, las solicitudes se registran primero en Supabase; el email automático depende de configurar el worker seguro de `docs/CONFIGURAR-CORREOS.md`.
 - Los enlaces `mailto:` abren el programa de correo del cliente, pero **no envían nada hasta que la persona pulse Enviar**. No afirmar que se ha recibido un aviso mientras no exista un servicio de envío activado y comprobado.
 - La cuenta de Apple Developer ya está disponible; **Google Play Console todavía no**. Alta oficial: https://play.google.com/console/signup (25 USD de pago único, elección de tipo de cuenta y verificación). La cuenta de Google Play deberá crearla el titular con sus credenciales propias, no introducirlas en GitHub.
+
+## Páginas públicas preparadas para las tiendas
+
+Estas páginas estáticas se incluyen en la compilación web de Vite, tanto para GitHub Pages como dentro del paquete Capacitor:
+
+- **Soporte público:** https://warks1.github.io/REPARADO/soporte.html
+- **Solicitud web de eliminación de cuenta:** https://warks1.github.io/REPARADO/eliminar-cuenta.html
+
+El segundo enlace permite iniciar una solicitud de borrado desde un dispositivo sin tener la aplicación instalada; abre el correo de soporte del titular. **No envía ningún mensaje automáticamente**, y requiere que el usuario confirme el envío desde su cliente de correo. El formulario dentro de la aplicación autenticada sigue siendo independiente y registra la petición directamente en Supabase.
+
+Antes de subir a App Store/Google Play: comprobar que las URLs están publicadas, que el buzón tiene respuesta y verificación de titularidad, y que se procesa de verdad la eliminación de todos los datos borrables (cuentas, solicitudes, fotos, chats y reseñas). Revisar jurídicamente plazos de retención y RGPD. Un enlace visible **no sustituye** esta operación real.
+
+Referencias de política de las tiendas: https://developer.apple.com/help/app-review/guideline-reference/5-1-1-account-deletion/ y https://support.google.com/googleplay/android-developer/answer/13327111?hl=es .
+
+Queda pendiente la **política de privacidad definitiva**, que necesita identificación del responsable y información sobre tratamiento y retención; no se han inventado estos datos.
