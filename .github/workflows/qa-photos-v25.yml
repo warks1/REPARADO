@@ -1,0 +1,58 @@
+name: REPARADO V25 · Recuperación de fotos
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'connected.js'
+      - 'request-photos.js'
+      - 'tests/request-photos-v25.test.mjs'
+      - 'tests/request-submit-v24.test.mjs'
+      - 'vivid-theme.css'
+      - '.github/workflows/qa-photos-v25.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'connected.js'
+      - 'request-photos.js'
+      - 'tests/request-photos-v25.test.mjs'
+      - 'tests/request-submit-v24.test.mjs'
+      - 'vivid-theme.css'
+      - '.github/workflows/qa-photos-v25.yml'
+permissions:
+  contents: read
+jobs:
+  app:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: {node-version: '22'}
+      - run: npm install --no-audit --no-fund
+      - run: npm test
+      - run: npm run build
+  storage-security:
+    runs-on: ubuntu-latest
+    timeout-minutes: 14
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: reparado_test
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U postgres -d reparado_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+    env:
+      REPARADO_TEST_DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/reparado_test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.11'}
+      - run: python -m pip install --disable-pip-version-check 'psycopg[binary]>=3.2,<4'
+      - run: python -u tests/supabase-roles-rls.py
+      - run: python -u tests/storage-rls-v12.py
