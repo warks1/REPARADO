@@ -56,8 +56,8 @@ def check_isolation():
         assert {str(row[0]) for row in db.execute(
             'select id from public.service_requests').fetchall()}=={R1}
         assert len(db.execute('select id from public.profiles').fetchall())==1
-        assert db.execute('select count(*) from public.invoices').fetchone()[0]==0
-        # R1 ya completado en la prueba de roles, pero su factura sigue visible.
+        assert db.execute('select count(*) from public.invoices').fetchone()[0]==1
+        # R1 completado, y su factura final sigue visible para el cliente.
         assert db.execute('select count(*) from public.notifications').fetchone()[0]>=1
     with user(C2) as db:
         assert {str(row[0]) for row in db.execute(
