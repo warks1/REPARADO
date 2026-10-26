@@ -1,4 +1,5 @@
 import {supportHistoryMarkup} from './support-ticket-ui.js';
+import {submitSupportIssue,supportIssueFailureMessage} from './support-submission.js';
 import {readOwnDeletionStatus,submitOwnDeletionRequest,ownDeletionLabel} from './account-deletion.js';
 import {createPushSessionManager} from './push-session.js';
 import {validateRequestPhotos,getRequestPhotoCount,uploadRequestPhotos} from './request-photos.js';
@@ -570,9 +571,11 @@ export function mountConnected({app, services, supabase, authLinkIntent=null}) {
       <p data-feedback class="feedback" role="status"></p></section>`;
     main.querySelector('#view-invoices').addEventListener('click',loadInvoices);
     const historyPanel=main.querySelector('#customer-support-history');
+    const supportOwnerId=session.user.id;
+    let historyRequestSeq=0;
     const refreshSupportHistory=async()=>{
-      if(!historyPanel||!session)return;
-      const uid=session.user.id;
+      if(!historyPanel||!isCurrentUser(supportOwnerId)||currentView!=='profile')return;
+      const uid=supportOwnerId,requestSeq=++historyRequestSeq;
       const list=historyPanel.querySelector('[data-support-history-list]');
       const note=historyPanel.querySelector('[data-support-history-status]');
       note.textContent='Consultando incidencias…';
@@ -581,18 +584,19 @@ export function mountConnected({app, services, supabase, authLinkIntent=null}) {
         const {data,error}=await supabase.from('support_reports')
           .select('id,subject,status,created_at')
           .order('created_at',{ascending:false}).limit(15);
-        if(!historyPanel.isConnected||currentView!=='profile'||!session||session.user.id!==uid)return;
+        if(!historyPanel.isConnected||currentView!=='profile'||!isCurrentUser(uid)||requestSeq!==historyRequestSeq)return;
         if(error)throw error;
         list.innerHTML=supportHistoryMarkup(data);
-        note.textContent=(data?.length||0)+' incidencias registradas en esta cuenta.';
+        note.textContent=(data?.length||0)+' incidencias visibles en esta cuenta.';
       }catch{
-        if(historyPanel.isConnected&&currentView==='profile')
+        if(historyPanel.isConnected&&currentView==='profile'&&isCurrentUser(uid)&&requestSeq===historyRequestSeq)
           note.textContent='No se pueden consultar las incidencias. Comprueba la conexión y pulsa Actualizar estados.';
       }
     };
     historyPanel?.querySelector('[data-refresh-support]')?.addEventListener('click',refreshSupportHistory);
     refreshSupportHistory();
     const issueForm=main.querySelector('#reparado-issue-report');
+    let issueReportId=crypto.randomUUID(),previousIssuePayload=null;
     issueForm.addEventListener('submit',async event=>{
       event.preventDefault();
       if(!session?.user?.id)return;
@@ -607,22 +611,36 @@ export function mountConnected({app, services, supabase, authLinkIntent=null}) {
       }
       if(button.disabled)return;
       const userId=session.user.id;
+      if(!isCurrentUser(supportOwnerId))return;
+      const payloadSnapshot=JSON.stringify({subject,description,context});
+      if(previousIssuePayload!==null&&previousIssuePayload!==payloadSnapshot){
+        feedback.textContent='Has modificado la incidencia después de un intento. Consulta Mis incidencias antes de enviar una nueva.';
+        return;
+      }
+      previousIssuePayload=payloadSnapshot;
       button.disabled=true;
       feedback.textContent='Registrando tu incidencia…';
       try{
-        const {error}=await supabase.from('support_reports').insert({
-          user_id:userId,subject,description,context
+        const result=await submitSupportIssue({
+          supabase,userId,subject,description,context,reportId:issueReportId
         });
-        if(!feedback.isConnected||!session||session.user.id!==userId)return;
-        if(error){
-          feedback.textContent='No hemos podido registrar la incidencia. Escríbenos a reparado_soporte@outlook.es.';
+        if(!feedback.isConnected||!isCurrentUser(userId)||currentView!=='profile')return;
+        if(!result.ok){
+          feedback.textContent=supportIssueFailureMessage(result.code);
+          // Permitir corregir/redactar otra incidencia cuando es un límite confirmado.
+          if(result.code==='limit'){previousIssuePayload=null;issueReportId=crypto.randomUUID();}
         }else{
-          feedback.textContent='Incidencia registrada. El equipo podrá revisarla desde el panel privado.';
+          feedback.textContent=result.recovered?
+            'La incidencia ya estaba registrada; la hemos recuperado. Consulta su estado en Mis incidencias.':
+            'Incidencia registrada. El equipo podrá revisarla desde el panel privado.';
           issueForm.reset();
-          refreshSupportHistory();
+          previousIssuePayload=null;
+          issueReportId=crypto.randomUUID();
+          void refreshSupportHistory();
         }
       }catch{
-        if(feedback.isConnected)feedback.textContent='No se ha podido conectar. Puedes utilizar el correo de soporte.';
+        if(feedback.isConnected&&isCurrentUser(userId)&&currentView==='profile')
+          feedback.textContent='No se pudo confirmar el registro. Consulta Mis incidencias antes de reintentar.';
       }finally{if(button.isConnected)button.disabled=false;}
     });
 
@@ -790,12 +808,14 @@ export function mountConnected({app, services, supabase, authLinkIntent=null}) {
     const root=main.querySelector('#reparado-support-admin'),status=root.querySelector('[data-issues-status]'),list=root.querySelector('[data-issues-list]');
     const adminUserId=session.user.id;
     const available=()=>root.isConnected&&currentView==='support-admin'&&isCurrentUser(adminUserId)&&profile?.role==='admin';
+    let refreshSeq=0;
     async function refresh(){
+      const seq=++refreshSeq;
       try{
         const {data,error}=await supabase.from('support_reports')
           .select('id,subject,description,context,status,created_at')
           .in('status',['open','reviewing']).order('created_at',{ascending:false}).limit(100);
-        if(!available())return;
+        if(!available()||seq!==refreshSeq)return;
         if(error)throw error;
         status.textContent=(data?.length||0)+' incidencias abiertas o en revisión.';
         list.innerHTML=(data||[]).map(item=>'<article class="support-ticket" data-support-ticket="'+esc(item.id)+'">'+
@@ -804,14 +824,18 @@ export function mountConnected({app, services, supabase, authLinkIntent=null}) {
           '<div class="flex-actions"><button type="button" data-support-status="reviewing" data-ticket-id="'+esc(item.id)+'">En revisión</button>'+
           '<button type="button" data-support-status="resolved" data-ticket-id="'+esc(item.id)+'">Marcar resuelta</button></div></article>').join('')||
           '<p>No hay incidencias pendientes.</p>';
-      }catch{if(available())status.textContent='No se pueden cargar las incidencias. Revisa conexión y permisos.';}
+      }catch{if(available()&&seq===refreshSeq)status.textContent='No se pueden cargar las incidencias. Revisa conexión y permisos.';}
     }
+    const savingReports=new Set();
     root.addEventListener('click',async event=>{
       const b=event.target.closest('[data-support-status]');
       if(!b||b.disabled||!available())return;
       const next=b.dataset.supportStatus,id=b.dataset.ticketId;
-      if(!['reviewing','resolved'].includes(next)||!list.querySelector('[data-support-ticket="'+CSS.escape(id)+'"]'))return;
-      b.disabled=true;
+      if(!['reviewing','resolved'].includes(next)||!list.querySelector('[data-support-ticket="'+CSS.escape(id)+'"]')||savingReports.has(id))return;
+      savingReports.add(id);
+      const reportCard=list.querySelector('[data-support-ticket="'+CSS.escape(id)+'"]');
+      const buttons=[...reportCard.querySelectorAll('[data-support-status]')];
+      for(const button of buttons)button.disabled=true;
       try{
         const {data,error}=await supabase.from('support_reports').update({status:next})
           .eq('id',id).in('status',['open','reviewing']).select('id,status');
@@ -819,7 +843,10 @@ export function mountConnected({app, services, supabase, authLinkIntent=null}) {
         if(error||!data?.length){status.textContent='No se pudo cambiar el estado. Actualiza la pantalla.';return;}
         await refresh();
       }catch{if(available())status.textContent='No se ha podido guardar el cambio.';}
-      finally{if(b.isConnected)b.disabled=false;}
+      finally{
+        savingReports.delete(id);
+        for(const button of buttons)if(button.isConnected)button.disabled=false;
+      }
     });
     await refresh();
   }
