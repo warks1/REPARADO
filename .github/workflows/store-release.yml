@@ -108,6 +108,8 @@ jobs:
       APPLE_P12_BASE64: ${{ secrets.REPARADO_APPLE_DISTRIBUTION_P12_BASE64 }}
       APPLE_P12_PASSWORD: ${{ secrets.REPARADO_APPLE_DISTRIBUTION_P12_PASSWORD }}
       APPLE_PROFILE_BASE64: ${{ secrets.REPARADO_APPLE_PROFILE_BASE64 }}
+      REPARADO_VERSION_NAME: ${{ inputs.version }}
+      REPARADO_BUILD_NUMBER: ${{ inputs.compilacion }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -117,8 +119,8 @@ jobs:
         run: |
           set -euo pipefail
           node scripts/store-preflight.mjs
-          [[ "${{ inputs.compilacion }}" =~ ^[1-9][0-9]*$ ]] || { echo 'Número de compilación inválido'; exit 1; }
-          [[ "${{ inputs.version }}" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo 'Versión inválida'; exit 1; }
+          [[ "$REPARADO_BUILD_NUMBER" =~ ^[1-9][0-9]*$ ]] || { echo 'Número de compilación inválido'; exit 1; }
+          [[ "$REPARADO_VERSION_NAME" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo 'Versión inválida'; exit 1; }
           test -n "$APPLE_TEAM_ID" && test -n "$APPLE_P12_BASE64" && test -n "$APPLE_P12_PASSWORD" && test -n "$APPLE_PROFILE_BASE64" || { echo 'Falta firma o provisioning profile de Apple'; exit 1; }
           xcodebuild -version
       - name: Instalar, probar y compilar aplicación
@@ -154,7 +156,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          xcodebuild archive -project ios/App/App.xcodeproj -scheme App -configuration Release -destination 'generic/platform=iOS' -archivePath "$RUNNER_TEMP/Reparado.xcarchive" DEVELOPMENT_TEAM="$APPLE_TEAM_ID" CODE_SIGN_STYLE=Manual PROVISIONING_PROFILE_SPECIFIER="$PROFILE_NAME" CODE_SIGN_IDENTITY="Apple Distribution" MARKETING_VERSION="${{ inputs.version }}" CURRENT_PROJECT_VERSION="${{ inputs.compilacion }}"
+          xcodebuild archive -project ios/App/App.xcodeproj -scheme App -configuration Release -destination 'generic/platform=iOS' -archivePath "$RUNNER_TEMP/Reparado.xcarchive" DEVELOPMENT_TEAM="$APPLE_TEAM_ID" CODE_SIGN_STYLE=Manual PROVISIONING_PROFILE_SPECIFIER="$PROFILE_NAME" CODE_SIGN_IDENTITY="Apple Distribution" MARKETING_VERSION="$REPARADO_VERSION_NAME" CURRENT_PROJECT_VERSION="$REPARADO_BUILD_NUMBER"
           cat > "$RUNNER_TEMP/ExportOptions.plist" <<EOF
           <?xml version="1.0" encoding="UTF-8"?>
           <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
