@@ -20,7 +20,10 @@ test('V34: deshabilitar endpoint heredado que permitía aceptar sin cantidad',()
  assert.match(sql,/p_expected_price numeric/);
 });
 test('V34: estado aceptado no permite alterar importe ni fingir aceptación admin',()=>{
- assert.match(sql,/old\.status::text in \('accepted','scheduled','in_progress','completed'\)/);
+ assert.match(sql,/old\.status::text in \('accepted','scheduled','in_progress','completed','cancelled'\)/);
+ assert.match(sql,/REPARADO_QUOTE_MUST_BE_ACCEPTED_FIRST/);
+ assert.match(sql,/REPARADO_ACCEPTED_QUOTE_CANNOT_REOPEN/);
+ assert.match(sql,/and old\.status::text not in \('accepted','scheduled','in_progress','completed'\)/);
  assert.match(sql,/new\.price is distinct from old\.price/);
  assert.match(sql,/REPARADO_ACCEPTED_QUOTE_PRICE_LOCKED/);
  assert.match(sql,/REPARADO_ACCEPTANCE_REQUIRES_CUSTOMER/);
