@@ -88,15 +88,16 @@ with connect() as db:
        "unrelated-bucket",f"{C1}/{R1}/otra-imagen.webp"))
     assert db.execute("select public from storage.buckets where id=%s",(B,)).fetchone()[0] is False
 
-# Regresión que reproduce el problema anterior: un nombre con carpeta
-# propiedad de C1 permitía consultar metadatos de otra solicitud.
+# Una instalación nueva debe ser privada desde el primer SQL, incluso
+# antes de ejecutar migraciones. Rutas huérfanas o incoherentes no se filtran.
 with acting_as(C1) as db:
-    leaked=names(db)
-    assert spoof_c1 in leaked and orphan in leaked and extra in leaked,leaked
-print("V12: vulnerabilidad de rutas históricas reproducida con objetos ficticios",flush=True)
+    assert names(db)=={valid_c1},names(db)
+print("V12: instalación nueva no expone fotos ajenas ni rutas incoherentes",flush=True)
 
 with connect() as db:
     db.execute((ROOT/"supabase/migration-v12.sql").read_text(encoding="utf8"))
+    # Reejecutar la configuración básica nunca debe relajar V12.
+    db.execute((ROOT/"supabase/storage-photos.sql").read_text(encoding="utf8"))
     # Confirmar que no se modificaron ni eliminaron objetos ficticios.
     assert db.execute("select count(*) from storage.objects").fetchone()[0]==7
     policies=db.execute("""select policyname from pg_policies
