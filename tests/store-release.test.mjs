@@ -50,7 +50,10 @@ test('el cliente incluye el mecanismo de solicitud de borrado',()=>{
  const code=readFileSync(new URL('../connected.js',import.meta.url),'utf8');
  const sql=readFileSync(new URL('../supabase/migration-store-account-deletion.sql',import.meta.url),'utf8');
  assert.ok(code.includes('request-account-deletion'));
- assert.ok(code.includes(".from('account_deletion_requests').insert({user_id:userId})"));
+ const deletion=readFileSync(new URL('../account-deletion.js',import.meta.url),'utf8');
+ assert.ok(code.includes('submitOwnDeletionRequest(supabase,deletionOwnerId)'));
+ assert.ok(deletion.includes(".from('account_deletion_requests').insert({user_id:userId})"));
+ assert.ok(deletion.includes("readOwnDeletionStatus(supabase)"));
  assert.ok(sql.includes('enable row level security'));
  assert.ok(sql.includes('grant insert(user_id)'));
  assert.ok(sql.includes('user_id=(select auth.uid())'));
