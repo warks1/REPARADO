@@ -461,7 +461,7 @@ export function mountConnected({app, services, supabase, authLinkIntent=null}) {
       if(!confirmed)return;
       button.disabled=true;
       try{
-        const {data:accepted,error}=await supabase.rpc('accept_reparado_quote',{p_request_id:button.dataset.acceptQuote});
+        const {data:accepted,error}=await supabase.rpc('accept_reparado_quote',{p_request_id:button.dataset.acceptQuote,p_expected_price:valid.total});
         if(!isCurrentUser(quoteUserId)||currentView!=='requests'||!button.isConnected)return;
         if(error)throw error;
         if(!accepted){message('Este presupuesto ya no está disponible. Actualiza la solicitud.',true);return}
@@ -1065,6 +1065,10 @@ export function mountConnected({app, services, supabase, authLinkIntent=null}) {
         // guardando en paralelo. No anunciar cambios cuando el servidor falla.
         if(error.code==='23P01'||error.message?.includes('REPARADO_SCHEDULE_CONFLICT'))
           return message('No se ha programado: otro administrador acaba de reservar una visita de ese operario a menos de 60 minutos. Actualiza el panel y elige otra hora.',true);
+        if(error.code==='23514' && error.message?.includes('REPARADO_ACCEPTED_QUOTE_PRICE_LOCKED'))
+          return message('No puedes cambiar el importe de un presupuesto ya aceptado. Si debes cambiarlo, vuelve a dejarlo en Presupuestado y solicita una nueva aceptación al cliente.',true);
+        if(error.code==='23514' && error.message?.includes('REPARADO_ACCEPTANCE_REQUIRES_CUSTOMER'))
+          return message('Solo el cliente puede aceptar su presupuesto. Selecciona Presupuestado y espera su confirmación.',true);
         if(error.message?.includes('REPARADO_SCHEDULE_OPERATOR_REQUIRED')||
            error.message?.includes('REPARADO_SCHEDULE_INVALID_OPERATOR'))
           return message('No se ha guardado: revisa el operario y la fecha de la visita.',true);
