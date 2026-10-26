@@ -1,4 +1,5 @@
 import {supportHistoryMarkup} from './support-ticket-ui.js';
+import {readOwnDeletionStatus,submitOwnDeletionRequest,ownDeletionLabel} from './account-deletion.js';
 import {createPushSessionManager} from './push-session.js';
 import {validateRequestPhotos,getRequestPhotoCount,uploadRequestPhotos} from './request-photos.js';
 import {submitRepairRequest} from './request-submission.js';
@@ -563,6 +564,7 @@ export function mountConnected({app, services, supabase, authLinkIntent=null}) {
         <h3>Privacidad de la cuenta</h3>
         <p>Puedes solicitar la eliminación de tu cuenta y de tus datos personales, salvo aquellos que debamos conservar por obligación legal.</p>
         <button type="button" id="request-account-deletion">Solicitar eliminación de mi cuenta</button>
+        <button type="button" id="refresh-account-deletion-status">Consultar estado</button>
         <p id="account-deletion-status" role="status" aria-live="polite"></p>
       </section>
       <p data-feedback class="feedback" role="status"></p></section>`;
@@ -625,40 +627,67 @@ export function mountConnected({app, services, supabase, authLinkIntent=null}) {
     });
 
     const deletionButton=main.querySelector('#request-account-deletion');
+    const deletionRefresh=main.querySelector('#refresh-account-deletion-status');
     const deletionStatus=main.querySelector('#account-deletion-status');
+    const deletionOwnerId=session.user.id;
+    const ownDeletionScreen=()=>deletionStatus.isConnected&&
+      currentView==='profile'&&isCurrentUser(deletionOwnerId);
+    let deletionLoading=false,deletionSaving=false,deletionVerified=false,deletionExists=false;
+    const refreshDeletionControls=()=>{
+      if(!ownDeletionScreen())return;
+      deletionRefresh.disabled=deletionLoading||deletionSaving;
+      deletionButton.disabled=deletionLoading||deletionSaving||!deletionVerified||deletionExists;
+    };
     const renderDeletionStatus=async()=>{
-      if(!session)return;
-      const expected=session.user.id;
-      const {data,error}=await supabase.from('account_deletion_requests')
-        .select('id,status,requested_at').maybeSingle();
-      if(!deletionStatus.isConnected || !session || session.user.id!==expected)return;
-      if(error){
-        deletionStatus.textContent='No se puede consultar el estado de eliminación en este momento.';
-      }else if(data){
-        deletionButton.disabled=true;
-        deletionStatus.textContent='Solicitud registrada. Estado: '+(
-          data.status==='in_review'?'En revisión':data.status==='completed'?'Completada':'Recibida'
-        )+'.';
+      if(!ownDeletionScreen()||deletionLoading||deletionSaving)return;
+      deletionLoading=true;
+      refreshDeletionControls();
+      deletionStatus.textContent='Consultando estado de eliminación…';
+      try{
+        const result=await readOwnDeletionStatus(supabase);
+        if(!ownDeletionScreen())return;
+        deletionVerified=result.ok;
+        deletionExists=Boolean(result.request);
+        deletionStatus.textContent=result.ok?ownDeletionLabel(result.request):
+          'No se pudo comprobar el estado. Comprueba la conexión y pulsa Consultar estado.';
+      }finally{
+        deletionLoading=false;
+        refreshDeletionControls();
       }
     };
+    deletionRefresh.addEventListener('click',renderDeletionStatus);
     deletionButton.addEventListener('click',async()=>{
-      if(!session || deletionButton.disabled)return;
+      if(!ownDeletionScreen()||deletionButton.disabled||!deletionVerified||deletionExists)return;
       if(!window.confirm('¿Solicitar la eliminación de tu cuenta y tus datos personales? Algunos documentos fiscales deben conservarse por ley. La tramitación no es inmediata.'))return;
-      const userId=session.user.id;
-      deletionButton.disabled=true;
+      deletionSaving=true;
+      refreshDeletionControls();
       deletionStatus.textContent='Registrando tu solicitud…';
       try{
-        const {error}=await supabase.from('account_deletion_requests').insert({user_id:userId});
-        if(error && error.code!=='23505')throw error;
-        deletionStatus.textContent='Solicitud recibida. El equipo revisará la eliminación y te comunicará su finalización.';
+        const result=await submitOwnDeletionRequest(supabase,deletionOwnerId);
+        if(!ownDeletionScreen())return;
+        if(result.ok){
+          deletionVerified=true;
+          deletionExists=true;
+          deletionStatus.textContent=ownDeletionLabel(result.request)+
+            ' El equipo revisará la eliminación y te comunicará su finalización.';
+        }else{
+          // Si la respuesta se perdió, NO declarar registro confirmado.
+          // Obligar a consultar el estado antes de otra solicitud.
+          deletionVerified=false;
+          deletionStatus.textContent='No se pudo confirmar el registro. Pulsa Consultar estado antes de volver a solicitarlo.';
+        }
       }catch{
-        deletionButton.disabled=false;
-        deletionStatus.textContent='No se pudo registrar la solicitud. Inténtalo de nuevo.';
+        if(ownDeletionScreen()){
+          deletionVerified=false;
+          deletionStatus.textContent='No se pudo comprobar el registro. Pulsa Consultar estado antes de reintentar.';
+        }
+      }finally{
+        deletionSaving=false;
+        refreshDeletionControls();
       }
     });
-    renderDeletionStatus().catch(()=>{
-      if(deletionStatus.isConnected)deletionStatus.textContent='No se puede consultar el estado en este momento.';
-    });
+    refreshDeletionControls();
+    void renderDeletionStatus();
     main.querySelector('#profile-form').addEventListener('submit',async event=>{
       event.preventDefault();
       const fields=new FormData(event.currentTarget);
