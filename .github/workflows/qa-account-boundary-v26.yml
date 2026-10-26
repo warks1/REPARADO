@@ -1,0 +1,27 @@
+name: REPARADO V26 · Privacidad entre cuentas y recuperación de red
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'connected.js'
+      - 'tests/session-privacy-v26.test.mjs'
+      - '.github/workflows/qa-account-boundary-v26.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'connected.js'
+      - 'tests/session-privacy-v26.test.mjs'
+      - '.github/workflows/qa-account-boundary-v26.yml'
+permissions:
+  contents: read
+jobs:
+  privacy-and-build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: {node-version: '22'}
+      - run: npm install --no-audit --no-fund
+      - run: npm test
+      - run: npm run build
