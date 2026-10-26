@@ -342,6 +342,8 @@ export function mountConnected({app, services, supabase, authLinkIntent=null}) {
         const failures=photosResult.failed;
         photoUrls.forEach(URL.revokeObjectURL);
         photoUrls=[];
+        // Una respuesta de A no debe reescribir la pantalla de B.
+        if(!isCurrentUser(payload.customer_id)||main.querySelector('#new-request')!==form)return;
         form.remove();
         main.querySelector('.request-screen .card').insertAdjacentHTML('beforeend',
           '<div class="request-confirm"><h2>Solicitud recibida</h2><p>Hemos registrado tu solicitud. Puedes consultar su estado en Mis solicitudes.</p><button type="button" class="primary-cta" data-view="requests">Ver mis solicitudes →</button></div>');
@@ -389,14 +391,14 @@ export function mountConnected({app, services, supabase, authLinkIntent=null}) {
         if(validation){feedback.textContent=validation;return}
         feedback.textContent='Subiendo fotografías…';
         const result=await uploadRequestPhotos({supabase,userId:uid,requestId,files:selected,existing});
-        if(!input.isConnected||currentView!=='requests')return;
+        if(!input.isConnected||currentView!=='requests'||!isCurrentUser(uid))return;
         feedback.textContent=result.error||(
           result.failed
             ?result.uploaded+' fotos añadidas; '+result.failed+' no se pudieron subir. Puedes reintentarlo.'
             :result.uploaded+' fotografías añadidas correctamente.'
         );
       }catch{
-        if(input.isConnected && currentView==='requests')
+        if(input.isConnected && currentView==='requests' && isCurrentUser(uid))
           feedback.textContent='No se pudieron comprobar o adjuntar las fotografías. Revisa la conexión antes de reintentar.';
       }finally{input.value='';input.disabled=false}
     }));
@@ -423,7 +425,7 @@ export function mountConnected({app, services, supabase, authLinkIntent=null}) {
         }
         if(!out.children.length)out.textContent='No hay fotos disponibles.';
       }catch{
-        if(out.isConnected&&currentView==='requests')
+        if(out.isConnected&&currentView==='requests'&&isCurrentUser(uid))
           out.textContent='No se pudieron consultar las fotos. Comprueba la conexión y vuelve a intentarlo.';
       }finally{button.disabled=false}
     }));
@@ -432,18 +434,22 @@ export function mountConnected({app, services, supabase, authLinkIntent=null}) {
       const total=Number(button.dataset.acceptTotal);
       const valid=vatIncluded(total);
       if(!valid){message('No se pudo verificar el importe. Actualiza la solicitud.',true);return;}
+      const quoteUserId=session?.user?.id;
+      if(!quoteUserId)return;
       const confirmed=window.confirm('¿Confirmas que aceptas el presupuesto de '+money(valid.total)+
         ' (IVA del 21 % incluido) para esta reparación? Esta acción se registrará en Reparado.');
       if(!confirmed)return;
       button.disabled=true;
       try{
         const {data:accepted,error}=await supabase.rpc('accept_reparado_quote',{p_request_id:button.dataset.acceptQuote});
+        if(!isCurrentUser(quoteUserId)||currentView!=='requests'||!button.isConnected)return;
         if(error)throw error;
         if(!accepted){message('Este presupuesto ya no está disponible. Actualiza la solicitud.',true);return}
         await loadRequests();
         message('Presupuesto aceptado. Reparado podrá programar la visita.');
       }catch{
-        message('No se pudo confirmar la aceptación. Revisa Mis solicitudes antes de volver a intentarlo.',true);
+        if(isCurrentUser(quoteUserId)&&currentView==='requests'&&button.isConnected)
+          message('No se pudo confirmar la aceptación. Revisa Mis solicitudes antes de volver a intentarlo.',true);
       }finally{if(button.isConnected)button.disabled=false}
     }));
   }
@@ -474,16 +480,19 @@ export function mountConnected({app, services, supabase, authLinkIntent=null}) {
     if(form)form.addEventListener('submit',async e=>{
       e.preventDefault();
       const body=String(new FormData(form).get('body')||'').trim();
-      if(!body)return;
+      const authorId=session?.user?.id;
+      if(!body||!authorId)return;
       const button=form.querySelector('[type=submit]');
       if(button.disabled)return;
       button.disabled=true;
       try{
-        const {error}=await supabase.from('messages').insert({customer_id:session.user.id,sender_id:session.user.id,body});
+        const {error}=await supabase.from('messages').insert({customer_id:authorId,sender_id:authorId,body});
+        if(!isCurrentUser(authorId)||!form.isConnected||currentView!=='chat')return;
         if(error)throw error;
         await loadChat();
       }catch{
-        message('No se pudo confirmar el envío. Revisa el chat antes de reintentar.',true);
+        if(isCurrentUser(authorId)&&form.isConnected&&currentView==='chat')
+          message('No se pudo confirmar el envío. Revisa el chat antes de reintentar.',true);
       }finally{button.disabled=false}
     });
   }
