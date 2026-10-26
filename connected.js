@@ -25,6 +25,9 @@ export function mountConnected({app, services, supabase, authLinkIntent=null}) {
   const validStatus = Object.keys(statusLabels);
   let session=null, profile=null, currentView='home', adminFilter='all', lastCategory=null, pendingService=null, pendingView=null;
   let passwordSetupPending=authLinkIntent==='invite'||authLinkIntent==='recovery';
+  // Cada lectura asíncrona queda asociada a la sesión y a su pantalla original.
+  let authEpoch=0;
+  const isCurrentUser=(userId)=>Boolean(userId && session?.user?.id===userId);
   const pushManager=createPushSessionManager({
     supabase,Capacitor,PushNotifications,
     onError:()=>console.warn('REPARADO: registro seguro de notificaciones no disponible')
@@ -218,11 +221,23 @@ export function mountConnected({app, services, supabase, authLinkIntent=null}) {
     });
   }
   async function boot(){
+    const epoch=++authEpoch;
     const {data,error}=await supabase.auth.getSession();
+    if(epoch!==authEpoch)return;
     if(error || !data?.session){session=null;profile=null;renderHome();return}
+    const userId=data.session.user.id;
     session=data.session;
     if(passwordSetupPending){showPasswordSetup();return}
-    const result=await supabase.from('profiles').select('id,full_name,phone,role').eq('id',session.user.id).maybeSingle();
+    const result=await supabase.from('profiles').select('id,full_name,phone,role').eq('id',userId).maybeSingle();
+    if(epoch!==authEpoch || !isCurrentUser(userId))return;
+    if(result.error){
+      profile=null;renderHome();
+      const note=document.createElement('p');
+      note.className='notice';
+      note.textContent='No se pudo cargar tu perfil. Comprueba la conexión antes de utilizar las funciones privadas.';
+      main.prepend(note);
+      return;
+    }
     profile=result.data || {role:'customer',full_name:''};
     app.querySelector('#logout').classList.add('hidden');
     const avatar=app.querySelector('.round-profile');
@@ -327,6 +342,8 @@ export function mountConnected({app, services, supabase, authLinkIntent=null}) {
         const failures=photosResult.failed;
         photoUrls.forEach(URL.revokeObjectURL);
         photoUrls=[];
+        // Una respuesta de A no debe reescribir la pantalla de B.
+        if(!isCurrentUser(payload.customer_id)||main.querySelector('#new-request')!==form)return;
         form.remove();
         main.querySelector('.request-screen .card').insertAdjacentHTML('beforeend',
           '<div class="request-confirm"><h2>Solicitud recibida</h2><p>Hemos registrado tu solicitud. Puedes consultar su estado en Mis solicitudes.</p><button type="button" class="primary-cta" data-view="requests">Ver mis solicitudes →</button></div>');
@@ -344,11 +361,13 @@ export function mountConnected({app, services, supabase, authLinkIntent=null}) {
   async function loadRequests(){
     setActiveNav(app,'requests');
     currentView='requests';main.innerHTML=`<section class="card">${backButton}<h2>Mis solicitudes</h2><p>Cargando…</p></section>`;
+    const userId=session?.user?.id, loadingScreen=main.firstElementChild;
+    if(!userId)return showLogin();
     let data,error;
     try{
-      ({data,error}=await supabase.from('service_requests').select('id,service_name,status,price,street,address_number,city,preferred_date,scheduled_at,operator_name').eq('customer_id',session.user.id).order('created_at',{ascending:false}));
+      ({data,error}=await supabase.from('service_requests').select('id,service_name,status,price,street,address_number,city,preferred_date,scheduled_at,operator_name').eq('customer_id',userId).order('created_at',{ascending:false}));
     }catch{error=new Error('No se pudieron cargar tus solicitudes. Comprueba la conexión.');}
-    if(currentView!=='requests')return;
+    if(currentView!=='requests'||!isCurrentUser(userId)||main.firstElementChild!==loadingScreen)return;
     if(error){main.innerHTML=`<section class="card">${backButton}<h2>Mis solicitudes</h2><p>No se pudieron cargar tus solicitudes. Comprueba la conexión.</p><button type="button" data-view="requests">Reintentar</button></section>`;return}
     main.innerHTML=`<section class="card">${backButton}<h2>Mis solicitudes</h2><p data-feedback class="feedback" role="status"></p>${data?.length?data.map(r=>`<article class="request"><strong>${esc(r.service_name)}</strong><span>${esc(statusLabels[r.status]||r.status)}</span><p>${esc(r.street)}, ${esc(r.address_number)} · ${esc(r.city)}</p>${staffProgressMarkup(r.status)}${r.price!=null?`<p>Importe confirmado: <b>${money(r.price)}</b> (IVA incluido)</p>`:''}<small>${r.scheduled_at?'Visita: '+esc(safeTime(r.scheduled_at)):'Fecha preferida: '+esc(r.preferred_date||'No indicada')}</small><div class="flex-actions"><button type="button" data-customer-photos="${esc(r.id)}">📷 Mis fotos</button></div><div class="request-photo-retry"><label>Añadir fotografías a esta solicitud (máximo 4 en total)<input type="file" data-upload-request-photos="${esc(r.id)}" accept="image/jpeg,image/png,image/webp,image/heic" multiple></label><p role="status" aria-live="polite" data-upload-photo-result="${esc(r.id)}"></p></div>${r.status==="completed"?`<div class="flex-actions"><button type="button" class="customer-review-action" data-rate-request="${esc(r.id)}" aria-label="Valorar ${esc(r.service_name)}">⭐ Valorar este trabajo</button></div>`:""}<div class="photo-links" data-customer-photo-output="${esc(r.id)}"></div>${r.status==="quoted" && r.price!==null ? `<div class="flex-actions"><p class="quote-acceptance-summary">Presupuesto: ${money(r.price)} IVA incluido (21 %). Base: ${money(vatIncluded(r.price).base)} · IVA: ${money(vatIncluded(r.price).vat)}. Revisa el importe antes de aceptarlo.</p><button type="button" data-accept-quote="${esc(r.id)}" data-accept-total="${esc(r.price)}">Aceptar presupuesto de ${money(r.price)}</button></div>` : ""}</article>`).join(''):'<p>Todavía no tienes solicitudes.</p>'}</section>`;
     main.querySelectorAll('[data-rate-request]').forEach(button=>button.addEventListener('click',()=>{
@@ -372,14 +391,14 @@ export function mountConnected({app, services, supabase, authLinkIntent=null}) {
         if(validation){feedback.textContent=validation;return}
         feedback.textContent='Subiendo fotografías…';
         const result=await uploadRequestPhotos({supabase,userId:uid,requestId,files:selected,existing});
-        if(!input.isConnected||currentView!=='requests')return;
+        if(!input.isConnected||currentView!=='requests'||!isCurrentUser(uid))return;
         feedback.textContent=result.error||(
           result.failed
             ?result.uploaded+' fotos añadidas; '+result.failed+' no se pudieron subir. Puedes reintentarlo.'
             :result.uploaded+' fotografías añadidas correctamente.'
         );
       }catch{
-        if(input.isConnected && currentView==='requests')
+        if(input.isConnected && currentView==='requests' && isCurrentUser(uid))
           feedback.textContent='No se pudieron comprobar o adjuntar las fotografías. Revisa la conexión antes de reintentar.';
       }finally{input.value='';input.disabled=false}
     }));
@@ -406,7 +425,7 @@ export function mountConnected({app, services, supabase, authLinkIntent=null}) {
         }
         if(!out.children.length)out.textContent='No hay fotos disponibles.';
       }catch{
-        if(out.isConnected&&currentView==='requests')
+        if(out.isConnected&&currentView==='requests'&&isCurrentUser(uid))
           out.textContent='No se pudieron consultar las fotos. Comprueba la conexión y vuelve a intentarlo.';
       }finally{button.disabled=false}
     }));
@@ -415,54 +434,65 @@ export function mountConnected({app, services, supabase, authLinkIntent=null}) {
       const total=Number(button.dataset.acceptTotal);
       const valid=vatIncluded(total);
       if(!valid){message('No se pudo verificar el importe. Actualiza la solicitud.',true);return;}
+      const quoteUserId=session?.user?.id;
+      if(!quoteUserId)return;
       const confirmed=window.confirm('¿Confirmas que aceptas el presupuesto de '+money(valid.total)+
         ' (IVA del 21 % incluido) para esta reparación? Esta acción se registrará en Reparado.');
       if(!confirmed)return;
       button.disabled=true;
       try{
         const {data:accepted,error}=await supabase.rpc('accept_reparado_quote',{p_request_id:button.dataset.acceptQuote});
+        if(!isCurrentUser(quoteUserId)||currentView!=='requests'||!button.isConnected)return;
         if(error)throw error;
         if(!accepted){message('Este presupuesto ya no está disponible. Actualiza la solicitud.',true);return}
         await loadRequests();
         message('Presupuesto aceptado. Reparado podrá programar la visita.');
       }catch{
-        message('No se pudo confirmar la aceptación. Revisa Mis solicitudes antes de volver a intentarlo.',true);
+        if(isCurrentUser(quoteUserId)&&currentView==='requests'&&button.isConnected)
+          message('No se pudo confirmar la aceptación. Revisa Mis solicitudes antes de volver a intentarlo.',true);
       }finally{if(button.isConnected)button.disabled=false}
     }));
   }
   async function loadAgenda(){
     setActiveNav(app,'agenda');
     currentView='agenda';main.innerHTML=`<section class="card">${backButton}<h2>Mi agenda</h2><p>Cargando…</p></section>`;
+    const userId=session?.user?.id,loadingScreen=main.firstElementChild;
+    if(!userId)return showLogin();
     let data,error;
     try{
-      ({data,error}=await supabase.from('service_requests').select('service_name,scheduled_at,status,operator_name').eq('customer_id',session.user.id).in('status',['scheduled','in_progress']).order('scheduled_at'));
+      ({data,error}=await supabase.from('service_requests').select('service_name,scheduled_at,status,operator_name').eq('customer_id',userId).in('status',['scheduled','in_progress']).order('scheduled_at'));
     }catch{error=new Error('No se pudo cargar la agenda. Comprueba la conexión.');}
-    if(currentView!=='agenda')return;
+    if(currentView!=='agenda'||!isCurrentUser(userId)||main.firstElementChild!==loadingScreen)return;
     main.innerHTML=`<section class="card">${backButton}<h2>Mi agenda</h2>${error?'<p>No se pudo consultar la agenda. Comprueba la conexión.</p><button type="button" data-view="agenda">Reintentar</button>':data?.length?data.map(r=>`<article class="request"><b>${esc(r.service_name)}</b><p>${esc(safeTime(r.scheduled_at))}</p><small>${esc(statusLabels[r.status])} · Operario: ${esc(r.operator_name||'Por asignar')}</small></article>`).join(''):'<p>No hay visitas programadas.</p>'}</section>`;
   }
   async function loadChat(){
     setActiveNav(app,'chat');
     currentView='chat';main.innerHTML=`<section class="card">${backButton}<h2>Chat con Reparado</h2><p>Cargando…</p></section>`;
+    const userId=session?.user?.id,loadingScreen=main.firstElementChild;
+    if(!userId)return showLogin();
     let data,error;
     try{
-      ({data,error}=await supabase.from('messages').select('sender_id,body,created_at').eq('customer_id',session.user.id).order('created_at'));
+      ({data,error}=await supabase.from('messages').select('sender_id,body,created_at').eq('customer_id',userId).order('created_at'));
     }catch{error=new Error('No se pudo cargar el chat. Comprueba la conexión.');}
-    if(currentView!=='chat')return;
+    if(currentView!=='chat'||!isCurrentUser(userId)||main.firstElementChild!==loadingScreen)return;
     main.innerHTML=`<section class="card">${backButton}<h2>Chat con Reparado</h2>${error?'<p>No se pudo abrir el chat. Comprueba la conexión.</p><button type="button" data-view="chat">Reintentar</button>':`<div id="messages">${(data||[]).map(r=>`<p class="${r.sender_id===session.user.id?'me':''}">${esc(r.body)}</p>`).join('')||'<p>Sin mensajes todavía.</p>'}</div><form id="chat-form"><label>Mensaje<input name="body" maxlength="2000" required placeholder="Escribe aquí…"></label><button type="submit">Enviar</button></form><p data-feedback role="status"></p>`}</section>`;
     const form=main.querySelector('#chat-form');
     if(form)form.addEventListener('submit',async e=>{
       e.preventDefault();
       const body=String(new FormData(form).get('body')||'').trim();
-      if(!body)return;
+      const authorId=session?.user?.id;
+      if(!body||!authorId)return;
       const button=form.querySelector('[type=submit]');
       if(button.disabled)return;
       button.disabled=true;
       try{
-        const {error}=await supabase.from('messages').insert({customer_id:session.user.id,sender_id:session.user.id,body});
+        const {error}=await supabase.from('messages').insert({customer_id:authorId,sender_id:authorId,body});
+        if(!isCurrentUser(authorId)||!form.isConnected||currentView!=='chat')return;
         if(error)throw error;
         await loadChat();
       }catch{
-        message('No se pudo confirmar el envío. Revisa el chat antes de reintentar.',true);
+        if(isCurrentUser(authorId)&&form.isConnected&&currentView==='chat')
+          message('No se pudo confirmar el envío. Revisa el chat antes de reintentar.',true);
       }finally{button.disabled=false}
     });
   }
@@ -608,15 +638,27 @@ export function mountConnected({app, services, supabase, authLinkIntent=null}) {
       const full_name=String(fields.get('full_name')||'').trim();
       const phone=String(fields.get('phone')||'').trim();
       if(full_name.length>100 || phone.length>25)return message('Los datos son demasiado largos.',true);
-      const {error}=await supabase.from('profiles').update({full_name,phone}).eq('id',session.user.id);
-      if(error){message('No se pudo guardar: '+error.message,true);return;}
-      profile={...profile,full_name,phone};message('Perfil actualizado.');
+      const userId=session?.user?.id;
+      const profileForm=event.currentTarget;
+      const button=profileForm.querySelector('[type=submit]');
+      if(!userId||button.disabled)return;
+      button.disabled=true;
+      try{
+        const {error}=await supabase.from('profiles').update({full_name,phone}).eq('id',userId);
+        if(!isCurrentUser(userId)||!profileForm.isConnected||currentView!=='profile')return;
+        if(error)throw error;
+        profile={...profile,full_name,phone};message('Perfil actualizado.');
+      }catch{
+        if(isCurrentUser(userId)&&currentView==='profile')
+          message('No se pudo guardar el perfil. Comprueba tu conexión e inténtalo de nuevo.',true);
+      }finally{button.disabled=false}
     });
   }
 
   async function loadStaffChat(customerId, serviceName){
     if(!userIsStaff() || !session)return renderHome();
     currentView='staff-chat';
+    const staffUserId=session.user.id;
     const box=document.createElement('section');
     box.className='card';
     const back=document.createElement('button');
@@ -629,17 +671,23 @@ export function mountConnected({app, services, supabase, authLinkIntent=null}) {
     history.textContent='Cargando mensajes…';
     box.append(back,heading,history);
     main.replaceChildren(box);
-    const result=await supabase.from('messages').select('sender_id,body,created_at')
-      .eq('customer_id',customerId).order('created_at',{ascending:true}).limit(300);
-    if(currentView!=='staff-chat')return;
+    let result;
+    try{
+      result=await supabase.from('messages').select('sender_id,body,created_at')
+        .eq('customer_id',customerId).order('created_at',{ascending:true}).limit(300);
+    }catch{result={error:new Error('Fallo de conexión')};}
+    if(currentView!=='staff-chat'||!isCurrentUser(staffUserId)||!box.isConnected)return;
     history.replaceChildren();
     if(result.error){
-      history.textContent='No se pudieron cargar los mensajes: '+result.error.message;
+      history.textContent='No se pudieron cargar los mensajes. Comprueba la conexión.';
+      const retry=document.createElement('button');
+      retry.type='button';retry.textContent='Reintentar';retry.addEventListener('click',()=>loadStaffChat(customerId,serviceName));
+      box.append(retry);
       return;
     }
     for(const row of result.data||[]){
       const p=document.createElement('p');
-      p.className=row.sender_id===session.user.id?'me':'';
+      p.className=row.sender_id===staffUserId?'me':'';
       p.textContent=row.body;
       history.append(p);
     }
@@ -661,13 +709,19 @@ export function mountConnected({app, services, supabase, authLinkIntent=null}) {
     form.addEventListener('submit',async event=>{
       event.preventDefault();
       const body=input.value.trim();
-      if(!body || !session)return;
+      if(!body||!isCurrentUser(staffUserId)||send.disabled)return;
       send.disabled=true;
-      const {error}=await supabase.from('messages').insert({
-        customer_id:customerId,sender_id:session.user.id,body
-      });
-      if(error){feedback.textContent='No se pudo enviar: '+error.message;send.disabled=false;return}
-      await loadStaffChat(customerId,serviceName);
+      try{
+        const {error}=await supabase.from('messages').insert({
+          customer_id:customerId,sender_id:staffUserId,body
+        });
+        if(!isCurrentUser(staffUserId)||!box.isConnected||currentView!=='staff-chat')return;
+        if(error)throw error;
+        await loadStaffChat(customerId,serviceName);
+      }catch{
+        if(isCurrentUser(staffUserId)&&box.isConnected)
+          feedback.textContent='No se pudo confirmar el mensaje. Revisa el chat antes de reenviarlo.';
+      }finally{send.disabled=false}
     });
   }
 
@@ -678,7 +732,8 @@ export function mountConnected({app, services, supabase, authLinkIntent=null}) {
       '<h2>Incidencias de clientes</h2><p class="notice">Solo administración. Los detalles son privados; no los envíes por correo ni los compartas fuera del panel.</p>'+
       '<p data-issues-status role="status">Cargando…</p><div data-issues-list></div></section>';
     const root=main.querySelector('#reparado-support-admin'),status=root.querySelector('[data-issues-status]'),list=root.querySelector('[data-issues-list]');
-    const available=()=>root.isConnected&&currentView==='support-admin'&&session&&profile?.role==='admin';
+    const adminUserId=session.user.id;
+    const available=()=>root.isConnected&&currentView==='support-admin'&&isCurrentUser(adminUserId)&&profile?.role==='admin';
     async function refresh(){
       try{
         const {data,error}=await supabase.from('support_reports')
@@ -734,17 +789,25 @@ export function mountConnected({app, services, supabase, authLinkIntent=null}) {
     currentView='admin';adminFilter=filter;
     main.innerHTML=`<section class="card">${backButton}<h2>Panel interno</h2><p>Cargando solicitudes…</p></section>`;
     const admin=profile?.role==='admin';
+    const staffUserId=session.user.id, loadingScreen=main.firstElementChild;
     const baseJobs=supabase.from('service_requests')
       .select('id,customer_id,service_name,street,address_number,city,phone,description,status,scheduled_at,operator_id,operator_name,price')
       .order('created_at',{ascending:false}).limit(150);
-    const [jobs,team]=await Promise.all([
-      admin ? baseJobs : baseJobs.eq('operator_id',session.user.id),
-      admin ? supabase.from('profiles').select('id,full_name,role').eq('role','operator') : Promise.resolve({data:[],error:null})
-    ]);
-    if(currentView!=='admin')return;
-    if(jobs.error){main.innerHTML=`<section class="card">${backButton}<h2>Panel interno</h2><p>${esc(jobs.error.message)}</p></section>`;return}
+    let jobs,team;
+    try{
+      [jobs,team]=await Promise.all([
+        admin ? baseJobs : baseJobs.eq('operator_id',staffUserId),
+        admin ? supabase.from('profiles').select('id,full_name,role').eq('role','operator') : Promise.resolve({data:[],error:null})
+      ]);
+    }catch{jobs={data:null,error:new Error('Error de conexión')};team={data:[],error:null};}
+    if(currentView!=='admin'||!isCurrentUser(staffUserId)||main.firstElementChild!==loadingScreen)return;
+    if(jobs.error){
+      main.innerHTML=`<section class="card">${backButton}<h2>Panel interno</h2><p>No se pudieron cargar los trabajos. Comprueba la conexión.</p><button type="button" data-reload-staff>Reintentar</button></section>`;
+      main.querySelector('[data-reload-staff]')?.addEventListener('click',()=>renderAdmin(filter));
+      return;
+    }
     if(admin && team.error){
-      main.innerHTML=`<section class="card">${backButton}<h2>Panel interno</h2><p>No se pudo consultar el personal. No se permiten asignaciones hasta recuperar la lista de operarios.</p><p>${esc(team.error.message)}</p><button type="button" data-reload-staff>Reintentar</button></section>`;
+      main.innerHTML=`<section class="card">${backButton}<h2>Panel interno</h2><p>No se pudo consultar el personal. No se permiten asignaciones hasta recuperar la lista de operarios.</p><button type="button" data-reload-staff>Reintentar</button></section>`;
       main.querySelector('[data-reload-staff]')?.addEventListener('click',()=>renderAdmin(filter));
       return;
     }
@@ -850,8 +913,14 @@ export function mountConnected({app, services, supabase, authLinkIntent=null}) {
         });
       });
     }
+    const staffSaves=new Set();
     main.querySelectorAll('form[data-job-id]').forEach(form=>form.addEventListener('submit',async e=>{
       e.preventDefault();
+      const jobId=form.dataset.jobId,saveButton=form.querySelector('[type=submit]');
+      if(!isCurrentUser(staffUserId)||!form.isConnected||staffSaves.has(jobId))return;
+      staffSaves.add(jobId);
+      if(saveButton)saveButton.disabled=true;
+      try{
       const fields=new FormData(form);
       const status=String(fields.get('status'));
       if(!admin){
@@ -859,8 +928,9 @@ export function mountConnected({app, services, supabase, authLinkIntent=null}) {
         if(!original)return message('Solicitud no encontrada.',true);
         const allowed=operatorMaySetStatus(original.status,status);
         if(!allowed)return message('El operario no puede realizar esta transición.',true);
-        const {error}=await supabase.from('service_requests').update({status}).eq('id',form.dataset.jobId);
-        if(error)message('No se pudo actualizar: '+error.message,true);
+        const {error}=await supabase.from('service_requests').update({status}).eq('id',jobId);
+        if(!isCurrentUser(staffUserId)||currentView!=='admin'||!form.isConnected)return;
+        if(error)message('No se pudo guardar el estado. Comprueba la conexión e inténtalo de nuevo.',true);
         else {await renderAdmin(filter);message('Estado del trabajo actualizado.');}
         return;
       }
@@ -893,8 +963,9 @@ export function mountConnected({app, services, supabase, authLinkIntent=null}) {
           .in('status',['scheduled','in_progress'])
           .gte('scheduled_at',start)
           .lt('scheduled_at',end);
+        if(!isCurrentUser(staffUserId)||currentView!=='admin'||!form.isConnected)return;
         if(appointments.error)
-          return message('No se pudo comprobar la agenda del operario. No se ha guardado la programación: '+appointments.error.message,true);
+          return message('No se pudo comprobar la agenda del operario. No se ha guardado la programación.',true);
         const existing=sameOperatorSlot(appointments.data,{
           requestId:form.dataset.jobId,operatorId:operator_id,scheduledAt:stamp.toISOString()
         });
@@ -904,7 +975,8 @@ export function mountConnected({app, services, supabase, authLinkIntent=null}) {
       const operator=operators.find(op=>op.id===operator_id);
       const {error}=await supabase.from('service_requests').update({
         status,price:quotedPrice,operator_id,operator_name:operator?.full_name||null,scheduled_at:stamp?stamp.toISOString():null
-      }).eq('id',form.dataset.jobId);
+      }).eq('id',jobId);
+      if(!isCurrentUser(staffUserId)||currentView!=='admin'||!form.isConnected)return;
       if(error){
         // Postgres V7: error transaccional, incluso con dos administradores
         // guardando en paralelo. No anunciar cambios cuando el servidor falla.
@@ -913,10 +985,17 @@ export function mountConnected({app, services, supabase, authLinkIntent=null}) {
         if(error.message?.includes('REPARADO_SCHEDULE_OPERATOR_REQUIRED')||
            error.message?.includes('REPARADO_SCHEDULE_INVALID_OPERATOR'))
           return message('No se ha guardado: revisa el operario y la fecha de la visita.',true);
-        return message('No se han guardado los cambios: '+error.message,true);
+        return message('No se han podido confirmar los cambios. Revisa los datos y tu conexión.',true);
       }
       await renderAdmin(filter);
       message('Solicitud actualizada.');
+      }catch{
+        if(isCurrentUser(staffUserId)&&currentView==='admin')
+          message('No se pudo confirmar el cambio. Revisa el estado del trabajo antes de volver a guardar.',true);
+      }finally{
+        staffSaves.delete(jobId);
+        if(saveButton?.isConnected)saveButton.disabled=false;
+      }
     }));
     // Los documentos se generan solo a partir de los trabajos consultados con
     // los permisos actuales. No se envían, firman ni insertan en facturación.
@@ -947,31 +1026,44 @@ export function mountConnected({app, services, supabase, authLinkIntent=null}) {
     main.querySelectorAll('[data-staff-chat]').forEach(button=>button.addEventListener('click',()=>loadStaffChat(button.dataset.staffChat,button.dataset.chatService)));
     main.querySelectorAll('[data-photos]').forEach(button=>button.addEventListener('click',async()=>{
       const out=main.querySelector(`[data-photo-output="${button.dataset.photos}"]`);
-      if(!out)return;
+      if(!out||button.disabled||!isCurrentUser(staffUserId))return;
+      button.disabled=true;
       out.textContent='Buscando fotografías…';
       const folder=`${button.dataset.owner}/${button.dataset.photos}`;
-      const {data,error}=await supabase.storage.from('request-photos').list(folder,{limit:50});
-      if(error){out.textContent='No se pudieron consultar las fotos: '+error.message;return}
-      out.replaceChildren();
-      if(!data?.length){out.textContent='Sin fotos disponibles.';return}
-      for(const photo of data){
-        if(!photo.name || photo.name.startsWith('.'))continue;
-        const signed=await supabase.storage.from('request-photos').createSignedUrl(`${folder}/${photo.name}`,120);
-        if(signed.error)continue;
-        const a=document.createElement('a');a.href=signed.data.signedUrl;a.target='_blank';a.rel='noopener noreferrer';a.textContent='📷 Ver fotografía';out.append(a);
-      }
-      if(!out.children.length)out.textContent='No hay fotos accesibles.';
+      try{
+        const {data,error}=await supabase.storage.from('request-photos').list(folder,{limit:50});
+        if(!isCurrentUser(staffUserId)||currentView!=='admin'||!out.isConnected)return;
+        if(error)throw error;
+        out.replaceChildren();
+        if(!data?.length){out.textContent='Sin fotos disponibles.';return}
+        for(const photo of data){
+          if(!photo.name || photo.name.startsWith('.'))continue;
+          const signed=await supabase.storage.from('request-photos').createSignedUrl(`${folder}/${photo.name}`,120);
+          if(!isCurrentUser(staffUserId)||currentView!=='admin'||!out.isConnected)return;
+          if(signed.error||!signed.data?.signedUrl)continue;
+          const a=document.createElement('a');a.href=signed.data.signedUrl;a.target='_blank';a.rel='noopener noreferrer';a.textContent='📷 Ver fotografía';out.append(a);
+        }
+        if(!out.children.length)out.textContent='No hay fotos accesibles.';
+      }catch{
+        if(isCurrentUser(staffUserId)&&currentView==='admin'&&out.isConnected)
+          out.textContent='No se pudieron consultar las fotografías. Comprueba la conexión.';
+      }finally{button.disabled=false}
     }));
   }
   supabase.auth.onAuthStateChange((event)=>{
     if(event==='SIGNED_OUT'){
+      authEpoch++;
       void pushManager.discard();
       session=null;profile=null;passwordSetupPending=false;
       pendingService=null;pendingView=null;renderHome();
     }else if(event==='PASSWORD_RECOVERY'){
+      authEpoch++;
       passwordSetupPending=true;
       queueMicrotask(()=>boot());
-    }else if(event==='SIGNED_IN')queueMicrotask(()=>boot());
+    }else if(event==='SIGNED_IN'){
+      authEpoch++;
+      queueMicrotask(()=>boot());
+    }
   });
   // Mostrar la portada inmediatamente, incluso si la sesión tarda o no hay red.
   renderHome();
