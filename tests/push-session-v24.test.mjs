@@ -101,3 +101,42 @@ test('móvil: cerrar sesión durante el permiso impide registro tardío',async()
   assert.equal(d.listeners.size,0);
   assert.equal(d.calls.length,0);
 });
+
+test('V28: si Android renueva su token se retira el anterior y solo permanece el último',async()=>{
+  const d=fakeDevice();
+  const manager=createPushSessionManager(d);
+  const second='new_device_token_example_with_at_least_thirty_two_chars';
+  d.setUser('A');
+  assert.equal(await manager.activate('A'),true);
+  await d.emit('registration',{value:token});
+  await d.emit('registration',{value:second});
+  assert.equal(await manager.deactivate('A'),true);
+  assert.equal(d.tokens.size,0);
+  const registrations=d.calls.filter(x=>x.name==='reparado_register_device').map(x=>x.args.p_token);
+  const revocations=d.calls.filter(x=>x.name==='reparado_revoke_device').map(x=>x.args.p_token);
+  assert.deepEqual(registrations,[token,second]);
+  assert.deepEqual(revocations,[token,second]);
+});
+test('V28: error al revocar token antiguo bloquea salida hasta limpiar ambos tokens',async()=>{
+  const d=fakeDevice();const errors=[];
+  const manager=createPushSessionManager({...d,onError:e=>errors.push(String(e))});
+  const second='second_device_token_example_with_at_least_thirty_two_chars';
+  d.setUser('A');await manager.activate('A');
+  await d.emit('registration',{value:token});
+  d.revokeFails(true);
+  await d.emit('registration',{value:second});
+  assert.equal(await manager.deactivate('A'),false);
+  assert.equal(d.tokens.size,2);
+  d.revokeFails(false);
+  assert.equal(await manager.deactivate('A'),true);
+  assert.equal(d.tokens.size,0);
+  assert.ok(errors.length>=1);
+});
+test('V28: registrar varias veces el mismo token no inventa una revocación adicional',async()=>{
+  const d=fakeDevice(),p=createPushSessionManager(d);
+  d.setUser('A');await p.activate('A');
+  await d.emit('registration',{value:token});
+  await d.emit('registration',{value:token});
+  await p.deactivate('A');
+  assert.deepEqual(d.calls.filter(x=>x.name==='reparado_revoke_device').map(x=>x.args.p_token),[token]);
+});
