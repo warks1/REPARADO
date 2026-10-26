@@ -54,13 +54,13 @@ with as_user(ADM) as db:
     db.execute("update public.service_requests set price=65.50 where id=%s",(R2,))
 
 with as_user(C1) as db:
-    assert db.execute("select public.accept_reparado_quote(%s,%s)",(R2,65.50)).fetchone()[0] is False
+    assert db.execute("select public.accept_reparado_quote(%s,%s::numeric)",(R2,65.50)).fetchone()[0] is False
 with as_user(C2) as db:
     # La RPC antigua sin cantidad es inaccesible, aunque se conozca su nombre.
     denied(db,"select public.accept_reparado_quote(%s)",(R2,),code='42501')
-    assert db.execute("select public.accept_reparado_quote(%s,%s)",(R2,60)).fetchone()[0] is False
-    assert db.execute("select public.accept_reparado_quote(%s,%s)",(R2,65.50)).fetchone()[0] is True
-    assert db.execute("select public.accept_reparado_quote(%s,%s)",(R2,65.50)).fetchone()[0] is False
+    assert db.execute("select public.accept_reparado_quote(%s,%s::numeric)",(R2,60)).fetchone()[0] is False
+    assert db.execute("select public.accept_reparado_quote(%s,%s::numeric)",(R2,65.50)).fetchone()[0] is True
+    assert db.execute("select public.accept_reparado_quote(%s,%s::numeric)",(R2,65.50)).fetchone()[0] is False
 
 with as_user(ADM) as db:
     denied(db,"update public.service_requests set price=999 where id=%s",(R2,))
@@ -70,8 +70,8 @@ with as_user(ADM) as db:
     db.execute("update public.service_requests set price=75 where id=%s",(R2,))
 
 with as_user(C2) as db:
-    assert db.execute("select public.accept_reparado_quote(%s,%s)",(R2,65.50)).fetchone()[0] is False
-    assert db.execute("select public.accept_reparado_quote(%s,%s)",(R2,75)).fetchone()[0] is True
+    assert db.execute("select public.accept_reparado_quote(%s,%s::numeric)",(R2,65.50)).fetchone()[0] is False
+    assert db.execute("select public.accept_reparado_quote(%s,%s::numeric)",(R2,75)).fetchone()[0] is True
 
 with as_user(ADM) as db:
     db.execute("""update public.service_requests
@@ -90,6 +90,6 @@ with as_user(ADM) as db:
     assert db.execute("select price,status::text from public.service_requests where id=%s",(R2,)).fetchone()==(75,'completed')
 
 with as_user(None,'anon') as db:
-    denied(db,"select public.accept_reparado_quote(%s,%s)",(R2,75),code='42501')
+    denied(db,"select public.accept_reparado_quote(%s,%s::numeric)",(R2,75),code='42501')
 
 print('V34 OK: aceptación solo cliente+importe exacto, sin RPC heredada; admin no falsifica consentimiento; precio bloqueado incluso en trabajo finalizado.',flush=True)
