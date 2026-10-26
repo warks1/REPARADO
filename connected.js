@@ -79,6 +79,7 @@ export function mountConnected({app, services, supabase, authLinkIntent=null}) {
       else if(view==='chat')loadChat();
       else if(view==='profile')loadProfile();
       else if(view==='notifications')loadNotifications();
+      else if(view==='invoices')loadInvoices();
       else if(view==='admin')renderAdmin();
       else if(view==='review-moderation')openReviewModeration();
       else if(view==='support-admin')loadSupportReports();
