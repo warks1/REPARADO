@@ -55,5 +55,6 @@ jobs:
         with: {python-version: '3.11'}
       - run: python -m pip install --disable-pip-version-check 'psycopg[binary]>=3.2,<4'
       - run: python -u tests/supabase-roles-rls.py
+      - run: python -u tests/reviews-moderation-rls-v15.py
       - run: python -u tests/security-acl-v19.py
       - run: python -u tests/request-idempotency-v27.py
