@@ -15,12 +15,14 @@ export function createPushSessionManager({supabase, Capacitor, PushNotifications
     if(starting)return false;
     const currentGeneration=++generation;
     starting=true;
+    // Asociar el usuario ANTES de pedir permisos: logout podrá invalidar
+    // una ventana de permisos que siga abierta.
+    owner=userId;token=null;active=false;
     try{
       await removeListeners();
       const permissions=await PushNotifications.requestPermissions();
       if(permissions.receive!=='granted' || currentGeneration!==generation)return false;
-      owner=userId;token=null;active=false;
-      listeners.push(await PushNotifications.addListener('registration', ({value})=>{
+      const registrationListener=await PushNotifications.addListener('registration', ({value})=>{
         if(currentGeneration!==generation || owner!==userId || !value)return;
         const registeredToken=value;
         pendingRegistration=pendingRegistration.catch(()=>{}).then(async()=>{
@@ -32,11 +34,16 @@ export function createPushSessionManager({supabase, Capacitor, PushNotifications
           // la operación en vuelo. Nunca enviar el token a registros o consola.
           if(owner===userId)token=registeredToken;
         }).catch(onError);
-      }));
-      listeners.push(await PushNotifications.addListener('registrationError',()=>{
+      });
+      if(currentGeneration!==generation){await registrationListener.remove();return false;}
+      listeners.push(registrationListener);
+      const failureListener=await PushNotifications.addListener('registrationError',()=>{
         onError(new Error('No se pudo registrar el dispositivo para notificaciones'));
-      }));
+      });
+      if(currentGeneration!==generation){await failureListener.remove();return false;}
+      listeners.push(failureListener);
       await PushNotifications.register();
+      if(currentGeneration!==generation)return false;
       active=true;
       return true;
     }catch(error){
