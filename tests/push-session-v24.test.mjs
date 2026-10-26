@@ -71,6 +71,8 @@ test('móvil: desconectar listeners antiguos evita dobles registros',async()=>{
   await p.deactivate('A');
   assert.equal(d.listeners.size,0);
   d.setUser('B');await p.activate('B');await d.emit('registration',{value:token});
+  // La RPC de registro es asíncrona; la baja espera a que termine.
+  await p.deactivate('B');
   assert.equal(d.calls.filter(x=>x.name==='reparado_register_device').length,2);
 });
 test('móvil: nunca registra tokens si Supabase rechaza la RPC',async()=>{
