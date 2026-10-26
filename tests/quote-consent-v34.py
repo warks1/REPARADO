@@ -47,8 +47,10 @@ with psycopg.connect(DSN) as db:
     assert not db.execute("select has_function_privilege('anon','public.accept_reparado_quote(uuid,numeric)','EXECUTE')").fetchone()[0]
 
 with as_user(ADM) as db:
-    # Un administrador NO puede fingir una aceptación del cliente.
+    # Un administrador NO puede fingir aceptación ni programar sin consentimiento.
     denied(db,"update public.service_requests set status='accepted' where id=%s",(R2,))
+    denied(db,"update public.service_requests set status='scheduled',operator_id=%s,scheduled_at='2026-10-27 09:00+00' where id=%s",(OP,R2))
+    denied(db,"update public.service_requests set status='quoted' where id=%s",(R1,))
     assert db.execute("select status::text from public.service_requests where id=%s",(R2,)).fetchone()[0]=='quoted'
     # Hasta la aceptación, puede elaborar/corregir el presupuesto.
     db.execute("update public.service_requests set price=65.50 where id=%s",(R2,))
@@ -65,13 +67,8 @@ with as_user(C2) as db:
 with as_user(ADM) as db:
     denied(db,"update public.service_requests set price=999 where id=%s",(R2,))
     denied(db,"update public.service_requests set price=999,status='quoted' where id=%s",(R2,))
-    # Re-cotización explícita: recuperar el estado sin alterar aún el importe.
-    db.execute("update public.service_requests set status='quoted' where id=%s",(R2,))
-    db.execute("update public.service_requests set price=75 where id=%s",(R2,))
-
-with as_user(C2) as db:
-    assert db.execute("select public.accept_reparado_quote(%s,%s::numeric)",(R2,65.50)).fetchone()[0] is False
-    assert db.execute("select public.accept_reparado_quote(%s,%s::numeric)",(R2,75)).fetchone()[0] is True
+    # La aceptación ya prestada no se puede reabrir/re-cotizar unilateralmente.
+    denied(db,"update public.service_requests set status='quoted' where id=%s",(R2,))
 
 with as_user(ADM) as db:
     db.execute("""update public.service_requests
@@ -87,9 +84,9 @@ with as_user(OP) as db:
 with as_user(ADM) as db:
     denied(db,"update public.service_requests set price=90 where id=%s",(R1,))
     denied(db,"update public.service_requests set price=90 where id=%s",(R2,))
-    assert db.execute("select price,status::text from public.service_requests where id=%s",(R2,)).fetchone()==(75,'completed')
+    assert db.execute("select price,status::text from public.service_requests where id=%s",(R2,)).fetchone()==(65.50,'completed')
 
 with as_user(None,'anon') as db:
-    denied(db,"select public.accept_reparado_quote(%s,%s::numeric)",(R2,75),code='42501')
+    denied(db,"select public.accept_reparado_quote(%s,%s::numeric)",(R2,65.50),code='42501')
 
-print('V34 OK: aceptación solo cliente+importe exacto, sin RPC heredada; admin no falsifica consentimiento; precio bloqueado incluso en trabajo finalizado.',flush=True)
+print('V34 OK: 5 roles, precio exacto, sin RPC heredada; admin no puede aceptar ni programar sin cliente; sin recotización posterior ni cambio de precio.',flush=True)
