@@ -30,7 +30,7 @@ begin
 
   -- No retroceder de un estado posterior al consentimiento a 'quoted'
   -- para luego alterar el importe y volver a presentar la misma solicitud.
-  if old.status::text in ('accepted','scheduled','in_progress','completed')
+  if old.status::text in ('accepted','scheduled','in_progress','completed','cancelled')
      and new.status::text in ('new','quoted') then
     raise exception using errcode='23514',
       message='REPARADO_ACCEPTED_QUOTE_CANNOT_REOPEN';
