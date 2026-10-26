@@ -117,14 +117,19 @@ export function mountConnected({app, services, supabase, authLinkIntent=null}) {
       const form=event.currentTarget;
       const email=String(new FormData(form).get('email')||'').trim();
       if(!email)return message('Introduce tu correo electrónico.',true);
-      const submit=form.querySelector('[type=submit]');submit.disabled=true;
-      // Solo el origen/ruta de la propia app. Debe estar permitido en
-      // Authentication -> URL Configuration del proyecto de pruebas.
-      const redirectTo=window.location.origin+window.location.pathname;
-      const {error}=await supabase.auth.resetPasswordForEmail(email,{redirectTo});
-      submit.disabled=false;
-      message(error?'No se pudo enviar el enlace. Prueba de nuevo o contacta con Reparado.':
-        'Si la cuenta existe, recibirás un enlace para restablecer tu contraseña.',Boolean(error));
+      const submit=form.querySelector('[type=submit]');
+      if(submit.disabled)return;
+      submit.disabled=true;
+      try{
+        // Solo el origen/ruta de la propia app, sin tokens ni parámetros.
+        // Configurar URL permitida en Authentication -> URL Configuration.
+        const redirectTo=window.location.origin+window.location.pathname;
+        const {error}=await supabase.auth.resetPasswordForEmail(email,{redirectTo});
+        message(error?'No se pudo solicitar el enlace. Inténtalo más tarde o contacta con Reparado.':
+          'Si la cuenta existe, recibirás un enlace para restablecer tu contraseña.',Boolean(error));
+      }catch{
+        message('No se pudo conectar para solicitar el enlace. Inténtalo de nuevo.',true);
+      }finally{submit.disabled=false}
     });
     if(!openRegistration)return;
     main.querySelector('#register').addEventListener('click',()=>{
@@ -143,13 +148,20 @@ export function mountConnected({app, services, supabase, authLinkIntent=null}) {
       const password=String(fields.get('password')||'');
       if(password!==fields.get('password_confirm'))return message('Las contraseñas no coinciden.',true);
       if(password.length<12)return message('La contraseña debe tener al menos 12 caracteres.',true);
-      const submit=form.querySelector('[type=submit]');submit.disabled=true;
-      const {error}=await supabase.auth.signUp({
-        email,password,options:{data:{full_name:String(fields.get('full_name')||'').trim()}}
-      });
-      submit.disabled=false;
-      message(error?error.message:'Cuenta registrada. Revisa tu correo electrónico si necesitas confirmar el acceso.',Boolean(error));
-      if(!error)form.reset();
+      const submit=form.querySelector('[type=submit]');
+      if(submit.disabled)return;
+      submit.disabled=true;
+      try{
+        const {error}=await supabase.auth.signUp({
+          email,password,options:{data:{full_name:String(fields.get('full_name')||'').trim()}}
+        });
+        // No mostrar mensajes del proveedor que podrían distinguir cuentas existentes.
+        message(error?'No se pudo procesar el registro. Inténtalo más tarde o contacta con Reparado.':
+          'Solicitud procesada. Revisa tu correo electrónico para continuar si procede.',Boolean(error));
+        if(!error)form.reset();
+      }catch{
+        message('No se pudo conectar para registrar la cuenta. Inténtalo de nuevo.',true);
+      }finally{submit.disabled=false}
     });
   }
   function showPasswordSetup(){
@@ -169,14 +181,22 @@ export function mountConnected({app, services, supabase, authLinkIntent=null}) {
       const password=String(data.get('password')||'');
       if(password.length<12)return message('Usa al menos 12 caracteres.',true);
       if(password!==data.get('confirm'))return message('Las contraseñas no coinciden.',true);
-      const submit=form.querySelector('[type=submit]');submit.disabled=true;
-      const {error}=await supabase.auth.updateUser({password});
-      submit.disabled=false;
-      if(error)return message('No se pudo guardar la contraseña: '+error.message,true);
-      passwordSetupPending=false;
-      authLinkIntent=null;
-      // Nunca añadir contraseñas o tokens a enlaces, registros o mensajes.
-      await boot();
+      const submit=form.querySelector('[type=submit]');
+      if(submit.disabled)return;
+      submit.disabled=true;
+      try{
+        const {error}=await supabase.auth.updateUser({password});
+        if(error){
+          message('No se pudo cambiar la contraseña. Revisa los requisitos e inténtalo de nuevo.',true);
+          return;
+        }
+        passwordSetupPending=false;
+        authLinkIntent=null;
+        // Nunca añadir contraseñas o tokens a enlaces, registros o mensajes.
+        await boot();
+      }catch{
+        message('No se pudo completar el cambio de contraseña. Inténtalo de nuevo.',true);
+      }finally{submit.disabled=false}
     });
   }
   async function boot(){
