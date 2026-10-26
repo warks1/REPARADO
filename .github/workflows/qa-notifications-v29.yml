@@ -1,0 +1,33 @@
+name: REPARADO V29 · Avisos y facturas fiables
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'notifications-data.js'
+      - 'notifications.js'
+      - 'invoices.js'
+      - 'connected.js'
+      - 'tests/notifications-network-v29.test.mjs'
+      - '.github/workflows/qa-notifications-v29.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'notifications-data.js'
+      - 'notifications.js'
+      - 'invoices.js'
+      - 'connected.js'
+      - 'tests/notifications-network-v29.test.mjs'
+      - '.github/workflows/qa-notifications-v29.yml'
+permissions:
+  contents: read
+jobs:
+  app:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: {node-version: '22'}
+      - run: npm install --no-audit --no-fund
+      - run: npm test
+      - run: npm run build

@@ -79,6 +79,7 @@ export function mountConnected({app, services, supabase, authLinkIntent=null}) {
       else if(view==='chat')loadChat();
       else if(view==='profile')loadProfile();
       else if(view==='notifications')loadNotifications();
+      else if(view==='invoices')loadInvoices();
       else if(view==='admin')renderAdmin();
       else if(view==='review-moderation')openReviewModeration();
       else if(view==='support-admin')loadSupportReports();
@@ -516,19 +517,28 @@ export function mountConnected({app, services, supabase, authLinkIntent=null}) {
   async function loadNotifications(){
     setActiveNav(app,'profile');
     currentView='notifications';
-    await renderNotifications({main,supabase,session,backButton,onRefresh:()=>currentView==='notifications',isStaff:userIsStaff()});
+    const userId=session?.user?.id;
+    if(!userId)return showLogin();
+    await renderNotifications({
+      main,supabase,session,onRefresh:()=>currentView==='notifications'&&isCurrentUser(userId),
+      isStaff:userIsStaff()
+    });
   }
   async function loadInvoices(){
     setActiveNav(app,'profile');
     currentView='invoices';
-    await renderInvoices({main,supabase,session,onRefresh:()=>currentView==='invoices'});
+    const userId=session?.user?.id;
+    if(!userId)return showLogin();
+    await renderInvoices({
+      main,supabase,session,onRefresh:()=>currentView==='invoices'&&isCurrentUser(userId)
+    });
   }
   function loadProfile(){
     setActiveNav(app,'profile');
     if(!session){showLogin();return}
     currentView='profile';
     main.innerHTML=`<section class="card">${backButton}<h2>Mi perfil</h2><p>${esc(session.user.email)}</p><p>Tipo de cuenta: ${esc(profile?.role||'customer')}</p>
-      <form id="profile-form"><label>Nombre completo<input name="full_name" autocomplete="name" maxlength="100" value="${esc(profile?.full_name||'')}"></label><label>Teléfono<input name="phone" type="tel" autocomplete="tel" maxlength="25" value="${esc(profile?.phone||'')}"></label><button type="submit">Guardar perfil</button></form><div class="flex-actions"><button type="button" data-logout>Cerrar sesión</button><button type="button" id="view-invoices">🧾 Mis facturas</button>${userIsStaff()?'<button type="button" data-view="admin">🧰 Gestión interna</button>':''}${profile?.role==='admin'?'<button type="button" data-view="review-moderation">⭐ Moderar reseñas</button><button type="button" data-view="support-admin">🐞 Incidencias de clientes</button>':''}</div>
+      <form id="profile-form"><label>Nombre completo<input name="full_name" autocomplete="name" maxlength="100" value="${esc(profile?.full_name||'')}"></label><label>Teléfono<input name="phone" type="tel" autocomplete="tel" maxlength="25" value="${esc(profile?.phone||'')}"></label><button type="submit">Guardar perfil</button></form><div class="flex-actions"><button type="button" data-logout>Cerrar sesión</button><button type="button" data-view="notifications">🔔 Mis avisos</button><button type="button" id="view-invoices">🧾 Mis facturas</button>${userIsStaff()?'<button type="button" data-view="admin">🧰 Gestión interna</button>':''}${profile?.role==='admin'?'<button type="button" data-view="review-moderation">⭐ Moderar reseñas</button><button type="button" data-view="support-admin">🐞 Incidencias de clientes</button>':''}</div>
       <section class="reparado-help" aria-label="Ayuda y atención al cliente"><h3>Atención y ayuda</h3>
         <form id="reparado-issue-report"><label>¿En qué parte de la app ha ocurrido?
           <select name="context" required>
