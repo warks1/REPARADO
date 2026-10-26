@@ -5,8 +5,8 @@ create table if not exists public.support_reports (
   user_id uuid not null references auth.users(id) on delete cascade,
   subject text not null check (char_length(btrim(subject)) between 5 and 140),
   description text not null check (char_length(btrim(description)) between 12 and 2000),
-  context text not null default 'app'
-    check (char_length(context) between 1 and 80),
+  context text not null default 'general'
+    check (context in ('general','solicitud','agenda','chat','facturacion','cuenta')),
   status text not null default 'open' check (status in ('open','reviewing','resolved')),
   created_at timestamptz not null default now()
 );
@@ -32,6 +32,27 @@ create policy "support admin moderate" on public.support_reports
   for update to authenticated
   using ((select public.is_reparado_admin()))
   with check ((select public.is_reparado_admin()) and status in ('open','reviewing','resolved'));
+
+-- Límite de uso para evitar abusos que saturen el equipo y el email.
+-- Se valida en el servidor, no mediante temporizadores de la interfaz.
+create or replace function public.reparado_limit_support_reports()
+returns trigger language plpgsql security definer
+set search_path=pg_catalog,public
+as $
+begin
+  if (select count(*) from public.support_reports s
+        where s.user_id=new.user_id and s.created_at>=now()-interval '1 hour')>=3
+    or (select count(*) from public.support_reports s
+        where s.user_id=new.user_id and s.created_at>=now()-interval '1 day')>=10
+  then raise exception 'REPARADO_SUPPORT_RATE_LIMIT'; end if;
+  return new;
+end;
+$;
+revoke all on function public.reparado_limit_support_reports()
+  from public,anon,authenticated;
+drop trigger if exists reparado_support_rate_limit on public.support_reports;
+create trigger reparado_support_rate_limit before insert on public.support_reports
+for each row execute function public.reparado_limit_support_reports();
 
 -- La cola no puede ser consultada o manipulada desde la app cliente.
 create table if not exists public.support_email_outbox (
