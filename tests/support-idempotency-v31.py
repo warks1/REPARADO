@@ -29,6 +29,9 @@ with psycopg.connect(dsn) as db:
     assert not db.execute("select has_column_privilege('anon','public.support_reports','client_report_id','INSERT')").fetchone()[0]
     assert db.execute("select has_column_privilege('authenticated','public.support_reports','client_report_id','SELECT')").fetchone()[0]
     assert not db.execute("select has_column_privilege('authenticated','public.support_reports','client_report_id','UPDATE')").fetchone()[0]
+    assert not db.execute("select has_column_privilege('authenticated','public.support_reports','user_id','SELECT')").fetchone()[0]
+    assert not db.execute("select has_function_privilege('anon','public.reparado_find_own_support_report(uuid)','EXECUTE')").fetchone()[0]
+    assert db.execute("select has_function_privilege('authenticated','public.reparado_find_own_support_report(uuid)','EXECUTE')").fetchone()[0]
 
 sql="""insert into public.support_reports(user_id,subject,description,context,client_report_id)
  values (%s,'Error cargando perfil','No consigo consultar mis incidencias privadas','cuenta',%s)
@@ -42,7 +45,7 @@ with as_user(A) as db:
     except psycopg.Error as exc:
         assert exc.sqlstate=='23505',(exc.sqlstate,str(exc))
     else:raise AssertionError('Se admitió duplicado de una incidencia')
-    assert db.execute("select id from public.support_reports where user_id=%s and client_report_id=%s",(A,KEY)).fetchone()[0]==record
+    assert db.execute("select public.reparado_find_own_support_report(%s)",(KEY,)).fetchone()[0]==record
     try:
         with db.transaction():
             db.execute("update public.support_reports set client_report_id=%s where id=%s",(SECOND,record))
@@ -50,7 +53,7 @@ with as_user(A) as db:
         assert exc.sqlstate=='42501',(exc.sqlstate,str(exc))
     else:raise AssertionError('Cliente pudo editar clave inmutable')
 with as_user(B) as db:
-    assert db.execute('select id from public.support_reports where client_report_id=%s',(KEY,)).fetchone() is None
+    assert db.execute("select public.reparado_find_own_support_report(%s)",(KEY,)).fetchone()[0] is None
     other=db.execute(sql,(B,KEY)).fetchone()[0]
     assert other!=record
     try:
@@ -64,6 +67,11 @@ with as_user(None,'anon') as db:
             db.execute(sql,(A,SECOND))
     except psycopg.Error as exc:assert exc.sqlstate=='42501',(exc.sqlstate,str(exc))
     else:raise AssertionError('Anónimo puede crear soporte')
+    try:
+        with db.transaction():
+            db.execute("select public.reparado_find_own_support_report(%s)",(KEY,))
+    except psycopg.Error as exc:assert exc.sqlstate=='42501',(exc.sqlstate,str(exc))
+    else:raise AssertionError('Anónimo puede recuperar incidencia')
 with psycopg.connect(dsn) as db:
     assert db.execute("select count(*) from public.support_reports where client_report_id=%s",(KEY,)).fetchone()[0]==2
     assert db.execute("select count(*) from public.support_email_outbox where report_id in (%s,%s)",(record,other)).fetchone()[0]==2
