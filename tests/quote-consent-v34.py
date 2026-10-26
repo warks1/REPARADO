@@ -85,6 +85,10 @@ with as_user(ADM) as db:
     denied(db,"update public.service_requests set price=90 where id=%s",(R1,))
     denied(db,"update public.service_requests set price=90 where id=%s",(R2,))
     assert db.execute("select price,status::text from public.service_requests where id=%s",(R2,)).fetchone()==(65.50,'completed')
+    # Cancelar no abre un camino para reabrir y alterar lo ya aceptado.
+    db.execute("update public.service_requests set status='cancelled' where id=%s",(R2,))
+    denied(db,"update public.service_requests set price=95 where id=%s",(R2,))
+    denied(db,"update public.service_requests set status='quoted' where id=%s",(R2,))
 
 with as_user(None,'anon') as db:
     denied(db,"select public.accept_reparado_quote(%s,%s::numeric)",(R2,65.50),code='42501')
