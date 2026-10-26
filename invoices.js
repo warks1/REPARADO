@@ -2,7 +2,10 @@ import {checkInvoiceAmounts,formatInvoiceEuro,invoiceStatusLabels} from './invoi
 // Lista de documentos emitidos al cliente. No crea facturas fiscales.
 export async function renderInvoices({main,supabase,session,onRefresh}) {
   const loading=document.createElement('section');loading.className='card';
-  loading.textContent='Consultando mis facturas…';main.replaceChildren(loading);
+  const cancel=document.createElement('button');cancel.type='button';cancel.className='back';
+  cancel.dataset.back='';cancel.textContent='← Volver';loading.append(cancel);
+  const wait=document.createElement('p');wait.textContent='Consultando mis facturas…';loading.append(wait);
+  main.replaceChildren(loading);
   const userId=session?.user?.id;
   let data,error;
   try{
