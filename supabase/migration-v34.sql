@@ -21,18 +21,35 @@ begin
   if (select auth.role()) is null or (select auth.role())='service_role'
     then return new; end if;
 
-  -- Ni siquiera el administrador puede alterar el precio YA aceptado.
-  if old.status::text in ('accepted','scheduled','in_progress','completed')
+  -- Un presupuesto aceptado se vuelve inmutable, incluso si se canceló.
+  if old.status::text in ('accepted','scheduled','in_progress','completed','cancelled')
       and new.price is distinct from old.price then
     raise exception using errcode='23514',
       message='REPARADO_ACCEPTED_QUOTE_PRICE_LOCKED';
   end if;
 
-  -- Solo la RPC invocada por el dueño puede pasar quoted -> accepted.
-  -- La política de administración no equivale a consentimiento del cliente.
+  -- No retroceder de un estado posterior al consentimiento a 'quoted'
+  -- para luego alterar el importe y volver a presentar la misma solicitud.
+  if old.status::text in ('accepted','scheduled','in_progress','completed')
+     and new.status::text in ('new','quoted') then
+    raise exception using errcode='23514',
+      message='REPARADO_ACCEPTED_QUOTE_CANNOT_REOPEN';
+  end if;
+
+  -- Nunca programar ni cerrar trabajos saltándose la aceptación del
+  -- cliente. Se permite avanzar desde los estados ya aceptados.
+  if new.status::text in ('scheduled','in_progress','completed')
+     and old.status::text not in ('accepted','scheduled','in_progress','completed') then
+    raise exception using errcode='23514',
+      message='REPARADO_QUOTE_MUST_BE_ACCEPTED_FIRST';
+  end if;
+
+  -- Ni un admin ni un operario pueden atribuirse la aceptación del cliente.
   if new.status::text='accepted'
      and old.status::text is distinct from 'accepted'
-     and (select public.is_reparado_admin()) then
+     and ((select public.is_reparado_admin())
+       or (select auth.uid()) is distinct from old.customer_id
+       or old.status::text<>'quoted') then
     raise exception using errcode='23514',
       message='REPARADO_ACCEPTANCE_REQUIRES_CUSTOMER';
   end if;
