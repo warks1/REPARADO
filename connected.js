@@ -928,8 +928,9 @@ export function mountConnected({app, services, supabase, authLinkIntent=null}) {
         if(!original)return message('Solicitud no encontrada.',true);
         const allowed=operatorMaySetStatus(original.status,status);
         if(!allowed)return message('El operario no puede realizar esta transición.',true);
-        const {error}=await supabase.from('service_requests').update({status}).eq('id',form.dataset.jobId);
-        if(error)message('No se pudo actualizar: '+error.message,true);
+        const {error}=await supabase.from('service_requests').update({status}).eq('id',jobId);
+        if(!isCurrentUser(staffUserId)||currentView!=='admin'||!form.isConnected)return;
+        if(error)message('No se pudo guardar el estado. Comprueba la conexión e inténtalo de nuevo.',true);
         else {await renderAdmin(filter);message('Estado del trabajo actualizado.');}
         return;
       }
@@ -962,8 +963,9 @@ export function mountConnected({app, services, supabase, authLinkIntent=null}) {
           .in('status',['scheduled','in_progress'])
           .gte('scheduled_at',start)
           .lt('scheduled_at',end);
+        if(!isCurrentUser(staffUserId)||currentView!=='admin'||!form.isConnected)return;
         if(appointments.error)
-          return message('No se pudo comprobar la agenda del operario. No se ha guardado la programación: '+appointments.error.message,true);
+          return message('No se pudo comprobar la agenda del operario. No se ha guardado la programación.',true);
         const existing=sameOperatorSlot(appointments.data,{
           requestId:form.dataset.jobId,operatorId:operator_id,scheduledAt:stamp.toISOString()
         });
@@ -973,7 +975,8 @@ export function mountConnected({app, services, supabase, authLinkIntent=null}) {
       const operator=operators.find(op=>op.id===operator_id);
       const {error}=await supabase.from('service_requests').update({
         status,price:quotedPrice,operator_id,operator_name:operator?.full_name||null,scheduled_at:stamp?stamp.toISOString():null
-      }).eq('id',form.dataset.jobId);
+      }).eq('id',jobId);
+      if(!isCurrentUser(staffUserId)||currentView!=='admin'||!form.isConnected)return;
       if(error){
         // Postgres V7: error transaccional, incluso con dos administradores
         // guardando en paralelo. No anunciar cambios cuando el servidor falla.
@@ -982,7 +985,7 @@ export function mountConnected({app, services, supabase, authLinkIntent=null}) {
         if(error.message?.includes('REPARADO_SCHEDULE_OPERATOR_REQUIRED')||
            error.message?.includes('REPARADO_SCHEDULE_INVALID_OPERATOR'))
           return message('No se ha guardado: revisa el operario y la fecha de la visita.',true);
-        return message('No se han guardado los cambios: '+error.message,true);
+        return message('No se han podido confirmar los cambios. Revisa los datos y tu conexión.',true);
       }
       await renderAdmin(filter);
       message('Solicitud actualizada.');
