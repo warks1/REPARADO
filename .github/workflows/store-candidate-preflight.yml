@@ -76,6 +76,9 @@ jobs:
   android-native-bundle:
     runs-on: ubuntu-latest
     timeout-minutes: 40
+    env:
+      REPARADO_BUILD_NUMBER: '1'
+      REPARADO_VERSION_NAME: '1.0.0'
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
