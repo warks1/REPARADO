@@ -29,5 +29,7 @@ export function contactLinksMarkup(){
   return '<div class="reparado-contact-links" aria-label="Correos de contacto">'+
     '<a href="'+reportIssueHref()+'">🐞 Comunicar un fallo de la app</a>'+
     '<a href="'+repairInquiryHref()+'">✉️ Consultas y solicitudes de reparación</a>'+
+    '<a href="./soporte.html">ℹ️ Centro de ayuda</a>'+
+    '<a href="./eliminar-cuenta.html">🔒 Eliminar cuenta</a>'+
     '</div>';
 }
