@@ -66,7 +66,7 @@ Deno.serve(async(request:Request)=>{
             'Sección: '+String(report.context||'general').slice(0,80),
             'Revisa los detalles privados en el panel de administración de REPARADO.',
             'Este mensaje no contiene el nombre, email ni la descripción del cliente.'
-          ].join('\\n')
+          ].join('\n')
         })
       });
       if(!res.ok)return failSupport('support_provider_http_'+res.status);
