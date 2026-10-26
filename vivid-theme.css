@@ -600,3 +600,17 @@ body,.shell,.customer-header,.customer-nav {background:#fff}
 .reparado-help h3{margin:0 0 8px;color:#26364c}
 .reparado-help .reparado-contact-links{justify-content:flex-start}
 @media(max-width:460px){.reparado-contact-links{flex-direction:column;align-items:stretch}.reparado-contact-links a{justify-content:center}}
+
+/* Incidencias de clientes: panel privado y formulario compatible con móviles. */
+#reparado-issue-report{display:flex;flex-direction:column;gap:10px;margin:10px 0}
+#reparado-issue-report label{display:flex;flex-direction:column;gap:5px;font-size:13px;font-weight:700}
+#reparado-issue-report input,#reparado-issue-report select,#reparado-issue-report textarea{width:100%;font:inherit;border:1px solid #c8d3e3;background:#fff;color:#17324f;padding:10px;border-radius:12px;max-width:100%}
+#reparado-issue-report textarea{resize:vertical;min-height:92px}
+#reparado-issue-report button{border-radius:12px;background:#ff692f;color:white;border:0;font-weight:800;min-height:43px;padding:10px 14px;cursor:pointer}
+#reparado-issue-report button:disabled{opacity:.6}
+#reparado-issue-report :is(input,select,textarea,button):focus-visible{outline:3px solid #277dc9;outline-offset:2px}
+#reparado-support-admin .support-ticket{border:1px solid #dce5ef;background:#fff;padding:14px;border-radius:14px;margin:10px 0;overflow-wrap:anywhere}
+#reparado-support-admin .support-ticket p{white-space:pre-wrap;line-height:1.6;color:#293f5d}
+#reparado-support-admin .support-ticket small{color:#647894}
+#reparado-support-admin .support-ticket button{border:1px solid #d7dff1;border-radius:11px;padding:9px 12px;background:#f2f7fe;color:#225a96}
+@media (max-width:460px){#reparado-support-admin .flex-actions{flex-wrap:wrap}#reparado-support-admin .flex-actions button{flex:1;min-width:130px}}
