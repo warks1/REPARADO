@@ -1,0 +1,29 @@
+name: REPARADO V38 · Diagnóstico de conexión administrativa
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'admin-connection-diagnostics.js'
+      - 'connected.js'
+      - 'tests/admin-connection-diagnostics-v38.test.mjs'
+      - '.github/workflows/qa-connection-diagnostics-v38.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'admin-connection-diagnostics.js'
+      - 'connected.js'
+      - 'tests/admin-connection-diagnostics-v38.test.mjs'
+      - '.github/workflows/qa-connection-diagnostics-v38.yml'
+permissions:
+  contents: read
+jobs:
+  unit-build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 14
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: {node-version: '22'}
+      - run: npm install --no-audit --no-fund
+      - run: npm test
+      - run: npm run build
