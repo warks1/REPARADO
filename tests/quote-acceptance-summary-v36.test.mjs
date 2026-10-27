@@ -37,5 +37,5 @@ test('V36: la descarga solo está disponible para una solicitud visible con acep
   assert.match(source,/data-download-accepted-quote/);
   assert.match(source,/data\.find\(item=>item\.id===button\.dataset\.downloadAcceptedQuote\)/);
   assert.match(source,/!isCurrentUser\(userId\)\|\|currentView!=='requests'\|\|!button\.isConnected/);
-  assert.match(source,/downloadQuoteAcceptanceSummary\(record\)/);
+  assert.match(source,/shareAcceptedQuote\(record/);
 });
