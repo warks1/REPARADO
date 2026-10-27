@@ -30,5 +30,5 @@ test('errores de autenticación genéricos y contraseñas nuevas largas de 15 o 
  assert.ok(!js.includes("if(error){message(error.message,true);return}\n      // Supabase"));
  assert.ok(js.includes("if(button.disabled)return"));
  assert.ok(js.includes("validateNewPassword(password)"));
- assert.ok(js.includes('name="password_confirm" type="password" autocomplete="new-password" minlength="12"'));
+ assert.ok(js.includes('name="password_confirm" type="password" autocomplete="new-password" minlength="15"'));
 });
