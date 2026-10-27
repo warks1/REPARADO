@@ -10,7 +10,7 @@ test('V37: contraseñas nuevas tienen al menos 15 caracteres Unicode y hasta 128
   assert.equal(MAX_NEW_PASSWORD_LENGTH,128);
   assert.match(validateNewPassword('frase demasia'),/15 caracteres/);
   assert.equal(validateNewPassword('Mi frase segura con espacios y acentos áéí'),null);
-  assert.equal(validateNewPassword('🧩'.repeat(15)),null); // codepoints, no UTF-16
+  assert.equal(validateNewPassword('🧩'.repeat(14)+'🎯'),null); // codepoints, no UTF-16
   assert.equal(validateNewPassword('🧩'.repeat(129))!==null,true);
   assert.equal(validateNewPassword('una contraseña muy larga '.repeat(5)),null);
 });
