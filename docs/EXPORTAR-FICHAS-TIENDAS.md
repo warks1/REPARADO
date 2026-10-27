@@ -35,3 +35,18 @@ La fuente de verdad es [`store-metadata/es-ES.json`](../store-metadata/es-ES.jso
 - [fastlane deliver: archivos localizados Apple](https://docs.fastlane.tools/actions/deliver/)
 
 El directorio de Apple es deliberadamente `fastlane/metadata/ios` para no mezclar el formato `name.txt` de Apple con el `title.txt` de Google. Cuando se configure deliver habrá que indicar esa ruta expresamente. **No se guardan API keys, contraseñas de tiendas ni certificados en estos archivos.**
+
+## Descargar todas las fichas en un ZIP (V41)
+
+La tarea de GitHub Actions **«REPARADO V41 · Descargar fichas de App Store y Google Play»** empaqueta los ocho textos de las tiendas, el JSON original y la ficha legible. Se ejecuta al incorporar cambios en las descripciones y también se puede iniciar manualmente:
+
+1. Abrir [Actions del repositorio](https://github.com/warks1/REPARADO/actions).
+2. Seleccionar **REPARADO V41 · Descargar fichas de App Store y Google Play**.
+3. Pulsar **Run workflow** sobre la rama `main`. Al finalizar, abrir la ejecución y descargar el artefacto `REPARADO-Fichas-AppStore-GooglePlay`.
+4. Extraer el ZIP interior `REPARADO-Fichas-AppStore-GooglePlay-es-ES.zip` para disponer de las carpetas de Apple y Google, junto a la descripción en texto plano.
+
+No necesita cuentas de desarrollador ni secretos; únicamente genera un **paquete de textos**, no una app instalable. Los artefactos de Actions caducan a los **14 días**.
+
+La compilación comercial de App Store y Google Play y su validación previa comprueban además `npm run metadata:check`: si la descripción original y los archivos exportados no coinciden, se detiene la compilación antes de firmar los paquetes.
+
+La ficha y el ZIP **no se envían automáticamente** a Google ni a Apple. El responsable de la cuenta deberá introducir los textos y confirmar capturas, privacidad y publicación.
