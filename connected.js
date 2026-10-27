@@ -461,7 +461,7 @@ export function mountConnected({app, services, supabase, authLinkIntent=null}) {
       if(!confirmed)return;
       button.disabled=true;
       try{
-        const {data:accepted,error}=await supabase.rpc('accept_reparado_quote',{p_request_id:button.dataset.acceptQuote});
+        const {data:accepted,error}=await supabase.rpc('accept_reparado_quote',{p_request_id:button.dataset.acceptQuote,p_expected_price:valid.total});
         if(!isCurrentUser(quoteUserId)||currentView!=='requests'||!button.isConnected)return;
         if(error)throw error;
         if(!accepted){message('Este presupuesto ya no está disponible. Actualiza la solicitud.',true);return}
@@ -1017,6 +1017,13 @@ export function mountConnected({app, services, supabase, authLinkIntent=null}) {
         else {await renderAdmin(filter);message('Estado del trabajo actualizado.');}
         return;
       }
+      const original=all.find(j=>j.id===jobId);
+      if(!original)return message('La solicitud ya no está disponible. Actualiza el panel.',true);
+      if(status==='accepted'&&original.status!=='accepted')
+        return message('La aceptación de un presupuesto debe realizarla el cliente desde Mis solicitudes.',true);
+      if(['scheduled','in_progress','completed'].includes(status)&&
+         !['accepted','scheduled','in_progress','completed'].includes(original.status))
+        return message('Antes de programar o finalizar el trabajo, el cliente debe aceptar el presupuesto.',true);
       const operator_id=String(fields.get('operator_id'))||null;
       const date=String(fields.get('scheduled_at'));
       const rawPrice=String(fields.get('price')??'').trim();
@@ -1065,6 +1072,14 @@ export function mountConnected({app, services, supabase, authLinkIntent=null}) {
         // guardando en paralelo. No anunciar cambios cuando el servidor falla.
         if(error.code==='23P01'||error.message?.includes('REPARADO_SCHEDULE_CONFLICT'))
           return message('No se ha programado: otro administrador acaba de reservar una visita de ese operario a menos de 60 minutos. Actualiza el panel y elige otra hora.',true);
+        if(error.code==='23514' && error.message?.includes('REPARADO_ACCEPTED_QUOTE_PRICE_LOCKED'))
+          return message('No puedes cambiar el importe de un presupuesto ya aceptado. Cualquier modificación requiere un nuevo presupuesto con aceptación expresa, conservando el anterior.',true);
+        if(error.code==='23514' && error.message?.includes('REPARADO_ACCEPTANCE_REQUIRES_CUSTOMER'))
+          return message('Solo el cliente puede aceptar su presupuesto desde Mis solicitudes.',true);
+        if(error.code==='23514' && error.message?.includes('REPARADO_QUOTE_MUST_BE_ACCEPTED_FIRST'))
+          return message('No se puede programar o finalizar un trabajo sin la aceptación del presupuesto.',true);
+        if(error.code==='23514' && error.message?.includes('REPARADO_ACCEPTED_QUOTE_CANNOT_REOPEN'))
+          return message('Un presupuesto ya aceptado no se puede volver a abrir ni modificar.',true);
         if(error.message?.includes('REPARADO_SCHEDULE_OPERATOR_REQUIRED')||
            error.message?.includes('REPARADO_SCHEDULE_INVALID_OPERATOR'))
           return message('No se ha guardado: revisa el operario y la fecha de la visita.',true);
