@@ -1,0 +1,51 @@
+name: REPARADO V50 · Comprobar privacidad con dos cuentas reales de Test
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'scripts/check-real-customer-isolation.mjs'
+      - 'tests/live-customer-isolation-v50.test.mjs'
+      - '.github/workflows/qa-real-account-rls-v50.yml'
+      - 'docs/VERIFICAR-CUENTAS-REALES-V50.md'
+  push:
+    branches: [main]
+    paths:
+      - 'scripts/check-real-customer-isolation.mjs'
+      - 'tests/live-customer-isolation-v50.test.mjs'
+      - '.github/workflows/qa-real-account-rls-v50.yml'
+      - 'docs/VERIFICAR-CUENTAS-REALES-V50.md'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  safety-unit-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: {node-version: '22'}
+      - run: npm install --no-audit --no-fund
+      - run: node --test tests/live-customer-isolation-v50.test.mjs
+      - run: npm test
+      - run: npm run build
+  read-only-real-test:
+    if: github.event_name == 'workflow_dispatch'
+    needs: safety-unit-tests
+    environment: reparado-private-test
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      REPARADO_TEST_SUPABASE_URL: ${{ secrets.REPARADO_TEST_SUPABASE_URL }}
+      REPARADO_TEST_PUBLISHABLE_KEY: ${{ secrets.REPARADO_TEST_PUBLISHABLE_KEY }}
+      REPARADO_TEST_CLIENT_A_EMAIL: ${{ secrets.REPARADO_TEST_CLIENT_A_EMAIL }}
+      REPARADO_TEST_CLIENT_A_PASSWORD: ${{ secrets.REPARADO_TEST_CLIENT_A_PASSWORD }}
+      REPARADO_TEST_CLIENT_B_EMAIL: ${{ secrets.REPARADO_TEST_CLIENT_B_EMAIL }}
+      REPARADO_TEST_CLIENT_B_PASSWORD: ${{ secrets.REPARADO_TEST_CLIENT_B_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: {node-version: '22'}
+      - run: npm install --no-audit --no-fund
+      - name: Consultar RLS mediante dos sesiones privadas sin modificar datos
+        run: node scripts/check-real-customer-isolation.mjs
