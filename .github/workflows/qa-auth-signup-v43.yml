@@ -1,0 +1,39 @@
+name: REPARADO V43 · Bloqueo Auth público en tiendas
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'scripts/store-auth-signup-check.mjs'
+      - 'tests/store-auth-signup-v43.test.mjs'
+      - '.github/workflows/store-release.yml'
+      - '.github/workflows/qa-auth-signup-v43.yml'
+      - 'docs/COMPROBAR-AUTH-ANTES-DE-TIENDAS.md'
+      - 'docs/PUBLICAR-EN-TIENDAS.md'
+  push:
+    branches: [main]
+    paths:
+      - 'scripts/store-auth-signup-check.mjs'
+      - 'tests/store-auth-signup-v43.test.mjs'
+      - '.github/workflows/store-release.yml'
+      - '.github/workflows/qa-auth-signup-v43.yml'
+      - 'docs/COMPROBAR-AUTH-ANTES-DE-TIENDAS.md'
+      - 'docs/PUBLICAR-EN-TIENDAS.md'
+permissions:
+  contents: read
+jobs:
+  test-build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: {node-version: '22'}
+      - run: npm install --no-audit --no-fund
+      - run: npm test
+      - run: npm run build
+      - name: La firma comercial sin proyecto Auth debe fallar
+        run: |
+          if node scripts/store-auth-signup-check.mjs; then
+            echo 'Fallo: permitió publicar sin configuración Auth'
+            exit 1
+          fi
