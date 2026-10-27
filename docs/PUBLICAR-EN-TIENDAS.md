@@ -60,12 +60,17 @@ Una compilación satisfactoria no garantiza la aprobación. Los certificados, pe
 - Desde el 31/08/2026 Google Play pide objetivo **API 36** para nuevas apps móviles. `https://support.google.com/googleplay/android-developer/answer/11926878`
 - Para cuentas personales de Play nuevas sujetas a sus requisitos de prueba, se necesita un mínimo de **12 testers durante 14 días continuados** antes de solicitar acceso a producción. `https://support.google.com/googleplay/android-developer/answer/14151465`
 
-## Metadatos sugeridos para la ficha (revisar con la empresa)
+## Información pública de REPARADO para las tiendas (es-ES)
 
-- **Nombre:** REPARADO
-- **Descripción breve:** Solicita reparaciones del hogar en Cataluña y consulta el seguimiento de tus trabajos.
-- **Descripción:** REPARADO ayuda a solicitar servicios de fontanería, albañilería y pladur, parquet y pequeños arreglos. Explora servicios y precios orientativos con IVA incluido, describe lo que necesitas y adjunta fotografías. Tras la aceptación del trabajo por el equipo, podrás seguir su estado y comunicarte con REPARADO desde tu cuenta. Las funciones que dependan del backend requieren inicio de sesión y disponibilidad del servicio.
-- **Importante:** no indicar pago en app ni factura automática certificada hasta implementar y comprobar dichas funciones.
+**Ficha redactada y preparada para copiar en las tiendas:** [FICHA-TIENDAS-es-ES.md](FICHA-TIENDAS-es-ES.md).
+
+Los campos estructurados en [`store-metadata/es-ES.json`](../store-metadata/es-ES.json) incluyen:
+- **Google Play:** nombre de la aplicación, descripción breve y descripción completa.
+- **App Store:** nombre, subtítulo, texto promocional, palabras clave y descripción completa.
+- **Servicios explicados:** fontanería, albañilería y pladur, parquet, manitas y reformas en Cataluña.
+- **Transparencia:** precios orientativos con IVA incluido; fecha de visita sujeta a confirmación y funciones de cliente sujetas a cuenta y conexión.
+
+Los textos están preparados conforme a los límites de las fichas, comprobados automáticamente por los tests. **Subirlos a GitHub no cambia por sí solo la información mostrada por Apple o Google**; hay que copiarlos a la ficha al solicitar la publicación. No anunciar pago en app, factura fiscal automática o avisos push remotos mientras esas funciones no se validen.
 
 ## No publicar sin cumplir
 - [ ] Backend REAL en producción y pruebas con cliente y operario.
