@@ -12,6 +12,7 @@ import { operatorMaySetStatus } from './rules.js'
 import {jobFilters,filterJobs,jobCounters,vatIncluded,sameOperatorSlot,staffVisitGapMinutes,validateAdminJobUpdate} from './staff-workflows.js'
 import {staffProgressMarkup,staffDocument} from './staff-documents.js'
 import {downloadQuoteAcceptanceSummary} from './quote-acceptance-summary.js'
+import {checkRealBackendConnection} from './admin-connection-diagnostics.js'
 import {calculateQuoteLines} from './quote-calculator.js'
 import { renderInvoices } from './invoices.js'
 import { renderNotifications } from './notifications.js'
@@ -578,6 +579,7 @@ export function mountConnected({app, services, supabase, authLinkIntent=null}) {
         '<div class="support-history-head"><h3>Mis incidencias</h3><button type="button" data-refresh-support>Actualizar estados</button></div>'+
         '<p data-support-history-status role="status" aria-live="polite">Consultando incidencias…</p>'+
         '<div data-support-history-list></div></section>':''}
+      ${profile?.role==='admin'?'<section class="reparado-help" id="system-diagnostics"><h3>Diagnóstico de conexión</h3><p>Comprueba la sesión y los permisos de lectura, sin modificar solicitudes ni acceder a datos de otros clientes.</p><button type="button" id="check-system-connection">Comprobar conexión real</button><p data-system-diagnostics-status role="status" aria-live="polite"></p></section>':''}
       <section class="account-deletion">
         <h3>Privacidad de la cuenta</h3>
         <p>Puedes solicitar la eliminación de tu cuenta y de tus datos personales, salvo aquellos que debamos conservar por obligación legal.</p>
@@ -587,6 +589,26 @@ export function mountConnected({app, services, supabase, authLinkIntent=null}) {
       </section>
       <p data-feedback class="feedback" role="status"></p></section>`;
     main.querySelector('#view-invoices').addEventListener('click',loadInvoices);
+    const connectionButton=main.querySelector('#check-system-connection');
+    connectionButton?.addEventListener('click',async()=>{
+      const originId=session?.user?.id;
+      const panel=main.querySelector('#system-diagnostics');
+      const output=panel?.querySelector('[data-system-diagnostics-status]');
+      if(!panel||!output||!isCurrentUser(originId)||profile?.role!=='admin'||connectionButton.disabled)return;
+      connectionButton.disabled=true;
+      output.textContent='Comprobando el servidor y permisos privados…';
+      try{
+        const report=await checkRealBackendConnection({supabase,userId:originId});
+        if(!panel.isConnected||currentView!=='profile'||!isCurrentUser(originId)||profile?.role!=='admin')return;
+        const details=report.checks.map(check=>(check.ok?'Correcto: ':'Error: ')+check.label).join(' · ');
+        output.textContent=(report.ok?'Comprobación de conexión superada. ':'Hay comprobaciones sin superar. ')+details+
+          '. Esta prueba no sustituye la auditoría de seguridad ni las pruebas en dispositivos reales.';
+      }catch{
+        if(panel.isConnected&&currentView==='profile'&&isCurrentUser(originId))
+          output.textContent='No se pudo realizar la comprobación. Revisa la conexión y vuelve a intentarlo.';
+      }finally{if(connectionButton.isConnected)connectionButton.disabled=false}
+    });
+
     const historyPanel=main.querySelector('#customer-support-history');
     const supportOwnerId=session.user.id;
     let historyRequestSeq=0;
