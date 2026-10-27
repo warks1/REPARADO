@@ -128,6 +128,6 @@ test('V44: la interfaz solo la muestra a clientes y valida la sesión después d
  assert.match(app,/id="download-my-data"/);
  assert.match(app,/buildPersonalDataExport\(/);
  assert.match(app,/authEpoch===originalEpoch/);
- assert.match(app,/downloadPersonalDataExport\(snapshot\)/);
+ assert.match(app,/sharePrivateDataExport\(snapshot/);
  assert.match(app,/revis(a|e) la carpeta de descargas|Revisa la carpeta de descargas/i);
 });
