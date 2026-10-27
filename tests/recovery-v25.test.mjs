@@ -6,9 +6,9 @@ const source=readFileSync(new URL('../connected.js',import.meta.url),'utf8');
 test('el cliente puede adjuntar nuevas fotos desde Mis solicitudes sin crear otra solicitud',()=>{
   assert.match(source,/data-upload-request-photos/);
   assert.match(source,/data-upload-photo-result/);
-  assert.match(source,/getRequestPhotoCount\(supabase,uid,requestId\)/);
-  assert.match(source,/uploadRequestPhotos\(\{supabase,userId:uid,requestId,files:selected,existing\}\)/);
-  assert.match(source,/session\.user\.id!==uid/);
+  assert.match(source,/uploadPhotosWithRecovery/);
+  assert.match(source,/isSessionCurrent/);
+  assert.match(source,/authEpoch===uploadEpoch/);
 });
 test('las consultas con red inestable muestran un mensaje y conservan navegación',()=>{
   for(const fn of ['loadRequests','loadAgenda','loadChat']){
