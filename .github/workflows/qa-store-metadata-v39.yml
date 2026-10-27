@@ -1,0 +1,34 @@
+name: REPARADO V39 · Fichas App Store y Google Play
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'store-metadata/**'
+      - 'docs/FICHA-TIENDAS-es-ES.md'
+      - 'docs/PUBLICAR-EN-TIENDAS.md'
+      - 'public/manifest.webmanifest'
+      - 'tests/store-metadata.test.mjs'
+      - '.github/workflows/qa-store-metadata-v39.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'store-metadata/**'
+      - 'docs/FICHA-TIENDAS-es-ES.md'
+      - 'docs/PUBLICAR-EN-TIENDAS.md'
+      - 'public/manifest.webmanifest'
+      - 'tests/store-metadata.test.mjs'
+      - '.github/workflows/qa-store-metadata-v39.yml'
+permissions:
+  contents: read
+jobs:
+  validate-metadata:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm install --no-audit --no-fund
+      - run: npm test
+      - run: npm run build
