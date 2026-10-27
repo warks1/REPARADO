@@ -10,6 +10,10 @@ on:
       - 'package.json'
       - 'capacitor.config.ts'
       - '.github/workflows/ios-simulator.yml'
+      - 'native/ios/**'
+      - 'scripts/install-ios-privacy.py'
+      - 'scripts/link-ios-privacy.rb'
+      - 'tests/test_ios_privacy_v47.py'
   workflow_dispatch:
 permissions:
   contents: read
@@ -35,6 +39,12 @@ jobs:
         run: |
           npx cap add ios
           npx cap sync ios
+      - name: Instalar el manifiesto Apple en el target App
+        run: |
+          python3 -m unittest discover -s tests -p 'test_ios_privacy_v47.py'
+          python3 scripts/install-ios-privacy.py
+          ruby scripts/link-ios-privacy.rb
+          plutil -lint ios/App/App/PrivacyInfo.xcprivacy
       - name: Crear iconos y splash de Reparado para iPhone
         run: npx @capacitor/assets generate --ios --iconBackgroundColor '#fff9f5' --splashBackgroundColor '#ffffff'
       - name: Comprobar configuración de Xcode
@@ -57,6 +67,7 @@ jobs:
         run: |
           test -f ios-build/Build/Products/Debug-iphonesimulator/App.app/Info.plist
           test -f ios-build/Build/Products/Debug-iphonesimulator/App.app/App
+          python3 scripts/install-ios-privacy.py --verify-bundle ios-build/Build/Products/Debug-iphonesimulator/App.app
       - name: Conservar versión para simulador
         uses: actions/upload-artifact@v4
         with:
