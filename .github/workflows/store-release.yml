@@ -61,6 +61,7 @@ jobs:
       - name: Instalar y probar aplicación
         run: |
           npm install --no-audit --no-fund
+          npm run metadata:check
           npm test
           npm run build
       - name: Crear Android nativo
@@ -126,6 +127,7 @@ jobs:
       - name: Instalar, probar y compilar aplicación
         run: |
           npm install --no-audit --no-fund
+          npm run metadata:check
           npm test
           npm run build
           npx cap add ios
