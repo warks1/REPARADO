@@ -20,12 +20,12 @@ export function checkPublicPageUrl(raw){
   let url;
   try{url=new URL(raw)}catch{return null}
   if(url.protocol!=='https:'||url.username||url.password||url.port||!url.hostname||
-     url.hash||url.search||isIP(url.hostname)||url.hostname.length>253)
+     url.hash||url.search||isIP(url.hostname)||url.hostname.includes('[')||url.hostname.length>253)
     return null;
   const host=url.hostname.toLowerCase();
   if(!host.includes('.')||/(?:^|\.)(?:localhost|local|internal|test|invalid|example)$/.test(host)||
-     host.endsWith('.example.com')||host.endsWith('.example.es')||
-     /\s/.test(raw)||raw!==url.href)return null;
+     host.endsWith('.example.com')||host.endsWith('.example.es')||host.endsWith('.example.org')||
+     /\s/.test(raw))return null;
   return url;
 }
 
