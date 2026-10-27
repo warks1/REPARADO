@@ -84,6 +84,12 @@ El proceso de creación de AAB/IPA comerciales consulta el estado real de **Supa
 
 Esta comprobación solo confirma el estado público de Auth; no acredita por sí sola que la protección de contraseñas filtradas, MFA o las políticas RLS estén correctamente configuradas.
 
+### Inventario de datos y borrador de privacidad (V51)
+
+Se ha preparado el inventario interno [INVENTARIO-DATOS-V51.md](INVENTARIO-DATOS-V51.md) y el borrador [POLITICA-PRIVACIDAD-BORRADOR-V51.md](POLITICA-PRIVACIDAD-BORRADOR-V51.md). Ambos documentos **requieren completar datos del responsable, finalidades, bases jurídicas, plazos y proveedores antes de su aprobación**.
+
+El borrador **no se sirve desde la web pública** ni autoriza a rellenar la URL de privacidad de App Store/Google Play. Solo después de su aprobación jurídica y operativa debe prepararse una página pública HTTPS; el control automático V48 comprobará que esa página funciona, pero no podrá sustituir la revisión legal.
+
 ## No publicar sin cumplir
 - [ ] Backend REAL en producción y pruebas con cliente y operario.
 - [ ] Responsabilidad legal, soporte, política de privacidad y solicitud web de borrado.
