@@ -29,7 +29,7 @@ test('Invitados establecen contraseña real Auth y recuperación usa origen sin 
   assert.ok(s.includes("supabase.auth.resetPasswordForEmail(email,{redirectTo})"));
   assert.ok(s.includes("window.location.origin+window.location.pathname"));
   assert.ok(s.includes("supabase.auth.updateUser({password})"));
-  assert.ok(s.includes("if(password.length<12)"));
+  assert.ok(s.includes("validateNewPassword(password)"));
   assert.ok(s.includes("event==='PASSWORD_RECOVERY'"));
   assert.ok(s.includes("passwordSetupPending=authLinkIntent==='invite'||authLinkIntent==='recovery'"));
   assert.ok(s.includes("if(passwordSetupPending){showPasswordSetup();return}"));

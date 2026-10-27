@@ -24,11 +24,11 @@ test('el navegador no filtra URL sensible a sitios externos',()=>{
  const html=read('index.html');
  assert.ok(html.includes('<meta name="referrer" content="no-referrer" />'));
 });
-test('errores de autenticación genéricos y contraseñas nuevas de 12 o más caracteres',()=>{
+test('errores de autenticación genéricos y contraseñas nuevas largas de 15 o más caracteres',()=>{
  const js=read('connected.js');
  assert.ok(js.includes("if(error){message('No se pudo iniciar sesión."));
  assert.ok(!js.includes("if(error){message(error.message,true);return}\n      // Supabase"));
  assert.ok(js.includes("if(button.disabled)return"));
- assert.ok(js.includes("if(password.length<12)return message('La contraseña debe tener al menos 12 caracteres.'"));
- assert.ok(js.includes('name="password_confirm" type="password" autocomplete="new-password" minlength="12"'));
+ assert.ok(js.includes("validateNewPassword(password)"));
+ assert.ok(js.includes('name="password_confirm" type="password" autocomplete="new-password" minlength="15"'));
 });
