@@ -55,6 +55,7 @@ jobs:
       - name: Comprobar datos de producción y autorización
         run: |
           node scripts/store-preflight.mjs
+          node scripts/store-auth-signup-check.mjs
           [[ "$REPARADO_BUILD_NUMBER" =~ ^[1-9][0-9]*$ ]] || { echo 'Número de compilación inválido'; exit 1; }
           [[ "$REPARADO_VERSION_NAME" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo 'Versión inválida'; exit 1; }
           test -n "$ANDROID_KEYSTORE_BASE64" && test -n "$REPARADO_ANDROID_KEYSTORE_PASSWORD" && test -n "$REPARADO_ANDROID_KEY_ALIAS" && test -n "$REPARADO_ANDROID_KEY_PASSWORD" || { echo 'Faltan credenciales de firma Android'; exit 1; }
@@ -120,6 +121,7 @@ jobs:
         run: |
           set -euo pipefail
           node scripts/store-preflight.mjs
+          node scripts/store-auth-signup-check.mjs
           [[ "$REPARADO_BUILD_NUMBER" =~ ^[1-9][0-9]*$ ]] || { echo 'Número de compilación inválido'; exit 1; }
           [[ "$REPARADO_VERSION_NAME" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo 'Versión inválida'; exit 1; }
           test -n "$APPLE_TEAM_ID" && test -n "$APPLE_P12_BASE64" && test -n "$APPLE_P12_PASSWORD" && test -n "$APPLE_PROFILE_BASE64" || { echo 'Falta firma o provisioning profile de Apple'; exit 1; }
