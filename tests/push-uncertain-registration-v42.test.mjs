@@ -41,13 +41,15 @@ function mockNative(){
  return mock;
 }
 
+async function emit(device,value){device.issueToken(value);await new Promise(resolve=>setImmediate(resolve))}
+
 test('V42: registro guardado en servidor con respuesta perdida se revoca antes de salir',async()=>{
  const d=mockNative(),errors=[];
  const p=createPushSessionManager({...d,onError:e=>errors.push(e.message)});
  d.setUser('A');
  assert.equal(await p.activate('A'),true);
  d.loseAck(true);
- await d.issueToken(tokenA);
+ await emit(d,tokenA);
  assert.equal(d.stored.get(tokenA),'A');
  assert.equal(errors.length,1);
  assert.equal(await p.deactivate('A'),true);
@@ -55,7 +57,7 @@ test('V42: registro guardado en servidor con respuesta perdida se revoca antes d
  assert.deepEqual(d.calls.map(x=>x.name),['reparado_register_device','reparado_revoke_device']);
  d.setUser('B');
  assert.equal(await p.activate('B'),true);
- await d.issueToken(tokenA);
+ await emit(d,tokenA);
  assert.equal(await p.deactivate('B'),true);
  assert.equal(d.stored.size,0);
 });
@@ -63,7 +65,7 @@ test('V42: registro guardado en servidor con respuesta perdida se revoca antes d
 test('V42: si también falla la revocación se rechaza la salida y se conserva el token para reintentar',async()=>{
  const d=mockNative(),p=createPushSessionManager({...d,onError:()=>{}});
  d.setUser('A');await p.activate('A');
- d.loseAck(true);await d.issueToken(tokenA);
+ d.loseAck(true);await emit(d,tokenA);
  d.failRevocation(true);
  assert.equal(await p.deactivate('A'),false);
  assert.equal(d.stored.get(tokenA),'A');
@@ -80,7 +82,7 @@ test('V42: si también falla la revocación se rechaza la salida y se conserva e
 
 test('V42: rechaza reemplazar cuenta con token activo incluso sin logout previo',async()=>{
  const d=mockNative(),p=createPushSessionManager(d);
- await p.activate('A');await d.issueToken(tokenA);
+ await p.activate('A');await emit(d,tokenA);
  assert.equal(d.stored.get(tokenA),'A');
  d.setUser('B');
  assert.equal(await p.activate('B'),false);
@@ -89,7 +91,7 @@ test('V42: rechaza reemplazar cuenta con token activo incluso sin logout previo'
  assert.equal(await p.deactivate('A'),true);
  d.setUser('B');
  assert.equal(await p.activate('B'),true);
- await d.issueToken(tokenB);
+ await emit(d,tokenB);
  assert.equal(d.stored.get(tokenB),'B');
  await p.deactivate('B');
  assert.equal(d.stored.size,0);
@@ -98,8 +100,8 @@ test('V42: rechaza reemplazar cuenta con token activo incluso sin logout previo'
 test('V42: error ambiguo en rotación revoca tanto el token antiguo como el nuevo',async()=>{
  const d=mockNative(),p=createPushSessionManager({...d,onError:()=>{}});
  d.setUser('A');await p.activate('A');
- await d.issueToken(tokenA);
- d.loseAck(true);await d.issueToken(tokenB);
+ await emit(d,tokenA);
+ d.loseAck(true);await emit(d,tokenB);
  assert.equal(d.stored.size,2);
  assert.equal(await p.deactivate('A'),true);
  assert.equal(d.stored.size,0);
