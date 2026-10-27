@@ -14,7 +14,8 @@ import {staffProgressMarkup,staffDocument} from './staff-documents.js'
 import {downloadQuoteAcceptanceSummary} from './quote-acceptance-summary.js'
 import {shareVisitCalendar} from './mobile-calendar-share.js'
 import {checkRealBackendConnection} from './admin-connection-diagnostics.js'
-import {buildPersonalDataExport,downloadPersonalDataExport} from './customer-data-export.js'
+import {buildPersonalDataExport} from './customer-data-export.js'
+import {sharePrivateDataExport} from './mobile-private-export.js'
 import {calculateQuoteLines} from './quote-calculator.js'
 import { renderInvoices } from './invoices.js'
 import { renderNotifications } from './notifications.js'
@@ -603,8 +604,8 @@ export function mountConnected({app, services, supabase, authLinkIntent=null}) {
       ${profile?.role==='customer'?`<section class="reparado-help" id="customer-data-export">
         <h3>Descargar mis datos</h3>
         <p>Puedes descargar un archivo JSON con tu perfil, solicitudes, mensajes, avisos, documentos visibles e incidencias. Las fotografías y las reseñas no forman parte de esta copia; si las necesitas, contacta con soporte.</p>
-        <p>El archivo incluye información personal, como direcciones y teléfonos. Guárdalo de forma privada.</p>
-        <button type="button" id="download-my-data">Descargar mis datos visibles</button>
+        <p>El archivo incluye información personal, como direcciones y teléfonos. Elige un destino seguro y no lo compartas con terceros.</p>
+        <button type="button" id="download-my-data">Guardar o compartir mis datos visibles</button>
         <p data-export-feedback role="status" aria-live="polite"></p>
       </section>`:''}
       <section class="account-deletion">
@@ -632,8 +633,13 @@ export function mountConnected({app, services, supabase, authLinkIntent=null}) {
           supabase,userId:ownerId,isCurrentUser:stillOwner
         });
         if(!stillOwner(ownerId))return;
-        downloadPersonalDataExport(snapshot);
-        feedback.textContent='Descarga solicitada. Revisa la carpeta de descargas y guarda el archivo en privado.';
+        const result=await sharePrivateDataExport(snapshot,{
+          userId:ownerId,isSessionCurrent:stillOwner
+        });
+        if(!stillOwner(ownerId))return;
+        feedback.textContent=result.mode==='native'
+          ?'Elige dónde guardar la copia en el menú del teléfono. Contiene datos privados; no la compartas con desconocidos.'
+          :'Descarga solicitada. Revisa la carpeta de descargas y guarda el archivo en privado.';
       }catch{
         if(stillOwner(ownerId))
           feedback.textContent='No se pudo preparar la copia completa. Comprueba la conexión o consulta con soporte.';
