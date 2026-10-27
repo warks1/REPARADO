@@ -44,6 +44,7 @@ jobs:
         with:
           node-version: '22'
       - run: npm install --no-audit --no-fund
+      - run: npm run metadata:check
       - run: npm test
       - run: npm run build
       - name: Verificar páginas públicas para las fichas de las tiendas
