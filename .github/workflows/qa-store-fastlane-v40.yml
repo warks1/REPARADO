@@ -1,0 +1,39 @@
+name: REPARADO V40 · Metadatos oficiales de tiendas
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'fastlane/metadata/**'
+      - 'store-metadata/**'
+      - 'scripts/export-store-metadata.mjs'
+      - 'tests/store-fastlane-v40.test.mjs'
+      - 'docs/EXPORTAR-FICHAS-TIENDAS.md'
+      - 'docs/PUBLICAR-EN-TIENDAS.md'
+      - 'package.json'
+      - '.github/workflows/qa-store-fastlane-v40.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'fastlane/metadata/**'
+      - 'store-metadata/**'
+      - 'scripts/export-store-metadata.mjs'
+      - 'tests/store-fastlane-v40.test.mjs'
+      - 'docs/EXPORTAR-FICHAS-TIENDAS.md'
+      - 'docs/PUBLICAR-EN-TIENDAS.md'
+      - 'package.json'
+      - '.github/workflows/qa-store-fastlane-v40.yml'
+permissions:
+  contents: read
+jobs:
+  validate-store-listings:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm install --no-audit --no-fund
+      - run: npm run metadata:check
+      - run: npm test
+      - run: npm run build
