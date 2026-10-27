@@ -15,8 +15,10 @@ const sections=Object.freeze([
     fields:'id,user_id,title,body,read,created_at'},
   {label:'facturas_visibles',table:'invoices',owner:'customer_id',
     fields:'id,request_id,customer_id,number,subtotal,vat,total,status,created_at',excludeDraft:true},
-  {label:'incidencias_soporte',table:'support_reports',owner:'user_id',
-    fields:'id,user_id,subject,description,context,status,created_at'}
+  // La columna user_id no es legible para clientes por diseño. La política RLS
+  // devuelve únicamente las incidencias propias de cuentas customer.
+  {label:'incidencias_soporte',table:'support_reports',owner:null,
+    fields:'id,subject,description,context,status,created_at'}
 ]);
 
 export class PersonalDataExportError extends Error{
@@ -44,7 +46,8 @@ async function loadRows({supabase,userId,isCurrentUser},config){
   const rows=[];
   for(let start=0;start<=MAX_ROWS_PER_SECTION;start+=PAGE_SIZE){
     assertOwner(userId,isCurrentUser);
-    let query=supabase.from(config.table).select(config.fields).eq(config.owner,userId);
+    let query=supabase.from(config.table).select(config.fields);
+    if(config.owner)query=query.eq(config.owner,userId);
     if(config.excludeDraft)query=query.neq('status','draft');
     let result;
     try{
@@ -53,7 +56,7 @@ async function loadRows({supabase,userId,isCurrentUser},config){
     assertOwner(userId,isCurrentUser);
     if(result?.error||!Array.isArray(result?.data))
       throw new PersonalDataExportError('network');
-    if(result.data.some(row=>!row||row[config.owner]!==userId))
+    if(result.data.some(row=>!row||(config.owner&&row[config.owner]!==userId)))
       throw new PersonalDataExportError('network');
     // Cuando devuelve una página completa, comprobar la página siguiente;
     // nunca generar un fichero que se presente como íntegro pero truncado.
@@ -76,15 +79,18 @@ export async function buildPersonalDataExport({supabase,userId,isCurrentUser,gen
   }catch{throw new PersonalDataExportError('network')}
   assertOwner(userId,isCurrentUser);
   if(!profile||profile.id!==userId)throw new PersonalDataExportError('network');
+  // Un administrador ve incidencias de otros usuarios por RLS. Esta exportación
+  // es exclusiva de clientes para evitar incluir datos de terceros.
+  if(profile.role!=='customer')throw new PersonalDataExportError('session');
   const records={perfil:profile};
   for(const section of sections)
     records[section.label]=await loadRows({supabase,userId,isCurrentUser},section);
   // La solicitud de eliminación es como máximo una fila y su RLS es por cuenta.
   try{
+    // user_id no tiene permiso de lectura; RLS limita a la única fila propia.
     const {data,error}=await supabase.from('account_deletion_requests')
-      .select('id,user_id,status,requested_at,completed_at').eq('user_id',userId).maybeSingle();
+      .select('id,status,requested_at,completed_at').maybeSingle();
     if(error)throw error;
-    if(data&&data.user_id!==userId)throw new Error('Owner mismatch');
     records.solicitud_eliminacion=data||null;
   }catch{throw new PersonalDataExportError('network')}
   await serverOwner(supabase,userId,isCurrentUser);
