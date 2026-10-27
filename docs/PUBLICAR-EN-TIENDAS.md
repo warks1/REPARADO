@@ -78,6 +78,12 @@ Además de la ficha legible, hay archivos separados para cada tienda en `fastlan
 
 Esta preparación no equivale a publicar los metadatos en Apple o Google. No se ha añadido ninguna clave ni automatismo para cambiar las tiendas sin aprobación.
 
+### Bloqueo automático de altas públicas en producción (V43)
+
+El proceso de creación de AAB/IPA comerciales consulta el estado real de **Supabase Auth** antes de firmar. En el modelo actual de acceso privado, si `disable_signup` no es `true` o falla la consulta, **la firma queda bloqueada**. Ocultar el formulario no es suficiente. Instrucciones y límites: [`COMPROBAR-AUTH-ANTES-DE-TIENDAS.md`](COMPROBAR-AUTH-ANTES-DE-TIENDAS.md).
+
+Esta comprobación solo confirma el estado público de Auth; no acredita por sí sola que la protección de contraseñas filtradas, MFA o las políticas RLS estén correctamente configuradas.
+
 ## No publicar sin cumplir
 - [ ] Backend REAL en producción y pruebas con cliente y operario.
 - [ ] Responsabilidad legal, soporte, política de privacidad y solicitud web de borrado.
