@@ -13,6 +13,7 @@ import {jobFilters,filterJobs,jobCounters,vatIncluded,sameOperatorSlot,staffVisi
 import {staffProgressMarkup,staffDocument} from './staff-documents.js'
 import {downloadQuoteAcceptanceSummary} from './quote-acceptance-summary.js'
 import {checkRealBackendConnection} from './admin-connection-diagnostics.js'
+import {buildPersonalDataExport,downloadPersonalDataExport} from './customer-data-export.js'
 import {calculateQuoteLines} from './quote-calculator.js'
 import { renderInvoices } from './invoices.js'
 import { renderNotifications } from './notifications.js'
@@ -580,6 +581,13 @@ export function mountConnected({app, services, supabase, authLinkIntent=null}) {
         '<p data-support-history-status role="status" aria-live="polite">Consultando incidencias…</p>'+
         '<div data-support-history-list></div></section>':''}
       ${profile?.role==='admin'?'<section class="reparado-help" id="system-diagnostics"><h3>Diagnóstico de conexión</h3><p>Comprueba la sesión y los permisos de lectura, sin modificar solicitudes ni acceder a datos de otros clientes.</p><button type="button" id="check-system-connection">Comprobar conexión real</button><p data-system-diagnostics-status role="status" aria-live="polite"></p></section>':''}
+      <section class="reparado-help" id="customer-data-export">
+        <h3>Descargar mis datos</h3>
+        <p>Puedes descargar un archivo JSON con tu perfil, solicitudes, mensajes, avisos, documentos visibles e incidencias. Las fotografías y las reseñas no forman parte de esta copia; si las necesitas, contacta con soporte.</p>
+        <p>El archivo incluye información personal, como direcciones y teléfonos. Guárdalo de forma privada.</p>
+        <button type="button" id="download-my-data">Descargar mis datos visibles</button>
+        <p data-export-feedback role="status" aria-live="polite"></p>
+      </section>
       <section class="account-deletion">
         <h3>Privacidad de la cuenta</h3>
         <p>Puedes solicitar la eliminación de tu cuenta y de tus datos personales, salvo aquellos que debamos conservar por obligación legal.</p>
@@ -589,6 +597,32 @@ export function mountConnected({app, services, supabase, authLinkIntent=null}) {
       </section>
       <p data-feedback class="feedback" role="status"></p></section>`;
     main.querySelector('#view-invoices').addEventListener('click',loadInvoices);
+    const personalDataButton=main.querySelector('#download-my-data');
+    personalDataButton?.addEventListener('click',async()=>{
+      const ownerId=session?.user?.id;
+      const originalEpoch=authEpoch;
+      const panel=main.querySelector('#customer-data-export');
+      const feedback=panel?.querySelector('[data-export-feedback]');
+      if(!ownerId||!panel||!feedback||personalDataButton.disabled||!isCurrentUser(ownerId))return;
+      personalDataButton.disabled=true;
+      feedback.textContent='Preparando una copia de los datos visibles de tu cuenta…';
+      const stillOwner=uid=>isCurrentUser(uid)&&authEpoch===originalEpoch&&
+        currentView==='profile'&&panel.isConnected;
+      try{
+        const snapshot=await buildPersonalDataExport({
+          supabase,userId:ownerId,isCurrentUser:stillOwner
+        });
+        if(!stillOwner(ownerId))return;
+        downloadPersonalDataExport(snapshot);
+        feedback.textContent='Descarga solicitada. Revisa la carpeta de descargas y guarda el archivo en privado.';
+      }catch{
+        if(stillOwner(ownerId))
+          feedback.textContent='No se pudo preparar la copia completa. Comprueba la conexión o consulta con soporte.';
+      }finally{
+        if(personalDataButton.isConnected)personalDataButton.disabled=false;
+      }
+    });
+
     const connectionButton=main.querySelector('#check-system-connection');
     connectionButton?.addEventListener('click',async()=>{
       const originId=session?.user?.id;
