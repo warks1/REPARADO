@@ -32,3 +32,15 @@ El documento descargado contiene información personal, incluyendo direcciones y
 - Activar el servidor de producción y comprobar que tiene aplicadas las migraciones de las tablas expuestas.
 
 La exportación no sustituye el trámite de eliminación ya disponible en la aplicación.
+
+## V49 · Guardar o compartir datos desde la aplicación móvil
+
+En la **web**, el botón sigue descargando un archivo JSON del cliente. En Android/iOS **nativos** usa los plugins de Capacitor ya instalados para abrir el selector del sistema con un archivo local de `Directory.Cache`. El cliente debe elegir explícitamente dónde guardarlo; la app **no envía datos automáticamente por email o a terceros**.
+
+Esta operación necesita una sesión autenticada en Supabase que coincida con `usuario_id` del archivo. Se comprueba que la sesión siga siendo la misma antes de escribir y antes de abrir el menú nativo; si cambia de cuenta, se borra el archivo temporal y se suspende la operación. Cada archivo tiene un nombre aleatorio único para evitar que dos sesiones compartan el mismo fichero. Ante fallo al escribir o compartir se intenta borrar de inmediato.
+
+Tras cerrar el menú se programa su eliminación de la caché **90 segundos después** para que el receptor termine de leerlo. La cancelación/terminación del proceso por el sistema operativo puede impedir esa limpieza: los datos son confidenciales y siguen requiriendo protección del dispositivo. La copia no debe guardarse en carpetas públicas por defecto.
+
+**Aviso visible:** el archivo puede contener teléfonos, direcciones, mensajes y otros datos personales. El usuario debe conservarlo en un destino privado y no compartirlo con terceros desconocidos.
+
+Quedan pendientes pruebas reales en Android y iPhone, especialmente en caso de cancelar el diálogo, perder conectividad, cambiar de cuenta y reiniciar la aplicación. Esta descarga **no reemplaza la respuesta del responsable a una solicitud de acceso RGPD**.
