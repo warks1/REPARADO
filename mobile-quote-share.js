@@ -35,7 +35,12 @@ export async function shareAcceptedQuote(record,{
     return {mode:'browser'};
   }
   const nonce=randomId();
-  if(!UUID.test(String(nonce||'')))throw error();
+  // Nombres temporales únicos: aceptar exclusivamente UUID alfanumérico.
+  const parts=typeof nonce==='string'?nonce.split('-'):[];
+  const canonical=parts.length===5&&[8,4,4,4,12].every((n,i)=>parts[i].length===n)&&
+    parts.every(segment=>Array.from(segment).every(ch=>
+      ('0123456789abcdefABCDEF').includes(ch)));
+  if(!canonical)throw error();
   // El nombre no incluye ID de cliente, dirección ni servicio.
   const path='REPARADO-aceptacion-'+nonce.toLowerCase()+'.html';
   const apis=await getNativeApis();
