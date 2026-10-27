@@ -1,0 +1,36 @@
+name: REPARADO V53 · Compartir presupuestos aceptados
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'mobile-quote-share.js'
+      - 'connected.js'
+      - 'tests/mobile-quote-share-v53.test.mjs'
+      - 'tests/quote-acceptance-summary-v36.test.mjs'
+      - 'docs/PRESUPUESTOS-MOVIL-V53.md'
+      - '.github/workflows/qa-mobile-quote-v53.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'mobile-quote-share.js'
+      - 'connected.js'
+      - 'tests/mobile-quote-share-v53.test.mjs'
+      - 'tests/quote-acceptance-summary-v36.test.mjs'
+      - 'docs/PRESUPUESTOS-MOVIL-V53.md'
+      - '.github/workflows/qa-mobile-quote-v53.yml'
+permissions:
+  contents: read
+jobs:
+  test-native-quote:
+    runs-on: ubuntu-latest
+    timeout-minutes: 14
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: {node-version: '22'}
+      - run: npm install --no-audit --no-fund
+      - run: node --test tests/mobile-quote-share-v53.test.mjs tests/quote-acceptance-summary-v36.test.mjs
+      - run: npm test
+      - run: npm run build
+      - run: npx cap add android
+      - run: npx cap sync android
