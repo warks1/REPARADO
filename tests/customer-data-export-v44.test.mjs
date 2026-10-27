@@ -35,7 +35,7 @@ function fake({role='customer',foreign=false,records=203,authSwitch=false,failOn
     onRead?.(q);
     if(table===failOn)return {data:null,error:new Error('Confidencial')};
     let data=datasets[table]||[];
-    for(const [key,val] of q.filters)data=data.filter(row=>row[key]===val);
+    for(const [key,val] of q.filters)if(!(foreign&&table==='service_requests'))data=data.filter(row=>row[key]===val);
     for(const [key,val] of q.not)data=data.filter(row=>row[key]!==val);
     return {data:data.slice(start,end+1),error:null};
    },
