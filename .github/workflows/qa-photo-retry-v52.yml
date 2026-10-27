@@ -1,0 +1,36 @@
+name: REPARADO V52 · Fotos sin duplicados
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'photo-retry.js'
+      - 'connected.js'
+      - 'tests/photo-retry-v52.test.mjs'
+      - 'tests/request-submit-v24.test.mjs'
+      - 'tests/recovery-v25.test.mjs'
+      - 'docs/FOTOS-REINTENTABLES-V52.md'
+      - '.github/workflows/qa-photo-retry-v52.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'photo-retry.js'
+      - 'connected.js'
+      - 'tests/photo-retry-v52.test.mjs'
+      - 'tests/request-submit-v24.test.mjs'
+      - 'tests/recovery-v25.test.mjs'
+      - 'docs/FOTOS-REINTENTABLES-V52.md'
+      - '.github/workflows/qa-photo-retry-v52.yml'
+permissions:
+  contents: read
+jobs:
+  verify-photo-retry:
+    runs-on: ubuntu-latest
+    timeout-minutes: 14
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: {node-version: '22'}
+      - run: npm install --no-audit --no-fund
+      - run: node --test tests/photo-retry-v52.test.mjs tests/request-submit-v24.test.mjs tests/recovery-v25.test.mjs
+      - run: npm test
+      - run: npm run build
