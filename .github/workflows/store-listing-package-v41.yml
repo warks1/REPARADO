@@ -1,6 +1,15 @@
 name: REPARADO V41 · Descargar fichas de App Store y Google Play
 on:
   workflow_dispatch:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'store-metadata/**'
+      - 'fastlane/metadata/**'
+      - 'scripts/export-store-metadata.mjs'
+      - 'docs/FICHA-TIENDAS-es-ES.md'
+      - '.github/workflows/store-listing-package-v41.yml'
+      - 'tests/store-listing-package-v41.test.mjs'
   push:
     branches: [main]
     paths:
