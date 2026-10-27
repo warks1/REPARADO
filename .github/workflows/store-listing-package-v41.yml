@@ -1,0 +1,44 @@
+name: REPARADO V41 · Descargar fichas de App Store y Google Play
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'store-metadata/**'
+      - 'fastlane/metadata/**'
+      - 'scripts/export-store-metadata.mjs'
+      - 'docs/FICHA-TIENDAS-es-ES.md'
+      - '.github/workflows/store-listing-package-v41.yml'
+permissions:
+  contents: read
+jobs:
+  exportar-fichas:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validar textos con los datos originales
+        run: |
+          npm run metadata:check
+          node --test tests/store-metadata.test.mjs tests/store-fastlane-v40.test.mjs
+      - name: Preparar ZIP con textos para las dos tiendas
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p store-package
+          cp -R fastlane/metadata store-package/metadata
+          cp store-metadata/es-ES.json store-package/es-ES.json
+          cp docs/FICHA-TIENDAS-es-ES.md store-package/FICHA-TIENDAS-es-ES.md
+          (cd store-package && zip -q -r ../REPARADO-Fichas-AppStore-GooglePlay-es-ES.zip .)
+          test -s REPARADO-Fichas-AppStore-GooglePlay-es-ES.zip
+          unzip -t REPARADO-Fichas-AppStore-GooglePlay-es-ES.zip
+      - name: Conservar ficha para descarga manual
+        uses: actions/upload-artifact@v4
+        with:
+          name: REPARADO-Fichas-AppStore-GooglePlay
+          path: REPARADO-Fichas-AppStore-GooglePlay-es-ES.zip
+          if-no-files-found: error
+          retention-days: 14
