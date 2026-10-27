@@ -1,0 +1,19 @@
+{
+  "locale": "es-ES",
+  "platforms": {
+    "google_play": {
+      "name": "REPARADO",
+      "short_description": "Solicita reparaciones y servicios de manitas en Cataluña con seguimiento.",
+      "full_description": "REPARADO te ayuda a solicitar reparaciones, pequeñas instalaciones y reformas del hogar en Cataluña. Explora servicios, consulta precios orientativos con el 21 % de IVA incluido y organiza tus solicitudes desde el móvil.\n\nSERVICIOS QUE PUEDES SOLICITAR\n• Fontanería: grifos, fugas de agua, sifones, desatascos, cisternas y termos.\n• Albañilería y pladur: alicatados, solados, tabiques, techos y pequeñas reparaciones.\n• Parquet: instalación, reparación de tablas, rodapiés, lijado y barnizado.\n• Manitas: montaje de muebles, estanterías, cortinas, persianas, lámparas y accesorios.\n• Reformas: baños, cocinas y viviendas, con valoración y presupuesto según el trabajo.\n\nCÓMO FUNCIONA\n1. Busca el servicio que necesitas y consulta el importe orientativo o solicita presupuesto.\n2. Describe el trabajo, indica dónde se realizará y elige una fecha y franja horaria preferidas. Puedes adjuntar fotografías.\n3. Consulta el estado de tu solicitud, revisa el presupuesto y sigue la agenda cuando el equipo gestione el trabajo.\n4. Comunícate con REPARADO mediante el chat y, una vez finalizado el servicio, comparte tu valoración.\n\nREPARACIONES CON INFORMACIÓN CLARA\nLos precios mostrados son orientativos y pueden variar en función de los materiales, la complejidad y el desplazamiento. Las fechas solicitadas son preferencias, no reservas confirmadas. Para enviar solicitudes y acceder al seguimiento necesitas una cuenta y conexión al servicio.\n\nREPARADO está orientada a servicios de reparación y mantenimiento del hogar en Cataluña."
+    },
+    "app_store": {
+      "name": "REPARADO",
+      "subtitle": "Reparaciones y manitas",
+      "promotional_text": "Fontanería, parquet, pladur, manitas y reformas en Cataluña. Consulta precios orientativos con IVA y organiza tus solicitudes en un solo lugar.",
+      "description": "REPARADO te ayuda a solicitar reparaciones, pequeñas instalaciones y reformas del hogar en Cataluña. Explora servicios, consulta precios orientativos con el 21 % de IVA incluido y organiza tus solicitudes desde el móvil.\n\nSERVICIOS QUE PUEDES SOLICITAR\n• Fontanería: grifos, fugas de agua, sifones, desatascos, cisternas y termos.\n• Albañilería y pladur: alicatados, solados, tabiques, techos y pequeñas reparaciones.\n• Parquet: instalación, reparación de tablas, rodapiés, lijado y barnizado.\n• Manitas: montaje de muebles, estanterías, cortinas, persianas, lámparas y accesorios.\n• Reformas: baños, cocinas y viviendas, con valoración y presupuesto según el trabajo.\n\nCÓMO FUNCIONA\n1. Busca el servicio que necesitas y consulta el importe orientativo o solicita presupuesto.\n2. Describe el trabajo, indica dónde se realizará y elige una fecha y franja horaria preferidas. Puedes adjuntar fotografías.\n3. Consulta el estado de tu solicitud, revisa el presupuesto y sigue la agenda cuando el equipo gestione el trabajo.\n4. Comunícate con REPARADO mediante el chat y, una vez finalizado el servicio, comparte tu valoración.\n\nREPARACIONES CON INFORMACIÓN CLARA\nLos precios mostrados son orientativos y pueden variar en función de los materiales, la complejidad y el desplazamiento. Las fechas solicitadas son preferencias, no reservas confirmadas. Para enviar solicitudes y acceder al seguimiento necesitas una cuenta y conexión al servicio.\n\nREPARADO está orientada a servicios de reparación y mantenimiento del hogar en Cataluña.",
+      "keywords": "fontanería,albañilería,pladur,parquet,manitas,reformas,averías,grifería,hogar,cataluña"
+    }
+  },
+  "support_email": "reparado_soporte@outlook.es",
+  "publication_note": "Textos preparados para configurar manualmente la ficha al publicar. No indican que la app esté aprobada ni subida a ninguna tienda."
+}
