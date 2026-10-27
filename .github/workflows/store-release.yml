@@ -135,6 +135,9 @@ jobs:
           npx cap add ios
           npx cap sync ios
           npx @capacitor/assets generate --ios --iconBackgroundColor '#fff9f5' --splashBackgroundColor '#ffffff'
+          python3 scripts/install-ios-privacy.py
+          ruby scripts/link-ios-privacy.rb
+          plutil -lint ios/App/App/PrivacyInfo.xcprivacy
       - name: Preparar certificado y perfil Apple sin exponerlos
         shell: bash
         run: |
@@ -172,6 +175,7 @@ jobs:
           </dict></plist>
           EOF
           xcodebuild -exportArchive -archivePath "$RUNNER_TEMP/Reparado.xcarchive" -exportOptionsPlist "$RUNNER_TEMP/ExportOptions.plist" -exportPath "$RUNNER_TEMP/reparado-ipa"
+          python3 scripts/install-ios-privacy.py --verify-bundle "$RUNNER_TEMP/Reparado.xcarchive/Products/Applications/App.app"
           test -s "$RUNNER_TEMP/reparado-ipa/App.ipa"
           mkdir -p store-artifacts
           cp "$RUNNER_TEMP/reparado-ipa/App.ipa" store-artifacts/Reparado-iOS-AppStore.ipa
