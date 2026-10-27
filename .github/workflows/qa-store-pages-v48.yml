@@ -1,0 +1,38 @@
+name: REPARADO V48 · Validar enlaces públicos para tiendas
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'scripts/store-public-pages-check.mjs'
+      - 'tests/store-public-pages-v48.test.mjs'
+      - '.github/workflows/store-release.yml'
+      - '.github/workflows/qa-store-pages-v48.yml'
+      - 'docs/VERIFICAR-ENLACES-TIENDAS-V48.md'
+  push:
+    branches: [main]
+    paths:
+      - 'scripts/store-public-pages-check.mjs'
+      - 'tests/store-public-pages-v48.test.mjs'
+      - '.github/workflows/store-release.yml'
+      - '.github/workflows/qa-store-pages-v48.yml'
+      - 'docs/VERIFICAR-ENLACES-TIENDAS-V48.md'
+permissions:
+  contents: read
+jobs:
+  test-links:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: {node-version: '22'}
+      - run: npm install --no-audit --no-fund
+      - run: node --test tests/store-public-pages-v48.test.mjs
+      - run: npm test
+      - run: npm run build
+      - name: Sin configuración comercial no debe aprobar enlaces
+        run: |
+          if node scripts/store-public-pages-check.mjs; then
+            echo 'ERROR: permitida publicación sin páginas públicas verificadas'
+            exit 1
+          fi
