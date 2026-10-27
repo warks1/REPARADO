@@ -1,0 +1,29 @@
+name: REPARADO V42 · Rechazo seguro de tokens push inciertos
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'push-session.js'
+      - 'tests/push-session-v24.test.mjs'
+      - 'tests/push-uncertain-registration-v42.test.mjs'
+      - '.github/workflows/qa-push-uncertain-v42.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'push-session.js'
+      - 'tests/push-session-v24.test.mjs'
+      - 'tests/push-uncertain-registration-v42.test.mjs'
+      - '.github/workflows/qa-push-uncertain-v42.yml'
+permissions:
+  contents: read
+jobs:
+  test-build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: {node-version: '22'}
+      - run: npm install --no-audit --no-fund
+      - run: npm test
+      - run: npm run build
