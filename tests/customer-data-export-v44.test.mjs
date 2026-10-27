@@ -124,7 +124,7 @@ test('V44: cada fila identificable debe pertenecer al propietario autenticado',a
 });
 
 test('V44: la interfaz solo la muestra a clientes y valida la sesión después de leer datos',()=>{
- assert.match(app,/profile\?\.role==='customer'\?'<section class="reparado-help" id="customer-data-export"/);
+ assert.match(app,/profile\?\.role==='customer'\?`<section class="reparado-help" id="customer-data-export"/);
  assert.match(app,/id="download-my-data"/);
  assert.match(app,/buildPersonalDataExport\(/);
  assert.match(app,/authEpoch===originalEpoch/);
