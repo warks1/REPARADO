@@ -25,11 +25,8 @@ export async function shareAcceptedQuote(record,{
   },
   scheduleCleanup=(callback,ms)=>setTimeout(callback,ms)
 }={}){
-  const current=()=>UUID.test(String(userId||''))&&
-    typeof isSessionCurrent==='function'&&isSessionCurrent(userId);
-  if(!current())throw new Error('V53_TEST_SESSION_CHECK:'+
-    String(UUID.test(String(userId||'')))+':'+typeof isSessionCurrent+':'+
-    String(typeof isSessionCurrent==='function'&&isSessionCurrent(userId)));
+  const current=()=>Boolean(userId&&typeof isSessionCurrent==='function'&&isSessionCurrent(userId));
+  if(!current())throw error();
   // La función de presupuesto original verifica formato, importe y fecha.
   const contents=quoteAcceptanceSummary(record);
   if(!current())throw error();
