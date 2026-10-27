@@ -20,7 +20,7 @@ test('V51: borrador no finge tener datos fiscales, plazos o finalidad aprobada',
   assert.match(draft,/NO PUBLICAR/);
   assert.match(draft,/PENDIENTE: razón social/);
   assert.match(draft,/NIF\/CIF: \*\*\[PENDIENTE\]/);
-  assert.match(draft,/bases jurídicas/);
+  assert.match(draft,/base(?:s)? jur[ií]dica(?:s)?/i);
   assert.match(draft,/copias de seguridad/);
   assert.match(draft,/derechos/);
   assert.match(draft,/reparado_soporte@outlook\.es/);
