@@ -68,5 +68,5 @@ test('V45: botón disponible solo desde el listado privado de agenda',()=>{
   assert.match(code,/authEpoch!==epoch/);
   assert.match(code,/isCurrentUser\(userId\)/);
   assert.match(code,/data\?\.find\(row=>row\.id===button\.dataset\.visitCalendar/);
-  assert.match(code,/downloadVisitCalendar\(visit\)/);
+  assert.match(code,/shareVisitCalendar\(visit\)/);
 });
