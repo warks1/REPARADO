@@ -1,0 +1,29 @@
+name: REPARADO V36 · Resumen descargable de presupuesto
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'quote-acceptance-summary.js'
+      - 'connected.js'
+      - 'tests/quote-acceptance-summary-v36.test.mjs'
+      - '.github/workflows/qa-quote-summary-v36.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'quote-acceptance-summary.js'
+      - 'connected.js'
+      - 'tests/quote-acceptance-summary-v36.test.mjs'
+      - '.github/workflows/qa-quote-summary-v36.yml'
+permissions:
+  contents: read
+jobs:
+  test-build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: {node-version: '22'}
+      - run: npm install --no-audit --no-fund
+      - run: npm test
+      - run: npm run build
