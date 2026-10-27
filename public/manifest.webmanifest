@@ -1,7 +1,7 @@
 {
   "name": "Reparado - Servicios de reparación",
   "short_name": "Reparado",
-  "description": "Solicitudes de fontanería, albañilería, pladur y parquet",
+  "description": "Solicita reparaciones del hogar en Cataluña: fontanería, albañilería, pladur, parquet, manitas y reformas.",
   "lang": "es",
   "start_url": "./",
   "scope": "./",
