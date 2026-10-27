@@ -12,7 +12,7 @@ import {appHeader,bottomNavigation,setActiveNav,renderLanding,renderCategory,ser
 import { operatorMaySetStatus } from './rules.js'
 import {jobFilters,filterJobs,jobCounters,vatIncluded,sameOperatorSlot,staffVisitGapMinutes,validateAdminJobUpdate} from './staff-workflows.js'
 import {staffProgressMarkup,staffDocument} from './staff-documents.js'
-import {downloadQuoteAcceptanceSummary} from './quote-acceptance-summary.js'
+import {shareAcceptedQuote} from './mobile-quote-share.js'
 import {shareVisitCalendar} from './mobile-calendar-share.js'
 import {checkRealBackendConnection} from './admin-connection-diagnostics.js'
 import {buildPersonalDataExport} from './customer-data-export.js'
