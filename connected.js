@@ -12,6 +12,7 @@ import { operatorMaySetStatus } from './rules.js'
 import {jobFilters,filterJobs,jobCounters,vatIncluded,sameOperatorSlot,staffVisitGapMinutes,validateAdminJobUpdate} from './staff-workflows.js'
 import {staffProgressMarkup,staffDocument} from './staff-documents.js'
 import {downloadQuoteAcceptanceSummary} from './quote-acceptance-summary.js'
+import {downloadVisitCalendar} from './visit-calendar.js'
 import {checkRealBackendConnection} from './admin-connection-diagnostics.js'
 import {buildPersonalDataExport,downloadPersonalDataExport} from './customer-data-export.js'
 import {calculateQuoteLines} from './quote-calculator.js'
@@ -496,13 +497,25 @@ export function mountConnected({app, services, supabase, authLinkIntent=null}) {
     setActiveNav(app,'agenda');
     currentView='agenda';main.innerHTML=`<section class="card">${backButton}<h2>Mi agenda</h2><p>Cargando…</p></section>`;
     const userId=session?.user?.id,loadingScreen=main.firstElementChild;
+    const epoch=authEpoch;
     if(!userId)return showLogin();
     let data,error;
     try{
-      ({data,error}=await supabase.from('service_requests').select('service_name,scheduled_at,status,operator_name').eq('customer_id',userId).in('status',['scheduled','in_progress']).order('scheduled_at'));
+      ({data,error}=await supabase.from('service_requests').select('id,service_name,scheduled_at,status,operator_name').eq('customer_id',userId).in('status',['scheduled','in_progress']).order('scheduled_at'));
     }catch{error=new Error('No se pudo cargar la agenda. Comprueba la conexión.');}
-    if(currentView!=='agenda'||!isCurrentUser(userId)||main.firstElementChild!==loadingScreen)return;
-    main.innerHTML=`<section class="card">${backButton}<h2>Mi agenda</h2>${error?'<p>No se pudo consultar la agenda. Comprueba la conexión.</p><button type="button" data-view="agenda">Reintentar</button>':data?.length?data.map(r=>`<article class="request"><b>${esc(r.service_name)}</b><p>${esc(safeTime(r.scheduled_at))}</p><small>${esc(statusLabels[r.status])} · Operario: ${esc(r.operator_name||'Por asignar')}</small></article>`).join(''):'<p>No hay visitas programadas.</p>'}</section>`;
+    if(currentView!=='agenda'||!isCurrentUser(userId)||authEpoch!==epoch||main.firstElementChild!==loadingScreen)return;
+    main.innerHTML=`<section class="card">${backButton}<h2>Mi agenda</h2>${error?'<p>No se pudo consultar la agenda. Comprueba la conexión.</p><button type="button" data-view="agenda">Reintentar</button>':data?.length?data.map(r=>`<article class="request"><b>${esc(r.service_name)}</b><p>${esc(safeTime(r.scheduled_at))}</p><small>${esc(statusLabels[r.status])} · Operario: ${esc(r.operator_name||'Por asignar')}</small>${r.status==='scheduled'&&r.scheduled_at?`<p><button type="button" data-visit-calendar="${esc(r.id)}">📅 Descargar cita para calendario</button></p>`:''}</article>`).join(''):'<p>No hay visitas programadas.</p>'}<p data-feedback role="status" aria-live="polite"></p></section>`;
+    main.querySelectorAll('[data-visit-calendar]').forEach(button=>button.addEventListener('click',()=>{
+      if(button.disabled||!button.isConnected||currentView!=='agenda'||!isCurrentUser(userId)||authEpoch!==epoch)return;
+      const visit=data?.find(row=>row.id===button.dataset.visitCalendar&&row.status==='scheduled');
+      if(!visit)return;
+      try{
+        downloadVisitCalendar(visit);
+        message('Archivo de calendario preparado. Ábrelo para añadir la cita. El bloque de una hora es orientativo.');
+      }catch{
+        message('No se pudo generar el calendario. Revisa la fecha de la visita.',true);
+      }
+    }));
   }
   async function loadChat(){
     setActiveNav(app,'chat');
