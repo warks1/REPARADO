@@ -581,13 +581,13 @@ export function mountConnected({app, services, supabase, authLinkIntent=null}) {
         '<p data-support-history-status role="status" aria-live="polite">Consultando incidencias…</p>'+
         '<div data-support-history-list></div></section>':''}
       ${profile?.role==='admin'?'<section class="reparado-help" id="system-diagnostics"><h3>Diagnóstico de conexión</h3><p>Comprueba la sesión y los permisos de lectura, sin modificar solicitudes ni acceder a datos de otros clientes.</p><button type="button" id="check-system-connection">Comprobar conexión real</button><p data-system-diagnostics-status role="status" aria-live="polite"></p></section>':''}
-      <section class="reparado-help" id="customer-data-export">
+      ${profile?.role==='customer'?'<section class="reparado-help" id="customer-data-export">
         <h3>Descargar mis datos</h3>
         <p>Puedes descargar un archivo JSON con tu perfil, solicitudes, mensajes, avisos, documentos visibles e incidencias. Las fotografías y las reseñas no forman parte de esta copia; si las necesitas, contacta con soporte.</p>
         <p>El archivo incluye información personal, como direcciones y teléfonos. Guárdalo de forma privada.</p>
         <button type="button" id="download-my-data">Descargar mis datos visibles</button>
         <p data-export-feedback role="status" aria-live="polite"></p>
-      </section>
+      </section>':''}
       <section class="account-deletion">
         <h3>Privacidad de la cuenta</h3>
         <p>Puedes solicitar la eliminación de tu cuenta y de tus datos personales, salvo aquellos que debamos conservar por obligación legal.</p>
