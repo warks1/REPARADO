@@ -72,6 +72,12 @@ Los campos estructurados en [`store-metadata/es-ES.json`](../store-metadata/es-E
 
 Los textos están preparados conforme a los límites de las fichas, comprobados automáticamente por los tests. **Subirlos a GitHub no cambia por sí solo la información mostrada por Apple o Google**; hay que copiarlos a la ficha al solicitar la publicación. No anunciar pago en app, factura fiscal automática o avisos push remotos mientras esas funciones no se validen.
 
+### Archivos preparados para importación futura (V40)
+
+Además de la ficha legible, hay archivos separados para cada tienda en `fastlane/metadata/android/es-ES` y `fastlane/metadata/ios/es-ES`. Se actualizan desde un único archivo con `npm run metadata:export` y se verifican con `npm run metadata:check`. Consulta [`EXPORTAR-FICHAS-TIENDAS.md`](EXPORTAR-FICHAS-TIENDAS.md).
+
+Esta preparación no equivale a publicar los metadatos en Apple o Google. No se ha añadido ninguna clave ni automatismo para cambiar las tiendas sin aprobación.
+
 ## No publicar sin cumplir
 - [ ] Backend REAL en producción y pruebas con cliente y operario.
 - [ ] Responsabilidad legal, soporte, política de privacidad y solicitud web de borrado.
