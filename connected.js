@@ -2,7 +2,8 @@ import {supportHistoryMarkup} from './support-ticket-ui.js';
 import {submitSupportIssue,supportIssueFailureMessage} from './support-submission.js';
 import {readOwnDeletionStatus,submitOwnDeletionRequest,ownDeletionLabel} from './account-deletion.js';
 import {createPushSessionManager} from './push-session.js';
-import {validateRequestPhotos,getRequestPhotoCount,uploadRequestPhotos} from './request-photos.js';
+import {validateRequestPhotos} from './request-photos.js';
+import {uploadPhotosWithRecovery} from './photo-retry.js';
 import {submitRepairRequest} from './request-submission.js';
 import {contactLinksMarkup} from './contact-emails.js';
 import { mountReviewModeration } from './review-moderation.js';
@@ -334,6 +335,7 @@ export function mountConnected({app, services, supabase, authLinkIntent=null}) {
       if(button.disabled)return;
       button.disabled=true;
       let recorded=false;
+      const uploadEpoch=authEpoch;
       try{
         const fields=new FormData(form);
         const images=[...(form.elements.photos.files||[])];
@@ -360,11 +362,13 @@ export function mountConnected({app, services, supabase, authLinkIntent=null}) {
         if(created.error){message(created.error,true);return}
         recorded=true;
         if(!isCurrentUser(payload.customer_id)||main.querySelector('#new-request')!==form)return;
-        // Ante recuperación de un trabajo ya registrado, no repetir fotos:
-        // podrían haberse subido parcialmente. Se completan en Mis solicitudes.
-        const photosResult=images.length&&!created.recovered
-          ?await uploadRequestPhotos({supabase,userId:payload.customer_id,requestId:created.id,files:images})
-          :{uploaded:0,failed:0,error:null};
+        const photosResult=images.length
+          ?await uploadPhotosWithRecovery({
+            supabase,userId:payload.customer_id,requestId:created.id,files:images,
+            isSessionCurrent:id=>isCurrentUser(id)&&authEpoch===uploadEpoch&&
+              main.querySelector('#new-request')===form
+          })
+          :{uploaded:0,recovered:0,alreadyPresent:0,failed:0,error:null};
         const failures=photosResult.failed;
         photoUrls.forEach(URL.revokeObjectURL);
         photoUrls=[];
@@ -373,10 +377,13 @@ export function mountConnected({app, services, supabase, authLinkIntent=null}) {
         form.remove();
         main.querySelector('.request-screen .card').insertAdjacentHTML('beforeend',
           '<div class="request-confirm"><h2>Solicitud recibida</h2><p>Hemos registrado tu solicitud. Puedes consultar su estado en Mis solicitudes.</p><button type="button" class="primary-cta" data-view="requests">Ver mis solicitudes →</button></div>');
-        message(created.recovered?
-          'La solicitud ya estaba registrada. Comprueba sus fotografías en Mis solicitudes y añade las que falten.':
-          failures?'La solicitud se guardó, pero '+failures+' fotografía(s) no se pudieron subir.':
-          'Solicitud enviada correctamente.',Boolean(failures));
+        message(photosResult.error?
+          'La solicitud se ha registrado. No se pudieron comprobar las fotografías; entra en Mis solicitudes para completarlas.':
+          failures?
+          'La solicitud se ha registrado, pero '+failures+' fotografía(s) necesitan reintento desde Mis solicitudes.':
+          created.recovered?
+          'La solicitud ya estaba registrada. Fotografías recuperadas o adjuntadas sin duplicar las existentes.':
+          'Solicitud enviada correctamente.',Boolean(failures||photosResult.error));
       }catch{
         message(recorded?
           'La solicitud puede estar registrada. Revisa Mis solicitudes antes de volver a enviarla.':
@@ -420,23 +427,26 @@ export function mountConnected({app, services, supabase, authLinkIntent=null}) {
       const requestId=input.dataset.uploadRequestPhotos;
       const feedback=main.querySelector('[data-upload-photo-result="'+requestId+'"]');
       const uid=session?.user?.id;
+      const uploadEpoch=authEpoch;
       if(!feedback||!uid)return;
       const selected=Array.from(input.files||[]);
       if(!selected.length)return;
       input.disabled=true;
       feedback.textContent='Comprobando fotografías adjuntas…';
       try{
-        const existing=await getRequestPhotoCount(supabase,uid,requestId);
-        if(!session||session.user.id!==uid)throw new Error('Sesión cambiada');
-        const validation=validateRequestPhotos(selected,existing);
-        if(validation){feedback.textContent=validation;return}
-        feedback.textContent='Subiendo fotografías…';
-        const result=await uploadRequestPhotos({supabase,userId:uid,requestId,files:selected,existing});
-        if(!input.isConnected||currentView!=='requests'||!isCurrentUser(uid))return;
+        feedback.textContent='Subiendo o recuperando fotografías…';
+        const result=await uploadPhotosWithRecovery({
+          supabase,userId:uid,requestId,files:selected,
+          isSessionCurrent:id=>isCurrentUser(id)&&authEpoch===uploadEpoch&&
+            currentView==='requests'&&input.isConnected
+        });
+        if(!input.isConnected||currentView!=='requests'||!isCurrentUser(uid)||authEpoch!==uploadEpoch)return;
         feedback.textContent=result.error||(
-          result.failed
-            ?result.uploaded+' fotos añadidas; '+result.failed+' no se pudieron subir. Puedes reintentarlo.'
-            :result.uploaded+' fotografías añadidas correctamente.'
+          result.failed?
+            (result.uploaded+result.recovered)+' fotos guardadas o recuperadas; '+result.failed+
+              ' no se pudieron subir. Comprueba la conexión e inténtalo de nuevo.':
+            result.uploaded+' nuevas, '+result.recovered+' recuperadas, '+
+              result.alreadyPresent+' ya adjuntas. Sin duplicados.'
         );
       }catch{
         if(input.isConnected && currentView==='requests' && isCurrentUser(uid))
