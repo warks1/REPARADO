@@ -4,6 +4,8 @@ export function createPushSessionManager({supabase, Capacitor, PushNotifications
   let owner=null, token=null, listeners=[], active=false, starting=false;
   // Una rotación del token deja el anterior pendiente de baja hasta confirmarla.
   const retiredTokens=new Set();
+  // Respuesta de registro perdida: el servidor podría haber aceptado el token.
+  const uncertainTokens=new Set();
   let generation=0, pendingRegistration=Promise.resolve();
 
   const native=()=>Boolean(Capacitor.isNativePlatform());
@@ -14,6 +16,8 @@ export function createPushSessionManager({supabase, Capacitor, PushNotifications
   async function activate(userId){
     if(!userId || !native())return false;
     if(owner===userId && (active || starting))return true;
+    // Sin revocación confirmada nunca se pasa de una cuenta a otra.
+    if(owner && owner!==userId)return false;
     if(starting)return false;
     const currentGeneration=++generation;
     starting=true;
@@ -27,11 +31,13 @@ export function createPushSessionManager({supabase, Capacitor, PushNotifications
       const registrationListener=await PushNotifications.addListener('registration', ({value})=>{
         if(currentGeneration!==generation || owner!==userId || !value)return;
         const registeredToken=value;
+        uncertainTokens.add(registeredToken);
         pendingRegistration=pendingRegistration.catch(()=>{}).then(async()=>{
           const {data,error}=await supabase.rpc('reparado_register_device',{
             p_token:registeredToken,p_platform:Capacitor.getPlatform()
           });
           if(error || data!==true)throw new Error('Registro de notificaciones no disponible');
+          uncertainTokens.delete(registeredToken);
           // Guardar incluso si logout ha comenzado: deactivation espera esta
           // secuencia. No dejar dos tokens activos después de una rotación.
           if(owner===userId){
@@ -69,11 +75,12 @@ export function createPushSessionManager({supabase, Capacitor, PushNotifications
     // Bloquear callbacks nuevos y esperar a cualquier RPC ya iniciada.
     generation++;
     await pendingRegistration.catch(()=>{});
-    for(const deviceToken of new Set([...retiredTokens,...(token?[token]:[])])){
+    for(const deviceToken of new Set([...uncertainTokens,...retiredTokens,...(token?[token]:[])])){
       try{
         const {error}=await supabase.rpc('reparado_revoke_device',{p_token:deviceToken});
         if(error)throw error;
         retiredTokens.delete(deviceToken);
+        uncertainTokens.delete(deviceToken);
         if(token===deviceToken)token=null;
       }catch(error){
         onError(error);
@@ -81,13 +88,13 @@ export function createPushSessionManager({supabase, Capacitor, PushNotifications
       }
     }
     await removeListeners();
-    owner=null;token=null;retiredTokens.clear();active=false;
+    owner=null;token=null;retiredTokens.clear();uncertainTokens.clear();active=false;
     return true;
   }
   async function discard(){
     generation++;
     await removeListeners();
-    owner=null;token=null;retiredTokens.clear();active=false;
+    owner=null;token=null;retiredTokens.clear();uncertainTokens.clear();active=false;
   }
   return {activate,deactivate,discard};
 }
