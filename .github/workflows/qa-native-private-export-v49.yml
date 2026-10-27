@@ -1,0 +1,38 @@
+name: REPARADO V49 · Descargas privadas en Android e iPhone
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'mobile-private-export.js'
+      - 'connected.js'
+      - 'customer-data-export.js'
+      - 'tests/customer-data-export-v44.test.mjs'
+      - 'tests/mobile-private-export-v49.test.mjs'
+      - 'docs/EXPORTACION-DATOS-CLIENTE.md'
+      - '.github/workflows/qa-native-private-export-v49.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'mobile-private-export.js'
+      - 'connected.js'
+      - 'customer-data-export.js'
+      - 'tests/customer-data-export-v44.test.mjs'
+      - 'tests/mobile-private-export-v49.test.mjs'
+      - 'docs/EXPORTACION-DATOS-CLIENTE.md'
+      - '.github/workflows/qa-native-private-export-v49.yml'
+permissions:
+  contents: read
+jobs:
+  private-export-build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 14
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: {node-version: '22'}
+      - run: npm install --no-audit --no-fund
+      - run: node --test tests/customer-data-export-v44.test.mjs tests/mobile-private-export-v49.test.mjs
+      - run: npm test
+      - run: npm run build
+      - run: npx cap add android
+      - run: npx cap sync android
