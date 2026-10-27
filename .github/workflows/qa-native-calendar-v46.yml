@@ -1,0 +1,42 @@
+name: REPARADO V46 · Compartir citas en Android e iOS
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'mobile-calendar-share.js'
+      - 'visit-calendar.js'
+      - 'connected.js'
+      - 'package.json'
+      - 'tests/native-calendar-share-v46.test.mjs'
+      - 'tests/visit-calendar-v45.test.mjs'
+      - 'docs/AGENDA-CALENDARIO-ICS.md'
+      - '.github/workflows/qa-native-calendar-v46.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'mobile-calendar-share.js'
+      - 'visit-calendar.js'
+      - 'connected.js'
+      - 'package.json'
+      - 'tests/native-calendar-share-v46.test.mjs'
+      - 'tests/visit-calendar-v45.test.mjs'
+      - 'docs/AGENDA-CALENDARIO-ICS.md'
+      - '.github/workflows/qa-native-calendar-v46.yml'
+permissions:
+  contents: read
+jobs:
+  node-build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 16
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: {node-version: '22'}
+      - run: npm install --no-audit --no-fund
+      - run: node --test tests/native-calendar-share-v46.test.mjs tests/visit-calendar-v45.test.mjs
+      - run: npm test
+      - run: npm run build
+      - name: Comprobar enlace a plugins Capacitor nativos
+        run: |
+          npx cap add android
+          npx cap sync android
