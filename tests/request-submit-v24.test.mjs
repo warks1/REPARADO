@@ -13,8 +13,8 @@ test('solicitud: no admite doble envío ni deja el botón deshabilitado tras fal
   assert.match(text,/finally\s*\{/);
   assert.match(text,/if\(button\.isConnected\)button\.disabled=false/);
   assert.match(text,/Comprueba Mis solicitudes antes de reintentar/);
-  assert.match(text,/fotografía\(s\) no se pudieron subir/);
-  assert.match(text,/uploadRequestPhotos/);
+  assert.match(text,/fotografía\(s\) necesitan reintento/);
+  assert.match(text,/uploadPhotosWithRecovery/);
   assert.match(text,/photosResult\.failed/);
 });
 test('notificaciones: no se usan upserts directos ni se mantiene token tras cerrar sesión',()=>{
