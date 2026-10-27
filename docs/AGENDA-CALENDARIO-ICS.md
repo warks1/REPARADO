@@ -25,3 +25,13 @@ Al pulsarlo se genera localmente un archivo `.ics` estándar (iCalendar) que se 
 5. Confirmar que una visita cancelada o terminada no ofrece botón, y que el recordatorio depende del calendario del dispositivo.
 
 Los tests automáticos comprueban la sintaxis del archivo, control de longitud de línea UTF-8, rechazo de inyección, ausencia de datos personales y aislamiento básico entre sesiones.
+
+## V46 · Compartir la cita en iPhone y Android
+
+En una aplicación Capacitor nativa, el botón «Añadir cita a mi calendario» abre el **menú de compartir de iOS/Android** con un archivo temporal `.ics` generado en `Directory.Cache` mediante los plugins oficiales `@capacitor/filesystem` y `@capacitor/share`. El usuario elige el calendario o la aplicación receptora y confirma la importación. **No se solicita permiso general para leer o modificar el calendario** y REPARADO no afirma haber añadido la cita por sí sola.
+
+En un navegador web se conserva la descarga estándar del archivo. Si el dispositivo no admite compartir, o falla la escritura local, la app muestra un error y no anuncia éxito. La interfaz bloquea los clics simultáneos y descarta mensajes de sesiones ya cerradas. El archivo temporal del móvil se programa para borrarse **dos minutos después de cerrar el menú**, para permitir que el destinatario termine de leerlo; la caché puede conservarlo excepcionalmente si el sistema suspende la app.
+
+Los archivos nativos de desarrollo deben regenerarse con `npx cap sync` después de instalar los nuevos plugins. Para la publicación en App Store, revisar e incluir el **PrivacyInfo.xcprivacy** correspondiente al uso de Filesystem (categoría FileTimestamp y motivo admitido según la documentación actual de Capacitor), además de cualquier declaración requerida por otros plugins.
+
+**Pendiente:** validar en iPhone y Android físicos con Calendario, Google Calendar y una aplicación que no admita `.ics`, además de confirmar el comportamiento del diálogo al cancelar y la política de privacidad. No afirmar compatibilidad universal por las pruebas unitarias.
