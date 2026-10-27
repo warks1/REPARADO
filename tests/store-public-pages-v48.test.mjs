@@ -48,7 +48,7 @@ test('V48: páginas caídas, PDF, 404 o placeholder bloquean distribución comer
     {privacidad:{body:'<html><title>404 Not Found</title></html>'}},
     {soporte:{body:'<html><title>Sin contenidos</title><p>REPARADO página en construcción</p></html>'}},
     {privacidad:{length:'500000'}},
-    {privacidad:{body:'<html><title>Política de privacidad</title><p>Otros servicios sin REPARADO'.repeat(15)+'</html>'}}
+    {privacidad:{body:'<html><title>Política de privacidad</title><p>Otros servicios sin relación con esta app'.repeat(15)+'</html>'}}
   ];
   for(const failure of failures){
     const result=await checkStorePublicPages(vars,mock(failure));
