@@ -16,6 +16,7 @@ import {calculateQuoteLines} from './quote-calculator.js'
 import { renderInvoices } from './invoices.js'
 import { renderNotifications } from './notifications.js'
 import {publicRegistrationEnabled} from './auth-mode.js'
+import {validateNewPassword} from './password-policy.js'
 import { Capacitor } from '@capacitor/core'
 import { PushNotifications } from '@capacitor/push-notifications'
 
@@ -113,7 +114,7 @@ export function mountConnected({app, services, supabase, authLinkIntent=null}) {
     currentView='login';setActiveNav(app,'profile');session=null;profile=null;
     app.querySelector('#logout').classList.add('hidden');
     const pendingNotice=pendingService?`<p class="auth-pending">Continuar con: <strong>${esc(pendingService[1])}</strong></p>`:'';
-    const registerMarkup=openRegistration?`<button id="register" class="link" type="button">Crear una cuenta</button><form id="register-form" class="hidden"><label>Nombre y apellidos<input name="full_name" autocomplete="name" maxlength="100" required></label><label>Correo electrónico<input name="email" type="email" autocomplete="email" required></label><label>Contraseña<input name="password" type="password" autocomplete="new-password" minlength="12" required></label><label>Repetir contraseña<input name="password_confirm" type="password" autocomplete="new-password" minlength="12" required></label><button type="submit">Crear cuenta de cliente</button></form>`
+    const registerMarkup=openRegistration?`<button id="register" class="link" type="button">Crear una cuenta</button><form id="register-form" class="hidden"><label>Nombre y apellidos<input name="full_name" autocomplete="name" maxlength="100" required></label><label>Correo electrónico<input name="email" type="email" autocomplete="email" required></label><label>Contraseña<input name="password" type="password" autocomplete="new-password" minlength="15" maxlength="128" required></label><label>Repetir contraseña<input name="password_confirm" type="password" autocomplete="new-password" minlength="15" maxlength="128" required></label><p class="auth-password-hint">Usa una frase única de 15 caracteres o más. Puedes incluir espacios y usar un gestor de contraseñas.</p><button type="submit">Crear cuenta de cliente</button></form>`
       :'<p class="auth-invite-notice" role="note">Acceso privado: solicita una invitación al equipo de Reparado. Si ya tienes cuenta, inicia sesión.</p>';
     main.innerHTML=`<section class="auth card"><div class="heroicon"><img src="./icon.svg" width="44" height="44" alt=""></div><h1>Reparado</h1><p>Accede a tus servicios de reparación.</p>${pendingNotice}<form id="login"><input name="email" type="email" autocomplete="email" placeholder="Correo electrónico" required><input name="password" type="password" autocomplete="current-password" placeholder="Contraseña" required><button>Entrar</button></form><button id="forgot-password" type="button" class="link">¿Has olvidado tu contraseña?</button><form id="reset-form" class="hidden"><label>Correo de tu cuenta<input name="email" type="email" autocomplete="email" placeholder="Correo electrónico" required></label><button type="submit">Recibir enlace de recuperación</button></form>${registerMarkup}<p data-feedback class="feedback" role="status"></p></section>`;
     main.querySelector('#login').addEventListener('submit',async event=>{
@@ -176,7 +177,8 @@ export function mountConnected({app, services, supabase, authLinkIntent=null}) {
       const email=String(fields.get('email')||'').trim();
       const password=String(fields.get('password')||'');
       if(password!==fields.get('password_confirm'))return message('Las contraseñas no coinciden.',true);
-      if(password.length<12)return message('La contraseña debe tener al menos 12 caracteres.',true);
+      const passwordError=validateNewPassword(password);
+      if(passwordError)return message(passwordError,true);
       const submit=form.querySelector('[type=submit]');
       if(submit.disabled)return;
       submit.disabled=true;
@@ -198,14 +200,15 @@ export function mountConnected({app, services, supabase, authLinkIntent=null}) {
     currentView='password-setup';
     setActiveNav(app,'profile');
     const invited=authLinkIntent==='invite';
-    main.innerHTML=`<section class="auth card"><h2>${invited?'Completar invitación':'Restablecer contraseña'}</h2><p>Establece una contraseña nueva para entrar en REPARADO desde cualquier dispositivo.</p><form id="password-setup-form"><label>Nueva contraseña<input name="password" type="password" autocomplete="new-password" minlength="12" required></label><label>Repetir contraseña<input name="confirm" type="password" autocomplete="new-password" minlength="12" required></label><button type="submit">Guardar contraseña</button></form><button type="button" class="link" id="password-setup-logout">Cerrar sesión</button><p data-feedback class="feedback" role="status"></p></section>`;
+    main.innerHTML=`<section class="auth card"><h2>${invited?'Completar invitación':'Restablecer contraseña'}</h2><p>Establece una contraseña nueva para entrar en REPARADO desde cualquier dispositivo.</p><form id="password-setup-form"><label>Nueva contraseña<input name="password" type="password" autocomplete="new-password" minlength="15" maxlength="128" required></label><label>Repetir contraseña<input name="confirm" type="password" autocomplete="new-password" minlength="15" maxlength="128" required></label><p class="auth-password-hint">Usa una frase única de 15 caracteres o más. No es obligatorio mezclar números o símbolos.</p><button type="submit">Guardar contraseña</button></form><button type="button" class="link" id="password-setup-logout">Cerrar sesión</button><p data-feedback class="feedback" role="status"></p></section>`;
     main.querySelector('#password-setup-logout').addEventListener('click',safeSignOut);
     main.querySelector('#password-setup-form').addEventListener('submit',async event=>{
       event.preventDefault();
       const form=event.currentTarget;
       const data=new FormData(form);
       const password=String(data.get('password')||'');
-      if(password.length<12)return message('Usa al menos 12 caracteres.',true);
+      const passwordError=validateNewPassword(password);
+      if(passwordError)return message(passwordError,true);
       if(password!==data.get('confirm'))return message('Las contraseñas no coinciden.',true);
       const submit=form.querySelector('[type=submit]');
       if(submit.disabled)return;
