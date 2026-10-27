@@ -1,0 +1,32 @@
+name: REPARADO V51 · Preparación legal y privacidad
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'docs/INVENTARIO-DATOS-V51.md'
+      - 'docs/POLITICA-PRIVACIDAD-BORRADOR-V51.md'
+      - 'docs/PUBLICAR-EN-TIENDAS.md'
+      - 'tests/privacy-readiness-v51.test.mjs'
+      - '.github/workflows/qa-privacy-readiness-v51.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'docs/INVENTARIO-DATOS-V51.md'
+      - 'docs/POLITICA-PRIVACIDAD-BORRADOR-V51.md'
+      - 'docs/PUBLICAR-EN-TIENDAS.md'
+      - 'tests/privacy-readiness-v51.test.mjs'
+      - '.github/workflows/qa-privacy-readiness-v51.yml'
+permissions:
+  contents: read
+jobs:
+  check-privacy-drafts:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: {node-version: '22'}
+      - run: npm install --no-audit --no-fund
+      - run: node --test tests/privacy-readiness-v51.test.mjs
+      - run: npm test
+      - run: npm run build
