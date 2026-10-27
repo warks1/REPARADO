@@ -27,7 +27,7 @@ export async function shareAcceptedQuote(record,{
 }={}){
   const current=()=>UUID.test(String(userId||''))&&
     typeof isSessionCurrent==='function'&&isSessionCurrent(userId);
-  if(!current())throw error();
+  if(!current())throw new Error('No se pudo preparar el resumen privado del presupuesto (validación inicial de sesión).');
   // La función de presupuesto original verifica formato, importe y fecha.
   const contents=quoteAcceptanceSummary(record);
   if(!current())throw error();
