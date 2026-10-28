@@ -1,0 +1,38 @@
+name: REPARADO V59 · Borradores de facturación
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'billing-draft.js'
+      - 'connected.js'
+      - 'vivid-theme.css'
+      - 'tests/billing-draft-v59.test.mjs'
+      - 'docs/FACTURACION-V59.md'
+      - '.github/workflows/qa-billing-draft-v59.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'billing-draft.js'
+      - 'connected.js'
+      - 'vivid-theme.css'
+      - 'tests/billing-draft-v59.test.mjs'
+      - 'docs/FACTURACION-V59.md'
+      - '.github/workflows/qa-billing-draft-v59.yml'
+permissions:
+  contents: read
+jobs:
+  billing-draft:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm install --no-audit --no-fund
+      - name: Verificar IVA, avisos, permisos de interfaz y escape HTML
+        run: node --test tests/billing-draft-v59.test.mjs tests/invoice-integrity-v9.test.mjs
+      - name: Regresión completa JS
+        run: npm test
+      - name: Compilación web
+        run: npm run build
