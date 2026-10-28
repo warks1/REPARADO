@@ -19,6 +19,7 @@ import {buildPersonalDataExport} from './customer-data-export.js'
 import {sharePrivateDataExport} from './mobile-private-export.js'
 import {calculateQuoteLines} from './quote-calculator.js'
 import {billingDraftFormMarkup,billingDraftDocument} from './billing-draft.js'
+import {savePrivateBillingDraft,readPrivateBillingDraft} from './billing-draft-storage.js'
 import { renderInvoices } from './invoices.js'
 import { renderNotifications } from './notifications.js'
 import {publicRegistrationEnabled} from './auth-mode.js'
@@ -1248,8 +1249,8 @@ export function mountConnected({app, services, supabase, authLinkIntent=null}) {
         message(error.message||'No se pudo preparar el documento.',true);
       }
     }));
-    // V59: primer paso de facturación. Solo prepara un borrador imprimible;
-    // nunca llama a INSERT/UPDATE en invoices, no asigna número ni emite.
+    // V60: preparar, guardar y recuperar borradores fiscales privados.
+    // Solo administración; NO crea facturas fiscales ni asigna números.
     main.querySelectorAll('[data-billing-start]').forEach(button=>button.addEventListener('click',()=>{
       if(currentView!=='admin'||profile?.role!=='admin'||!isCurrentUser(staffUserId))return;
       const job=all.find(x=>String(x.id)===button.dataset.billingStart);
@@ -1257,24 +1258,69 @@ export function mountConnected({app, services, supabase, authLinkIntent=null}) {
       if(!host||!job||job.status!=='completed'||job.price==null)
         return message('Solo se pueden preparar borradores de trabajos terminados y valorados.',true);
       main.querySelectorAll('[data-document-host]').forEach(other=>other.replaceChildren());
-      host.innerHTML='<div class="staff-documents-toolbar"><button type="button" data-close-billing>Cerrar preparación</button></div>'+
+      host.innerHTML='<div class="staff-documents-toolbar"><button type="button" data-close-billing>Cerrar preparación</button>'+
+        '<button type="button" data-load-billing>Recuperar borrador guardado</button></div>'+
         billingDraftFormMarkup(job);
       host.querySelector('[data-close-billing]').addEventListener('click',()=>host.replaceChildren());
       const draftForm=host.querySelector('[data-billing-draft-form]');
+      const feedback=host.querySelector('[data-billing-feedback]');
+      const preview=host.querySelector('[data-billing-preview]');
+      const available=()=>currentView==='admin'&&profile?.role==='admin'&&
+        isCurrentUser(staffUserId)&&host.isConnected&&draftForm.isConnected;
+      const load=host.querySelector('[data-load-billing]');
+      load.addEventListener('click',async()=>{
+        if(!available()||load.disabled)return;
+        load.disabled=true;
+        feedback.textContent='Consultando borrador privado…';
+        try{
+          const fields=await readPrivateBillingDraft({supabase,job});
+          if(!available())return;
+          if(!fields){
+            feedback.textContent='No hay ningún borrador guardado para este trabajo.';
+            return;
+          }
+          for(const [name,value] of Object.entries(fields)){
+            const input=draftForm.elements.namedItem(name);
+            if(input&&'value' in input)input.value=String(value??'');
+          }
+          preview.replaceChildren();
+          feedback.textContent='Borrador privado recuperado. Revisa los datos y vuelve a preparar la vista antes de imprimir.';
+        }catch{
+          if(available())feedback.textContent='No se pudo recuperar el borrador o no coincide con el trabajo actual.';
+        }finally{if(load.isConnected)load.disabled=false}
+      });
+      // Cualquier edición invalida la vista previa: impedir guardar datos
+      // distintos a los que el administrador revisó en pantalla.
+      draftForm.addEventListener('input',()=>{
+        preview.replaceChildren();
+        feedback.textContent='Cambios pendientes: vuelve a preparar el borrador.';
+      });
       draftForm.addEventListener('submit',event=>{
         event.preventDefault();
-        if(currentView!=='admin'||profile?.role!=='admin'||!isCurrentUser(staffUserId)||!draftForm.isConnected)return;
-        const feedback=host.querySelector('[data-billing-feedback]');
-        const preview=host.querySelector('[data-billing-preview]');
+        if(!available())return;
         preview.replaceChildren();
         try{
-          const draft=billingDraftDocument(job,Object.fromEntries(new FormData(draftForm)));
-          preview.innerHTML='<div class="staff-documents-toolbar"><button type="button" data-print-billing>Imprimir / guardar borrador PDF</button></div>'+draft;
+          const fields=Object.fromEntries(new FormData(draftForm));
+          const draft=billingDraftDocument(job,fields);
+          preview.innerHTML='<div class="staff-documents-toolbar"><button type="button" data-print-billing>Imprimir / guardar borrador PDF</button>'+
+            '<button type="button" data-save-billing>Guardar borrador privado</button></div>'+draft;
           preview.querySelector('[data-print-billing]').addEventListener('click',()=>{
             if(typeof window.print==='function')window.print();
             else feedback.textContent='Este navegador no permite imprimir el borrador.';
           });
-          feedback.textContent='Borrador preparado. No es una factura emitida: faltan numeración oficial y registro fiscal.';
+          const save=preview.querySelector('[data-save-billing]');
+          save.addEventListener('click',async()=>{
+            if(!available()||save.disabled||!save.isConnected)return;
+            save.disabled=true;
+            feedback.textContent='Guardando borrador privado…';
+            try{
+              await savePrivateBillingDraft({supabase,job,fields});
+              if(available())feedback.textContent='Borrador privado guardado en Supabase. No es una factura emitida.';
+            }catch{
+              if(available())feedback.textContent='No se ha confirmado el guardado. Comprueba la conexión y recupera el borrador antes de reintentar.';
+            }finally{if(save.isConnected)save.disabled=false}
+          });
+          feedback.textContent='Borrador preparado. Puedes guardarlo de forma privada; no tiene número ni validez fiscal.';
         }catch(error){
           feedback.textContent=error.message||'No se pudo validar el borrador.';
         }
