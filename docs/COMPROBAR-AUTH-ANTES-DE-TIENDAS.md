@@ -2,6 +2,12 @@
 
 Mientras REPARADO solo admita acceso por **invitación**, no debe publicarse una app que oculte el botón de registro pero permita altas directamente por la API de Supabase.
 
+## V57 · Bloqueo de destinos y claves inseguras
+
+Antes de consultar `/auth/v1/settings`, el verificador confirma **de forma independiente** que la URL pertenece a un subdominio directo `*.supabase.co`, que no es **REPARADO Test**, que no incluye credenciales, puertos o rutas y que la clave es publicable o `anon` (nunca de servidor). Si falla cualquier condición, no se inicia ninguna petición HTTP.
+
+Si el servidor devuelve el campo `external.anonymous_users`, solo se acepta el booleano `false`. Como no todas las versiones de Auth publican este campo, su ausencia **no demuestra** que las altas anónimas estén desactivadas: es obligatorio comprobarlo también en el Dashboard antes de autorizar la publicación.
+
 ## Comprobación automática sin crear cuentas
 
 El proceso de firma de Android e iOS ahora consulta el endpoint público `GET /auth/v1/settings` del **proyecto de producción** indicado mediante las variables `VITE_SUPABASE_URL` y `VITE_SUPABASE_ANON_KEY`. El endpoint devuelve `disable_signup`.

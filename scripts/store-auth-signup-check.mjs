@@ -3,10 +3,16 @@
 // registro abierto aunque la UI oculte el botón. No crea cuentas ni envía emails.
 import {pathToFileURL} from 'node:url';
 import {resolve} from 'node:path';
+import {checkPublicConfig} from './check-public-config.mjs';
 
 export async function checkStoreAuthSignup({url,key,fetchImpl=fetch}={}){
   if(typeof url!=='string'||typeof key!=='string'||!key.trim())
     return {ok:false,reason:'Falta la configuración pública de Auth.'};
+  // V57: validar ANTES de cualquier petición. La comprobación aislada
+  // tampoco debe enviar una clave (ni siquiera publicable) a otros dominios,
+  // usar claves de servidor ni aceptar REPARADO Test para distribución.
+  if(checkPublicConfig(url,key))
+    return {ok:false,reason:'La configuración del servidor Auth no es válida para producción.'};
   let origin;
   try{
     const parsed=new URL(url);
@@ -29,8 +35,11 @@ export async function checkStoreAuthSignup({url,key,fetchImpl=fetch}={}){
     // asumir que esconder el formulario bloquea las altas.
     if(settings?.disable_signup!==true)
       return {ok:false,reason:'El servidor Auth permite nuevas altas o no confirma que estén cerradas.'};
-    if(settings?.external?.anonymous_users===true)
-      return {ok:false,reason:'El servidor Auth permite cuentas anónimas.'};
+    // Cuando el servidor expone el indicador, debe ser un booleano false.
+    // La ausencia del indicador no equivale a certificar la configuración:
+    // exigir además revisión manual del panel Auth antes de aprobar producción.
+    if(settings?.external?.anonymous_users!==undefined && settings.external.anonymous_users!==false)
+      return {ok:false,reason:'El servidor Auth permite cuentas anónimas o no confirma su bloqueo.'};
     return {ok:true,reason:'Supabase Auth confirma que no admite altas públicas.'};
   }catch{
     return {ok:false,reason:'No se ha podido verificar Auth por red o formato de respuesta.'};
