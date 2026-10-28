@@ -67,7 +67,8 @@ test('V59: solo admin y trabajo completado pueden abrir la preparación; no hay 
   assert.match(code,/admin && job\.status==='completed' && job\.price!=null/);
   assert.match(code,/currentView!=='admin'\|\|profile\?\.role!=='admin'/);
   assert.match(code,/billingDraftFormMarkup\(job\)/);
-  assert.match(code,/billingDraftDocument\(job,Object\.fromEntries\(new FormData\(draftForm\)\)\)/);
+  assert.match(code,/const fields=Object\.fromEntries\(new FormData\(draftForm\)\)/);
+  assert.match(code,/billingDraftDocument\(job,fields\)/);
   assert.doesNotMatch(source,/\.from\(['"]invoices['"]\)|\.insert\(|\.update\(|\.rpc\(/);
   assert.match(code,/Imprimir \/ guardar borrador PDF/);
 });
