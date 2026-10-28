@@ -14,7 +14,7 @@ ROOT=Path(__file__).resolve().parents[1]
 ADM='00000000-0000-4000-8000-000000000004'
 C1='00000000-0000-4000-8000-000000000001'
 OP='00000000-0000-4000-8000-000000000003'
-R1='10000000-0000-4000-8000-000000000001'
+R1='10000000-0000-4000-8000-000000000099'  # nuevo trabajo local sin factura previa
 R2='10000000-0000-4000-8000-000000000002'
 stmt='''select public.reparado_save_invoice_draft(
     %s::uuid,%s::numeric,%s,%s,%s,%s,%s,%s,%s,%s::date)'''
@@ -39,6 +39,14 @@ def denied(db,sql,params=(),code='23514'):
     raise AssertionError('Acceso prohibido aceptado')
 
 with psycopg.connect(DSN) as db:
+    # La suite V4–V11 ya contiene una factura emitida sobre su R1.
+    # Crear otro trabajo ficticio, terminado y distinto para el caso V60.
+    db.execute("""insert into public.service_requests(
+      id,customer_id,service_name,category,price,street,address_number,
+      postal_code,city,phone,status,operator_id,operator_name,scheduled_at)
+      values (%s,%s,'Reparación de prueba','Fontanería',121,'Calle de prueba',
+      '1','08001','Barcelona','000000000','completed',%s,'Operario de prueba',
+      '2026-11-11 13:00:00+00')""",(R1,C1,OP))
     migration=(ROOT/'supabase/migration-invoice-drafts-v60.sql').read_text()
     db.execute(migration)
     db.execute(migration)
