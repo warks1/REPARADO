@@ -4,7 +4,10 @@
 html{background:#fff}body{background:#fff;color:var(--ink)}
 .shell{width:100%;max-width:1140px;padding:0 clamp(14px,3.5vw,36px);margin:auto;min-height:100dvh;display:flex;flex-direction:column}
 .shell main{flex:1;min-width:0;padding:8px 0 125px}
-.shell footer{font-size:10px;padding:0 0 14px;color:#adb6c6}
+/* V58: reserva espacio real frente a la navegación fija de iOS/Android. */
+.shell footer{font-size:10px;padding:0 0 calc(108px + env(safe-area-inset-bottom,0px));color:#adb6c6}
+/* .reparado-contact-links usa display:flex en otro CSS; respetar hidden. */
+.shell footer .reparado-contact-links[hidden]{display:none}
 .customer-header{position:relative;top:auto;z-index:8;display:block;min-height:70px;padding:18px 0 8px;margin:0;background:#fff;border:none;box-shadow:none;border-radius:0}
 .header-main,.header-actions{display:flex;align-items:center;justify-content:space-between;gap:12px}
 .header-main{width:100%;min-width:0}
