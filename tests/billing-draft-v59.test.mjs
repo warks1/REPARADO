@@ -55,7 +55,8 @@ test('V59: campos suministrados se escapan para impedir HTML/scripts de cliente'
   const html=billingDraftDocument(job,{...fields,recipient_name:dangerous,description:dangerous});
   assert.ok(html.includes('&lt;img'));
   assert.ok(!html.includes('<img'));
-  assert.ok(!html.includes('src=x onerror='));
+  assert.ok(html.includes('&lt;img src=x onerror=alert(1)&gt;'));
+  assert.ok(!html.includes('<img src=x onerror='));
   const form=billingDraftFormMarkup({...job,service_name:'"><script>bad</script>'});
   assert.ok(!form.includes('<script>bad</script>'));
 });
