@@ -72,3 +72,18 @@ test('la web pública distingue demostración de modo conectado y protege modera
  expect(testBackendRequests,'REPARADO Test no debe conectarse a GitHub Pages público').toEqual([]);
  await info.attach('modo-publicado',{body:demo?'REPARADO público en modo local demostración':'Cliente conectado: comprobar que no sea REPARADO Test',contentType:'text/plain'});
 });
+
+
+test('V58: la web publicada no duplica los contactos dentro de Perfil',async({page})=>{
+  await page.goto('./',{waitUntil:'domcontentloaded'});
+  await expect(page.locator('.customer-nav [data-view="profile"]')).toBeVisible({timeout:20000});
+  await page.locator('.customer-nav [data-view="profile"]').click();
+  const local=page.locator('#local-profile');
+  // El despliegue comercial puede mostrar acceso en vez del perfil local.
+  // La revisión pública de duplicados se aplica únicamente a la demo.
+  test.skip(await local.count()===0,'No es la vista de Perfil local');
+  await expect(page.locator('#main .reparado-contact-links a')).toHaveCount(4);
+  await expect(page.locator('.shell footer .reparado-contact-links')).toBeHidden();
+  await page.locator('.customer-nav [data-view="home"]').click();
+  await expect(page.locator('.shell footer .reparado-contact-links')).toBeVisible();
+});

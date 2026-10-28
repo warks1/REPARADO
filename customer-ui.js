@@ -115,6 +115,10 @@ export function setActiveNav(app,active) {
     b.classList.toggle('active',selected);
     if(selected)b.setAttribute('aria-current','page');else b.removeAttribute('aria-current');
   });
+  // V58: en Perfil ya se incluyen los enlaces de ayuda y eliminación.
+  // Evitar una segunda copia en el pie, sin perderlos en las otras pantallas.
+  const footerLinks=app.querySelector('.shell footer .reparado-contact-links');
+  if(footerLinks)footerLinks.hidden=active==='profile';
 }
 const overview=[
   ['Fontanería','Agua y sanitarios','Fugas, atascos, grifos y cisternas'],
