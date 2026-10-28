@@ -7,6 +7,9 @@ export function createPushSessionManager({supabase, Capacitor, PushNotifications
   // Respuesta de registro perdida: el servidor podría haber aceptado el token.
   const uncertainTokens=new Set();
   let generation=0, pendingRegistration=Promise.resolve();
+  // Un cierre externo no puede revocar tokens con una sesión ya invalidada.
+  // Conservar la deuda de revocación y no permitir otra cuenta hasta resolverla.
+  let suspended=false, listenerCleanup=Promise.resolve();
 
   const native=()=>Boolean(Capacitor.isNativePlatform());
   async function removeListeners(){
@@ -15,6 +18,14 @@ export function createPushSessionManager({supabase, Capacitor, PushNotifications
   }
   async function activate(userId){
     if(!userId || !native())return false;
+    if(suspended && owner){
+      // B nunca hereda un token que todavía puede pertenecer a A.
+      if(owner!==userId)return false;
+      // Al volver A con una sesión válida, revocar primero cualquier token
+      // antiguo/ambiguo y sólo entonces solicitar un registro nuevo.
+      if(!await deactivate(userId))return false;
+    }
+    if(suspended){await listenerCleanup;suspended=false;}
     if(owner===userId && (active || starting))return true;
     // Sin revocación confirmada nunca se pasa de una cuenta a otra.
     if(owner && owner!==userId)return false;
@@ -74,6 +85,7 @@ export function createPushSessionManager({supabase, Capacitor, PushNotifications
     if(owner!==userId)return false;
     // Bloquear callbacks nuevos y esperar a cualquier RPC ya iniciada.
     generation++;
+    await listenerCleanup;
     await pendingRegistration.catch(()=>{});
     for(const deviceToken of new Set([...uncertainTokens,...retiredTokens,...(token?[token]:[])])){
       try{
@@ -88,13 +100,17 @@ export function createPushSessionManager({supabase, Capacitor, PushNotifications
       }
     }
     await removeListeners();
-    owner=null;token=null;retiredTokens.clear();uncertainTokens.clear();active=false;
+    owner=null;token=null;retiredTokens.clear();uncertainTokens.clear();active=false;suspended=false;
     return true;
   }
-  async function discard(){
+  function suspend(){
+    // onAuthStateChange debe invalidar callbacks ANTES de que se procese
+    // un nuevo login; nunca descartar el registro pendiente sin revocarlo.
     generation++;
-    await removeListeners();
-    owner=null;token=null;retiredTokens.clear();uncertainTokens.clear();active=false;
+    active=false;
+    suspended=Boolean(owner);
+    listenerCleanup=removeListeners();
+    return listenerCleanup;
   }
-  return {activate,deactivate,discard};
+  return {activate,deactivate,suspend};
 }
