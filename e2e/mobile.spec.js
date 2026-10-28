@@ -373,3 +373,24 @@ test('cada trabajo de Manitas presenta una foto real distinta y visible',async({
  expect(check.ok()).toBeTruthy();
  await expect.poll(()=>page.evaluate(()=>document.documentElement.scrollWidth-window.innerWidth)).toBeLessThanOrEqual(2);
 });
+
+
+test('V58: Perfil muestra una sola lista de ayuda y el footer no queda oculto por la barra móvil',async({page})=>{
+  await page.goto('/');
+  await page.locator('.customer-nav [data-view="profile"]').click();
+  await expect(page.locator('#local-profile')).toBeVisible();
+  await expect(page.locator('#main .reparado-contact-links a')).toHaveCount(4);
+  await expect(page.locator('.shell footer .reparado-contact-links')).toBeHidden();
+  await expect(page.locator('#main .reparado-contact-links a').first()).toBeVisible();
+  await expect(page.locator('#main .reparado-contact-links a').last()).toBeVisible();
+  await page.locator('.customer-nav [data-view="home"]').click();
+  await expect(page.locator('.shell footer .reparado-contact-links')).toBeVisible();
+  await page.evaluate(()=>window.scrollTo(0,document.documentElement.scrollHeight));
+  const regions=await page.evaluate(()=>{
+    const links=document.querySelector('.shell footer .reparado-contact-links');
+    const nav=document.querySelector('.customer-nav');
+    return {footerBottom:links?.getBoundingClientRect().bottom,navTop:nav?.getBoundingClientRect().top,viewportWidth:window.innerWidth,contentWidth:document.documentElement.scrollWidth};
+  });
+  expect(regions.footerBottom).toBeLessThanOrEqual(regions.navTop+1);
+  expect(regions.contentWidth).toBeLessThanOrEqual(regions.viewportWidth+2);
+});
