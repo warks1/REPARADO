@@ -95,23 +95,30 @@ export function mountConnected({app, services, supabase, authLinkIntent=null}) {
       else renderHome();
     }
   });
+  let signOutPending=false;
   async function safeSignOut(){
+    // Un doble toque no debe iniciar dos revocaciones ni dos salidas concurrentes.
+    if(signOutPending)return false;
+    signOutPending=true;
     const oldId=session?.user?.id;
-    if(oldId && !await pushManager.deactivate(oldId)){
-      message('No se pudo desconectar de forma segura este móvil. Comprueba la conexión e inténtalo otra vez.',true);
-      return false;
-    }
     try{
-      const {error}=await supabase.auth.signOut();
+      if(oldId && !await pushManager.deactivate(oldId)){
+        message('No se pudo desconectar de forma segura este móvil. Comprueba la conexión e inténtalo otra vez.',true);
+        return false;
+      }
+      // Supabase usa global por defecto: cerrar solo este dispositivo.
+      const {error}=await supabase.auth.signOut({scope:'local'});
       if(error)throw error;
       session=null;profile=null;pendingService=null;pendingView=null;
       renderHome();
       return true;
     }catch{
-      // Si falla cerrar sesión, reactivar el registro del usuario original.
+      // Si Auth falla, recuperar el registro push del usuario original.
       if(oldId)void pushManager.activate(oldId);
       message('No se pudo cerrar la sesión. Vuelve a intentarlo.',true);
       return false;
+    }finally{
+      signOutPending=false;
     }
   }
   app.querySelector('#logout').addEventListener('click',safeSignOut);
