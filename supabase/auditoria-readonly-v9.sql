@@ -1,4 +1,4 @@
--- REPARADO · auditoría de SOLO LECTURA para Supabase, tras migraciones V4–V11.
+-- REPARADO · auditoría de SOLO LECTURA, actualizada V56 tras migraciones V34/V54.
 -- Ejecutar en SQL Editor de un proyecto de pruebas, sin claves en ChatGPT.
 -- No crea tablas, no instala funciones, no altera ni muestra datos privados:
 -- solo indica presencia de protecciones y cuenta incidencias agregadas.
@@ -87,18 +87,21 @@ with auditoria as (
       where n.nspname='public' and p.prosecdef
         and has_function_privilege('anon',p.oid,'EXECUTE')),
    'Revocar EXECUTE anónimo a todas las funciones internas SECURITY DEFINER.'
- union all select 170,'V10: triggers internos no públicos',
+ union all select 170,'V56: triggers internos no públicos',
    not exists(select 1 from pg_proc p
       join pg_namespace n on n.oid=p.pronamespace
-      where n.nspname='public' and p.prosecdef and
-      p.proname not in ('accept_reparado_quote','is_reparado_admin','is_reparado_staff')
-      and has_function_privilege('authenticated',p.oid,'EXECUTE')),
-   'Revocar acceso directo a las funciones internas del servidor.'
- union all select 180,'V10: funciones de usuario disponibles',
-   has_function_privilege('authenticated','public.accept_reparado_quote(uuid)','EXECUTE')
+      where n.nspname='public'
+        and p.prorettype='pg_catalog.trigger'::regtype
+        and has_function_privilege('authenticated',p.oid,'EXECUTE')),
+   'Revocar ejecución directa de funciones TRIGGER; las RPC autenticadas se auditan por separado.'
+ union all select 180,'V56: aceptación de presupuesto con precio esperado',
+   not has_function_privilege('authenticated','public.accept_reparado_quote(uuid)','EXECUTE')
+   and has_function_privilege('authenticated','public.accept_reparado_quote(uuid,numeric)','EXECUTE')
+   and not has_function_privilege('anon','public.accept_reparado_quote(uuid)','EXECUTE')
+   and not has_function_privilege('anon','public.accept_reparado_quote(uuid,numeric)','EXECUTE')
    and has_function_privilege('authenticated','public.is_reparado_admin()','EXECUTE')
    and has_function_privilege('authenticated','public.is_reparado_staff()','EXECUTE'),
-   'Restituir únicamente las tres funciones requeridas por presupuestos y RLS.'
+   'V34: impedir aceptar presupuestos sin verificar precio; permitir solo RPC autenticada con importe.'
  union all select 190,'V10: siete índices de acceso',
    (select count(*)=7 from pg_indexes i
      where i.schemaname='public' and i.indexname in (

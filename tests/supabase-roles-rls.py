@@ -134,15 +134,23 @@ with connect() as db:
                for name,_,authenticated in functions),functions
     print("V10: 0 funciones SECURITY DEFINER anónimas; 3 RPC autenticadas; 8 triggers internos",flush=True)
 
-    # Informe de puesta en marcha sin datos personales. Debe ser seguro
-    # repetirlo porque solo utiliza consultas SELECT sobre la base.
-    audit=(ROOT/"supabase/auditoria-readonly-v9.sql").read_text(encoding="utf8")
-    audit_result=db.execute(audit).fetchall()
-    assert len(audit_result)==20,audit_result
-    pending=[row for row in audit_result if row[1]!='OK']
-    assert not pending,("Auditoría pendiente",pending)
-    assert db.execute(audit).fetchall()==audit_result
-    print(f"Auditoría Supabase: {len(audit_result)} comprobaciones correctas y ninguna escritura",flush=True)
+    # La suite V4–V11 aún necesita probar la RPC original de un argumento.
+    # En un SAVEPOINT temporal instalamos V34 para auditar el contrato actual;
+    # después lo revertimos para no alterar las pruebas heredadas ni migraciones
+    # posteriores de este PostgreSQL local. Nunca usar esta suite con un host real.
+    db.execute("savepoint reparado_auditoria_v34")
+    try:
+        db.execute((ROOT/"supabase/migration-v34.sql").read_text(encoding="utf8"))
+        audit=(ROOT/"supabase/auditoria-readonly-v9.sql").read_text(encoding="utf8")
+        audit_result=db.execute(audit).fetchall()
+        assert len(audit_result)==20,audit_result
+        pending=[row for row in audit_result if row[1]!='OK']
+        assert not pending,("Auditoría V34 pendiente",pending)
+        assert db.execute(audit).fetchall()==audit_result
+        print(f"Auditoría V56 sobre contrato V34: {len(audit_result)} comprobaciones OK, sin escritura persistente",flush=True)
+    finally:
+        db.execute("rollback to savepoint reparado_auditoria_v34")
+        db.execute("release savepoint reparado_auditoria_v34")
 
 with as_user(C1) as db:
     assert ids(db,"public.service_requests")=={R1}
