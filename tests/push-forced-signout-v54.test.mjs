@@ -111,3 +111,23 @@ test('V54: la aplicación suspende la asociación push al recibir SIGNED_OUT',()
   assert.match(source,/if\(event==='SIGNED_OUT'\)\{[\s\S]{0,100}pushManager\.suspend\(\)/);
   assert.doesNotMatch(source,/pushManager\.discard\(/);
 });
+
+test('V54: fallo de registro nativo tras aceptar el token conserva baja pendiente',async()=>{
+  const mobile=mockMobile(),errors=[];
+  mobile.PushNotifications.register=async()=>{
+    await mobile.sendToken(oldToken);
+    throw new Error('error nativo tras enviar el token');
+  };
+  const manager=createPushSessionManager({...mobile,onError:error=>errors.push(error.message)});
+  assert.equal(await manager.activate('A'),false);
+  assert.equal(mobile.tokens.get(oldToken),'A');
+  assert.equal(mobile.listeners.size,0);
+  mobile.setAccount('B');
+  assert.equal(await manager.activate('B'),false,'no transferir registros inciertos a B');
+  mobile.setAccount('A');
+  mobile.PushNotifications.register=async()=>{};
+  assert.equal(await manager.activate('A'),true);
+  assert.equal(mobile.tokens.has(oldToken),false);
+  assert.ok(errors.length);
+  assert.equal(await manager.deactivate('A'),true);
+});
