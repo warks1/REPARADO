@@ -18,6 +18,7 @@ import {checkRealBackendConnection} from './admin-connection-diagnostics.js'
 import {buildPersonalDataExport} from './customer-data-export.js'
 import {sharePrivateDataExport} from './mobile-private-export.js'
 import {calculateQuoteLines} from './quote-calculator.js'
+import {billingDraftFormMarkup,billingDraftDocument} from './billing-draft.js'
 import { renderInvoices } from './invoices.js'
 import { renderNotifications } from './notifications.js'
 import {publicRegistrationEnabled} from './auth-mode.js'
@@ -999,7 +1000,7 @@ export function mountConnected({app, services, supabase, authLinkIntent=null}) {
     const admin=profile?.role==='admin';
     const staffUserId=session.user.id, loadingScreen=main.firstElementChild;
     const baseJobs=supabase.from('service_requests')
-      .select('id,customer_id,service_name,street,address_number,city,phone,description,status,scheduled_at,operator_id,operator_name,price')
+      .select('id,customer_id,service_name,street,address_number,postal_code,city,phone,description,status,scheduled_at,operator_id,operator_name,price')
       .order('created_at',{ascending:false}).limit(150);
     let jobs,team;
     try{
@@ -1047,6 +1048,7 @@ export function mountConnected({app, services, supabase, authLinkIntent=null}) {
       </form><div class="staff-documents-toolbar">
         <button type="button" data-doc-kind="order" data-doc-job="${esc(job.id)}">Orden de trabajo</button>
         ${admin?'<button type="button" data-doc-kind="quote" data-doc-job="'+esc(job.id)+'">Vista de presupuesto</button>':''}
+        ${admin && job.status==='completed' && job.price!=null ? '<button type="button" data-billing-start="'+esc(job.id)+'">🧾 Preparar borrador de factura</button>' : ''}
       </div><div class="staff-document-host" data-document-host="${esc(job.id)}"></div>
       <div class="photo-links" data-photo-output="${esc(job.id)}"></div>
     </article>`).join('')||'<section class="card"><p>No hay solicitudes en esta vista.</p></section>'}`;
@@ -1245,6 +1247,38 @@ export function mountConnected({app, services, supabase, authLinkIntent=null}) {
       }catch(error){
         message(error.message||'No se pudo preparar el documento.',true);
       }
+    }));
+    // V59: primer paso de facturación. Solo prepara un borrador imprimible;
+    // nunca llama a INSERT/UPDATE en invoices, no asigna número ni emite.
+    main.querySelectorAll('[data-billing-start]').forEach(button=>button.addEventListener('click',()=>{
+      if(currentView!=='admin'||profile?.role!=='admin'||!isCurrentUser(staffUserId))return;
+      const job=all.find(x=>String(x.id)===button.dataset.billingStart);
+      const host=button.closest('.job-card')?.querySelector('[data-document-host]');
+      if(!host||!job||job.status!=='completed'||job.price==null)
+        return message('Solo se pueden preparar borradores de trabajos terminados y valorados.',true);
+      main.querySelectorAll('[data-document-host]').forEach(other=>other.replaceChildren());
+      host.innerHTML='<div class="staff-documents-toolbar"><button type="button" data-close-billing>Cerrar preparación</button></div>'+
+        billingDraftFormMarkup(job);
+      host.querySelector('[data-close-billing]').addEventListener('click',()=>host.replaceChildren());
+      const draftForm=host.querySelector('[data-billing-draft-form]');
+      draftForm.addEventListener('submit',event=>{
+        event.preventDefault();
+        if(currentView!=='admin'||profile?.role!=='admin'||!isCurrentUser(staffUserId)||!draftForm.isConnected)return;
+        const feedback=host.querySelector('[data-billing-feedback]');
+        const preview=host.querySelector('[data-billing-preview]');
+        preview.replaceChildren();
+        try{
+          const draft=billingDraftDocument(job,Object.fromEntries(new FormData(draftForm)));
+          preview.innerHTML='<div class="staff-documents-toolbar"><button type="button" data-print-billing>Imprimir / guardar borrador PDF</button></div>'+draft;
+          preview.querySelector('[data-print-billing]').addEventListener('click',()=>{
+            if(typeof window.print==='function')window.print();
+            else feedback.textContent='Este navegador no permite imprimir el borrador.';
+          });
+          feedback.textContent='Borrador preparado. No es una factura emitida: faltan numeración oficial y registro fiscal.';
+        }catch(error){
+          feedback.textContent=error.message||'No se pudo validar el borrador.';
+        }
+      });
     }));
     main.querySelectorAll('[data-staff-chat]').forEach(button=>button.addEventListener('click',()=>loadStaffChat(button.dataset.staffChat,button.dataset.chatService)));
     main.querySelectorAll('[data-photos]').forEach(button=>button.addEventListener('click',async()=>{
