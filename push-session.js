@@ -89,7 +89,9 @@ export function createPushSessionManager({supabase, Capacitor, PushNotifications
   }
   async function deactivate(userId){
     if(!native() || !owner)return true;
-    if(owner!==userId)return false;
+    // Si B nunca pudo registrar push porque persiste una baja de A,
+    // B sí puede cerrar SU sesión; la deuda de A permanece intacta.
+    if(owner!==userId)return suspended;
     // Bloquear callbacks nuevos y esperar a cualquier RPC ya iniciada.
     generation++;
     await listenerCleanup;
