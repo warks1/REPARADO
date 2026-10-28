@@ -17,10 +17,10 @@ test('solicitud: no admite doble envío ni deja el botón deshabilitado tras fal
   assert.match(text,/uploadPhotosWithRecovery/);
   assert.match(text,/photosResult\.failed/);
 });
-test('notificaciones: no se usan upserts directos ni se mantiene token tras cerrar sesión',()=>{
+test('notificaciones: logout revoca tokens y cierre externo suspende sin descartar bajas pendientes',()=>{
   assert.ok(source.includes('createPushSessionManager('));
   assert.ok(source.includes('await pushManager.deactivate(oldId)'));
-  assert.ok(source.includes("void pushManager.discard()"));
+  assert.ok(source.includes("void pushManager.suspend()"));
   assert.ok(!source.includes("from('device_tokens').upsert"));
   assert.ok(source.includes("main.querySelector('#password-setup-logout').addEventListener('click',safeSignOut)"));
 });
