@@ -1,4 +1,4 @@
--- REPARADO Test · Comprobación de cuatro cuentas de pruebas (solo lectura).
+-- REPARADO Test · Comprobación de cuatro cuentas de pruebas (V56, solo lectura).
 -- Ejecutar DESPUÉS de haber creado las cuentas vía Supabase Auth y de
 -- haber asignado el rol de operario y administrador autorizados.
 --
@@ -54,11 +54,13 @@ with comprobaciones as (
     (select count(*)=1 from storage.buckets where id='request-photos' and public=false),
     'Las fotos nunca deben estar en un bucket público.'
   union all select 100, 'RPC mínimas para usuarios conectados',
-    has_function_privilege('authenticated','public.accept_reparado_quote(uuid)','EXECUTE')
+    not has_function_privilege('authenticated','public.accept_reparado_quote(uuid)','EXECUTE')
+    and has_function_privilege('authenticated','public.accept_reparado_quote(uuid,numeric)','EXECUTE')
+    and not has_function_privilege('anon','public.accept_reparado_quote(uuid)','EXECUTE')
+    and not has_function_privilege('anon','public.accept_reparado_quote(uuid,numeric)','EXECUTE')
     and has_function_privilege('authenticated','public.is_reparado_admin()','EXECUTE')
-    and has_function_privilege('authenticated','public.is_reparado_staff()','EXECUTE')
-    and not has_function_privilege('anon','public.accept_reparado_quote(uuid)','EXECUTE'),
-    'Presupuestos y comprobación de rol disponibles solo con sesión.'
+    and has_function_privilege('authenticated','public.is_reparado_staff()','EXECUTE'),
+    'V34: aceptación solo con precio esperado y sesión autenticada; endpoint heredado cerrado.'
 )
 select control, case when ok then 'OK' else 'REVISAR' end as resultado, detalle
 from comprobaciones order by orden;
