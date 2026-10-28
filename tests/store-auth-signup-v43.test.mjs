@@ -48,3 +48,51 @@ test('V43: el flujo de publicación firmado verifica Auth en Apple y Google ante
   assert.ok(i<workflow.indexOf('bundleRelease'));
   assert.ok(i<workflow.indexOf('xcodebuild archive'));
 });
+
+
+test('V57: no enviar clave a servidor ajeno, imitación de Supabase ni REPARADO Test',async()=>{
+  const forbidden=[
+    'https://evil.example.net/',
+    'https://reparado-production-example.supabase.co.evil.example/',
+    'https://extra.reparado-production-example.supabase.co/',
+    'https://kpmmlzjvespenogqtujo.supabase.co/',
+    'https://reparado-production-example.supabase.co:8443/'
+  ];
+  let calls=0;
+  const neverFetch=async()=>{calls++;throw new Error('No se debe consultar esta URL')};
+  for(const invalidUrl of forbidden){
+    const result=await checkStoreAuthSignup({url:invalidUrl,key,fetchImpl:neverFetch});
+    assert.equal(result.ok,false,invalidUrl);
+  }
+  assert.equal(calls,0,'Una URL rechazable nunca debe iniciar una petición HTTP');
+});
+
+test('V57: rechazar claves privadas, rol desconocido y proyecto JWT distinto antes de enviar',async()=>{
+  const encode=v=>Buffer.from(JSON.stringify(v)).toString('base64url');
+  const jwt=payload=>[encode({alg:'HS256'}),encode(payload),'signature'].join('.');
+  let called=false;
+  const neverFetch=async()=>{called=true;throw new Error('No se debe consultar Auth')};
+  for(const invalidKey of [
+    'sb_secret_PRIVATE',
+    jwt({role:'service_role'}),
+    jwt({role:'authenticated'}),
+    jwt({role:'anon',ref:'un-proyecto-distinto'})
+  ]){
+    const result=await checkStoreAuthSignup({url,key:invalidKey,fetchImpl:neverFetch});
+    assert.equal(result.ok,false);
+  }
+  assert.equal(called,false);
+});
+
+test('V57: valores anónimos ambiguos bloquean firma y ausencia requiere validación manual',async()=>{
+  for(const anonymousUsers of [true,null,'false',0]){
+    const result=await checkStoreAuthSignup({
+      url,key,fetchImpl:fake({disable_signup:true,external:{anonymous_users:anonymousUsers}})
+    });
+    assert.equal(result.ok,false);
+  }
+  // Algunas versiones de Auth no exponen el indicador: no se inventa
+  // su valor y la aprobación final del panel de Auth sigue siendo obligatoria.
+  const old=await checkStoreAuthSignup({url,key,fetchImpl:fake({disable_signup:true,external:{}})});
+  assert.equal(old.ok,true);
+});
