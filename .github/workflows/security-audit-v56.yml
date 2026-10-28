@@ -1,0 +1,28 @@
+name: REPARADO V56 · Auditorías SQL de seguridad
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'supabase/auditoria-readonly-v9.sql'
+      - 'supabase/auditoria-cuentas-test-v12.sql'
+      - 'tests/security-audit-v56.test.mjs'
+      - '.github/workflows/security-audit-v56.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'supabase/auditoria-readonly-v9.sql'
+      - 'supabase/auditoria-cuentas-test-v12.sql'
+      - 'tests/security-audit-v56.test.mjs'
+      - '.github/workflows/security-audit-v56.yml'
+permissions:
+  contents: read
+jobs:
+  verify-audits:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --test tests/security-audit-v56.test.mjs
