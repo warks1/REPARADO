@@ -1269,7 +1269,7 @@ export function mountConnected({app, services, supabase, authLinkIntent=null}) {
   supabase.auth.onAuthStateChange((event)=>{
     if(event==='SIGNED_OUT'){
       authEpoch++;
-      void pushManager.discard();
+      void pushManager.suspend();
       session=null;profile=null;passwordSetupPending=false;
       pendingService=null;pendingView=null;renderHome();
     }else if(event==='PASSWORD_RECOVERY'){
