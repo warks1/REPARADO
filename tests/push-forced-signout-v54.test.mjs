@@ -131,3 +131,19 @@ test('V54: fallo de registro nativo tras aceptar el token conserva baja pendient
   assert.ok(errors.length);
   assert.equal(await manager.deactivate('A'),true);
 });
+
+test('V54: B puede cerrar su sesión sin push y la revocación pendiente de A permanece',async()=>{
+  const mobile=mockMobile(),manager=createPushSessionManager(mobile);
+  await manager.activate('A');
+  await mobile.sendToken(oldToken);
+  await manager.suspend();
+  mobile.setAccount('B');
+  assert.equal(await manager.activate('B'),false);
+  assert.equal(await manager.deactivate('B'),true,'B no creó token y debe poder salir');
+  await manager.suspend(); // callback SIGNED_OUT de B
+  assert.equal(mobile.tokens.get(oldToken),'A');
+  mobile.setAccount('A');
+  assert.equal(await manager.activate('A'),true);
+  assert.equal(mobile.tokens.size,0);
+  await manager.deactivate('A');
+});
