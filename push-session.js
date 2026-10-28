@@ -75,8 +75,15 @@ export function createPushSessionManager({supabase, Capacitor, PushNotifications
       return true;
     }catch(error){
       onError(error);
-      await removeListeners();
-      owner=null;token=null;active=false;
+      // Un fallo nativo puede llegar DESPUÉS de que el backend haya recibido
+      // el token. No olvidar el propietario ni los registros inciertos.
+      // Si logout ya invalidó esta generación, su propia limpieza manda.
+      if(currentGeneration===generation && owner===userId){
+        generation++;
+        active=false;suspended=true;
+        listenerCleanup=removeListeners();
+        await listenerCleanup;
+      }
       return false;
     }finally{starting=false}
   }
