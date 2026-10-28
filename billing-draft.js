@@ -57,7 +57,7 @@ export function billingDraftFormMarkup(job){
     .filter(Boolean).join(', ');
   const service=text(job?.service_name,240);
   return '<form data-billing-draft-form class="billing-draft-editor">'+
-    '<p class="notice">Solo preparación local. No se guardan datos fiscales en REPARADO ni se crea ninguna factura oficial.</p>'+
+    '<p class="notice">Borrador no emitido. Los datos no se guardan hasta pulsar «Guardar borrador privado», disponible solo para administración. No se crea ninguna factura oficial.</p>'+
     '<h4>Datos del emisor</h4>'+
     '<label>Nombre o razón social<input name="issuer_name" autocomplete="organization" maxlength="160" required></label>'+
     '<label>NIF del emisor<input name="issuer_nif" maxlength="24" required></label>'+
