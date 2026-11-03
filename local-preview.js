@@ -5,6 +5,7 @@ import {localReceipt,localRequestBackup,localBackupName,historicalEvents,readabl
 import {makeLocalCollection,restoreLocalCollection,localBackupLimit} from './local-backup.js';
 
 import {appHeader,bottomNavigation,renderLanding,renderCategory,serviceFormHeader,formPeriodPicker,priceFor,esc,setActiveNav,matchServices,serviceRow,featuredServices,showAllCategories} from './customer-ui.js';
+import {unitQuantityMarkup,bindUnitQuantity,unitQuantityDescription,unitQuoteText} from './unit-pricing.js';
 
 // La misma interfaz que verá el cliente: si faltan credenciales, se conservan
 // solicitudes locales para probar la navegación, sin simular envíos a operarios.
@@ -47,15 +48,21 @@ export function mountLocal({app,services}){
       '<label>Número, piso y puerta<input name="address_number" value="'+esc(p.address_number||'')+'" required maxlength="80"></label>'+
       '<div class="row"><label>Código postal<input name="postal_code" value="'+esc(p.postal_code||'')+'" inputmode="numeric" pattern="[0-9]{5}" maxlength="5" required></label><label>Municipio<input name="city" value="'+esc(p.city||'Barcelona')+'" required maxlength="90"></label></div>'+
       '<label>Teléfono de contacto<input name="phone" type="tel" value="'+esc(p.phone||'')+'" required maxlength="25"></label>'+
-      '<label>Descripción del problema<textarea name="description" placeholder="Cuéntanos qué necesitas reparar..." maxlength="1800" required></textarea></label>'+
+      '<label>Descripción del problema<textarea name="description" placeholder="Cuéntanos qué necesitas reparar..." maxlength="1800" required></textarea></label>'+unitQuantityMarkup(s)+
       '<label>Fotos (opcional)<input name="photos" type="file" accept="image/*" multiple></label>'+
       '<label>Fecha preferida<input name="preferred_date" type="date"></label>'+formPeriodPicker()+
       '<button type="submit">Guardar solicitud '+ '→</button></form>'+
       '<p class="notice">Tarifa «desde» con material estándar, mano de obra e IVA del 21 % incluidos. El precio final se confirma antes del trabajo. Sin Supabase, las solicitudes se guardan solo en este dispositivo y no se envían al equipo.</p>'+
       '<p data-feedback role="status"></p></section></div>';
+    const readUnitQuote=bindUnitQuantity(main.querySelector('#local-request'),s);
     main.querySelector('#local-request').addEventListener('submit',e=>{
       e.preventDefault();
       const data=new FormData(e.currentTarget);
+      const areaQuote=readUnitQuote();
+      if(['invalid','unavailable'].includes(areaQuote?.status)){
+        main.querySelector('[data-feedback]').textContent='La cantidad no es válida. Corrígela o deja el campo vacío.';
+        return;
+      }
       const selected=e.currentTarget.elements.photos?.files;
       if(selected?.length) {
         main.querySelector('[data-feedback]').textContent='Las fotos requieren conectar el almacenamiento privado. Puedes guardar el resto de la solicitud.';
@@ -64,9 +71,10 @@ export function mountLocal({app,services}){
       requests.unshift({id:globalThis.crypto?.randomUUID?.()||String(Date.now()),category:s[0],service:s[1],
         street:String(data.get('street')||''),address:String(data.get('address_number')||''),
         postal_code:String(data.get('postal_code')||''),city:String(data.get('city')||''),
-        phone:String(data.get('phone')||''),description:String(data.get('description')||''),
+        phone:String(data.get('phone')||''),description:String(data.get('description')||'')+
+          unitQuantityDescription(areaQuote)+(areaQuote?.status==='estimate'?'\n'+unitQuoteText(areaQuote):''),
         period:String(data.get('preferred_period')||''),date:String(data.get('preferred_date')||''),
-        price:s[2],status:'Pendiente (local)',created_at:new Date().toISOString(),
+        price:s[3]?0:s[2],status:'Pendiente (local)',created_at:new Date().toISOString(),
         history:[{type:'created',at:new Date().toISOString()}]});
       if(!persist(requests)){
         main.querySelector('[data-feedback]').textContent='No se ha podido guardar. Comprueba el almacenamiento de este navegador y vuelve a intentarlo.';
