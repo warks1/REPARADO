@@ -256,8 +256,9 @@ export function mountConnected({app, services, supabase, authLinkIntent=null}) {
     const epoch=++authEpoch;
     const {data,error}=await supabase.auth.getSession();
     if(epoch!==authEpoch)return;
-    if(error || !data?.session){session=null;profile=null;renderHome();return}
+    if(error || !data?.session){session=null;profile=null;customerChatPage=0;renderHome();return}
     const userId=data.session.user.id;
+    if(session?.user?.id!==userId)customerChatPage=0;
     session=data.session;
     if(passwordSetupPending){showPasswordSetup();return}
     const result=await supabase.from('profiles').select('id,full_name,phone,role').eq('id',userId).maybeSingle();
@@ -1455,7 +1456,7 @@ export function mountConnected({app, services, supabase, authLinkIntent=null}) {
       authEpoch++;
       void pushManager.suspend();
       session=null;profile=null;passwordSetupPending=false;
-      pendingService=null;pendingView=null;renderHome();
+      customerChatPage=0;pendingService=null;pendingView=null;renderHome();
     }else if(event==='PASSWORD_RECOVERY'){
       authEpoch++;
       passwordSetupPending=true;
