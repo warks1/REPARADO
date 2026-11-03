@@ -9,6 +9,7 @@ import {contactLinksMarkup} from './contact-emails.js';
 import { mountReviewModeration } from './review-moderation.js';
 import { mountReviews } from './reviews.js';
 import {appHeader,bottomNavigation,setActiveNav,renderLanding,renderCategory,serviceFormHeader,formPeriodPicker,serviceRow,matchServices,featuredServices,showAllCategories} from './customer-ui.js'
+import {unitQuantityMarkup,bindUnitQuantity,unitQuantityDescription} from './unit-pricing.js'
 import { operatorMaySetStatus } from './rules.js'
 import {jobFilters,filterJobs,jobCounters,vatIncluded,sameOperatorSlot,staffVisitGapMinutes,validateAdminJobUpdate} from './staff-workflows.js'
 import {staffProgressMarkup,staffDocument} from './staff-documents.js'
@@ -318,7 +319,7 @@ export function mountConnected({app, services, supabase, authLinkIntent=null}) {
       '<div class="row"><label>Código postal<input name="postal_code" inputmode="numeric" maxlength="5" pattern="[0-9]{5}" required></label>'+
       '<label>Municipio<input name="city" value="Barcelona" maxlength="90" required></label></div>'+
       '<label>Teléfono de contacto<input name="phone" type="tel" maxlength="25" required value="'+esc(profile?.phone||'')+'"></label>'+
-      '<label>Descripción del problema<textarea name="description" maxlength="1800" placeholder="Explícanos lo que necesitas reparar..." required></textarea></label>'+
+      '<label>Descripción del problema<textarea name="description" maxlength="1800" placeholder="Explícanos lo que necesitas reparar..." required></textarea></label>'+unitQuantityMarkup(service)+
       '<label>Fotos (opcional, máximo 4)<input name="photos" type="file" accept="image/jpeg,image/png,image/webp,image/heic" multiple></label>'+
       '<div class="photo-preview" aria-live="polite"></div>'+
       '<label>Fecha preferida<input name="preferred_date" type="date"></label>'+formPeriodPicker()+
@@ -336,6 +337,7 @@ export function mountConnected({app, services, supabase, authLinkIntent=null}) {
       }
     });
     const form=main.querySelector('#new-request');
+    const readUnitQuote=bindUnitQuantity(form,service);
     const submissionId=crypto.randomUUID();
     let firstAttemptPayload=null;
     form.addEventListener('submit',async event=>{
@@ -350,13 +352,18 @@ export function mountConnected({app, services, supabase, authLinkIntent=null}) {
         const images=[...(form.elements.photos.files||[])];
         const photoError=images.length?validateRequestPhotos(images):null;
         if(photoError){message(photoError,true);return;}
+        const areaQuote=readUnitQuote();
+        if(['invalid','unavailable'].includes(areaQuote?.status)){
+          message('La cantidad indicada no es válida. Corrígela o deja el campo vacío.',true);
+          return;
+        }
         const payload={
           customer_id:session.user.id,service_name:service[1],category:service[0],
           street:String(fields.get('street')).trim(),
           address_number:String(fields.get('address_number')).trim(),postal_code:String(fields.get('postal_code')).trim(),
           city:String(fields.get('city')).trim(),phone:String(fields.get('phone')).trim(),
           preferred_date:fields.get('preferred_date')||null,
-          description:String(fields.get('description')).trim()+'\nHorario preferido: '+String(fields.get('preferred_period')||'Indiferente')
+          description:String(fields.get('description')).trim()+unitQuantityDescription(areaQuote)+'\nHorario preferido: '+String(fields.get('preferred_period')||'Indiferente')
         };
         // Si la conexión se corta, repetir la misma operación, no crear otra.
         // Impedir que un usuario cambie el formulario y reutilice una clave
