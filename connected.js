@@ -17,6 +17,7 @@ import { operatorMaySetStatus } from './rules.js'
 import {jobFilters,filterJobs,jobCounters,vatIncluded,sameOperatorSlot,staffVisitGapMinutes,validateAdminJobUpdate} from './staff-workflows.js'
 import {fetchNewRequestsCount,fetchNewRequestsPage,newRequestsPageCount,canAdvanceNewRequests} from './staff-inbox.js'
 import {fetchUnassignedRequestsCount,fetchUnassignedRequestsPage} from './staff-unassigned.js'
+import {fetchCustomerRequestsPage,customerRequestsPageSize,customerRequestsPageCount,customerRequestsCanAdvance} from './customer-requests-page.js'
 import {staffProgressMarkup,staffDocument} from './staff-documents.js'
 import {shareAcceptedQuote} from './mobile-quote-share.js'
 import {shareVisitCalendar} from './mobile-calendar-share.js'
@@ -42,6 +43,7 @@ export function mountConnected({app, services, supabase, authLinkIntent=null}) {
   const statusLabels = {new:'Nueva', quoted:'Presupuesto',accepted:'Aceptada',scheduled:'Programada',in_progress:'En curso',completed:'Terminada',cancelled:'Cancelada'};
   const validStatus = Object.keys(statusLabels);
   let session=null, profile=null, currentView='home', adminFilter='all', newRequestsPage=0, unassignedRequestsPage=0, lastCategory=null, pendingService=null, pendingView=null;
+  let customerRequestsPage=0;
   let passwordSetupPending=authLinkIntent==='invite'||authLinkIntent==='recovery';
   // Cada lectura asíncrona queda asociada a la sesión y a su pantalla original.
   let authEpoch=0;
@@ -91,7 +93,7 @@ export function mountConnected({app, services, supabase, authLinkIntent=null}) {
       const view=menu.dataset.view;
       if(view==='home'){pendingService=null;pendingView=null;renderHome();return}
       if(!session){pendingService=null;pendingView=view;showLogin();return}
-      if(view==='requests')loadRequests();
+      if(view==='requests'){customerRequestsPage=0;loadRequests();}
       else if(view==='agenda')loadAgenda();
       else if(view==='chat')loadChat();
       else if(view==='profile')loadProfile();
@@ -117,7 +119,7 @@ export function mountConnected({app, services, supabase, authLinkIntent=null}) {
       // Supabase usa global por defecto: cerrar solo este dispositivo.
       const {error}=await supabase.auth.signOut({scope:'local'});
       if(error)throw error;
-      session=null;profile=null;pendingService=null;pendingView=null;
+      session=null;profile=null;pendingService=null;pendingView=null;customerRequestsPage=0;
       renderHome();
       return true;
     }catch{
@@ -432,13 +434,16 @@ export function mountConnected({app, services, supabase, authLinkIntent=null}) {
     const userId=session?.user?.id, loadingScreen=main.firstElementChild;
     const viewEpoch=authEpoch;
     if(!userId)return showLogin();
-    let data,error;
-    try{
-      ({data,error}=await supabase.from('service_requests').select('id,service_name,status,price,accepted_at,accepted_price,street,address_number,city,preferred_date,scheduled_at,operator_name').eq('customer_id',userId).order('created_at',{ascending:false}));
-    }catch{error=new Error('No se pudieron cargar tus solicitudes. Comprueba la conexión.');}
+    const requestedPage=Number.isSafeInteger(customerRequestsPage)&&customerRequestsPage>=0?customerRequestsPage:0;
+    const {data,count,error}=await fetchCustomerRequestsPage(supabase,userId,
+      'id,service_name,status,price,accepted_at,accepted_price,street,address_number,city,preferred_date,scheduled_at,operator_name',requestedPage);
     if(currentView!=='requests'||!isCurrentUser(userId)||authEpoch!==viewEpoch||main.firstElementChild!==loadingScreen)return;
     if(error){main.innerHTML=`<section class="card">${backButton}<h2>Mis solicitudes</h2><p>No se pudieron cargar tus solicitudes. Comprueba la conexión.</p><button type="button" data-view="requests">Reintentar</button></section>`;return}
-    main.innerHTML=`<section class="card">${backButton}<h2>Mis solicitudes</h2><p data-feedback class="feedback" role="status"></p>${data?.length?data.map(r=>`<article class="request"><strong>${esc(r.service_name)}</strong><span>${esc(statusLabels[r.status]||r.status)}</span><p>${esc(r.street)}, ${esc(r.address_number)} · ${esc(r.city)}</p>${staffProgressMarkup(r.status)}${r.price!=null?`<p>Importe confirmado: <b>${money(r.price)}</b> (IVA incluido)</p>`:''}${r.accepted_at&&r.accepted_price!=null?`<p class="quote-consent-proof"><strong>Presupuesto aceptado:</strong> ${money(r.accepted_price)} (IVA incluido) · ${esc(safeTime(r.accepted_at))}</p>`:''}${r.accepted_at&&r.accepted_price!=null?`<button type="button" data-download-accepted-quote="${esc(r.id)}">⬇ Descargar resumen de aceptación</button>`:''}<small>${r.scheduled_at?'Visita: '+esc(safeTime(r.scheduled_at)):'Fecha preferida: '+esc(r.preferred_date||'No indicada')}</small><div class="flex-actions"><button type="button" data-customer-photos="${esc(r.id)}">📷 Mis fotos</button></div><div class="request-photo-retry"><label>Añadir fotografías a esta solicitud (máximo 4 en total)<input type="file" data-upload-request-photos="${esc(r.id)}" accept="image/jpeg,image/png,image/webp,image/heic" multiple></label><p role="status" aria-live="polite" data-upload-photo-result="${esc(r.id)}"></p></div>${r.status==="completed"?`<div class="flex-actions"><button type="button" class="customer-review-action" data-rate-request="${esc(r.id)}" aria-label="Valorar ${esc(r.service_name)}">⭐ Valorar este trabajo</button></div>`:""}<div class="photo-links" data-customer-photo-output="${esc(r.id)}"></div>${r.status==="quoted" && r.price!==null ? `<div class="flex-actions"><p class="quote-acceptance-summary">Presupuesto: ${money(r.price)} IVA incluido (21 %). Base: ${money(vatIncluded(r.price).base)} · IVA: ${money(vatIncluded(r.price).vat)}. Revisa el importe antes de aceptarlo.</p><button type="button" data-accept-quote="${esc(r.id)}" data-accept-total="${esc(r.price)}">Aceptar presupuesto de ${money(r.price)}</button></div>` : ""}</article>`).join(''):'<p>Todavía no tienes solicitudes.</p>'}</section>`;
+    if(count>0 && requestedPage>=customerRequestsPageCount(count)){customerRequestsPage=0;return loadRequests();}
+    const pager=count>customerRequestsPageSize?`<nav class="staff-new-pagination customer-requests-pagination" aria-label="Páginas de mis solicitudes"><span>Página ${requestedPage+1} de ${customerRequestsPageCount(count)} · ${count} solicitudes</span><div><button type="button" data-requests-page="prev" ${requestedPage===0?'disabled':''}>← Anterior</button><button type="button" data-requests-page="next" ${customerRequestsCanAdvance(requestedPage,count)?'':'disabled'}>Siguiente →</button></div></nav>`:'';
+    main.innerHTML=`<section class="card">${backButton}<h2>Mis solicitudes</h2><p data-feedback class="feedback" role="status"></p>${data?.length?data.map(r=>`<article class="request"><strong>${esc(r.service_name)}</strong><span>${esc(statusLabels[r.status]||r.status)}</span><p>${esc(r.street)}, ${esc(r.address_number)} · ${esc(r.city)}</p>${staffProgressMarkup(r.status)}${r.price!=null?`<p>Importe confirmado: <b>${money(r.price)}</b> (IVA incluido)</p>`:''}${r.accepted_at&&r.accepted_price!=null?`<p class="quote-consent-proof"><strong>Presupuesto aceptado:</strong> ${money(r.accepted_price)} (IVA incluido) · ${esc(safeTime(r.accepted_at))}</p>`:''}${r.accepted_at&&r.accepted_price!=null?`<button type="button" data-download-accepted-quote="${esc(r.id)}">⬇ Descargar resumen de aceptación</button>`:''}<small>${r.scheduled_at?'Visita: '+esc(safeTime(r.scheduled_at)):'Fecha preferida: '+esc(r.preferred_date||'No indicada')}</small><div class="flex-actions"><button type="button" data-customer-photos="${esc(r.id)}">📷 Mis fotos</button></div><div class="request-photo-retry"><label>Añadir fotografías a esta solicitud (máximo 4 en total)<input type="file" data-upload-request-photos="${esc(r.id)}" accept="image/jpeg,image/png,image/webp,image/heic" multiple></label><p role="status" aria-live="polite" data-upload-photo-result="${esc(r.id)}"></p></div>${r.status==="completed"?`<div class="flex-actions"><button type="button" class="customer-review-action" data-rate-request="${esc(r.id)}" aria-label="Valorar ${esc(r.service_name)}">⭐ Valorar este trabajo</button></div>`:""}<div class="photo-links" data-customer-photo-output="${esc(r.id)}"></div>${r.status==="quoted" && r.price!==null ? `<div class="flex-actions"><p class="quote-acceptance-summary">Presupuesto: ${money(r.price)} IVA incluido (21 %). Base: ${money(vatIncluded(r.price).base)} · IVA: ${money(vatIncluded(r.price).vat)}. Revisa el importe antes de aceptarlo.</p><button type="button" data-accept-quote="${esc(r.id)}" data-accept-total="${esc(r.price)}">Aceptar presupuesto de ${money(r.price)}</button></div>` : ""}</article>`).join(''):'<p>Todavía no tienes solicitudes.</p>'}${pager}</section>`;
+    main.querySelector('[data-requests-page="prev"]')?.addEventListener('click',()=>{if(requestedPage>0){customerRequestsPage=requestedPage-1;void loadRequests()}});
+    main.querySelector('[data-requests-page="next"]')?.addEventListener('click',()=>{if(customerRequestsCanAdvance(requestedPage,count)){customerRequestsPage=requestedPage+1;void loadRequests()}});
     main.querySelectorAll('[data-download-accepted-quote]').forEach(button=>button.addEventListener('click',async()=>{
       if(button.disabled||currentView!=='requests'||!isCurrentUser(userId)||
          authEpoch!==viewEpoch||!button.isConnected)return;
