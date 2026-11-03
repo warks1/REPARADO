@@ -36,7 +36,14 @@ async function setup(page){
    if(p==='/rest/v1/profiles')return respond({id:customerId,full_name:'Cuenta de prueba',
      phone:'',role:'customer'},true);
    if(p==='/rest/v1/service_requests'&&req.method()==='GET'){
-     return respond(url.searchParams.get('status')==='eq.completed'?[jobs[0]]:jobs);
+     const rows=url.searchParams.get('status')==='eq.completed'?[jobs[0]]:jobs;
+     // V73 solicita recuento exacto con Prefer: count=exact.
+     // El mock representa Content-Range de PostgREST para devolver count.
+     return route.fulfill({
+       status:200,contentType:'application/json',
+       headers:{'content-range':'0-'+(rows.length-1)+'/'+rows.length,'range-unit':'items'},
+       body:JSON.stringify(rows)
+     });
    }
    if(p==='/rest/v1/customer_reviews' && req.method()==='GET')return respond([]);
    if(p==='/rest/v1/customer_reviews' && req.method()==='POST'){
