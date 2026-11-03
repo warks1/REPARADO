@@ -10,6 +10,7 @@ import { mountReviewModeration } from './review-moderation.js';
 import { mountReviews } from './reviews.js';
 import {appHeader,bottomNavigation,setActiveNav,renderLanding,renderCategory,serviceFormHeader,formPeriodPicker,serviceRow,matchServices,featuredServices,showAllCategories} from './customer-ui.js'
 import {unitQuantityMarkup,bindUnitQuantity,unitQuantityDescription} from './unit-pricing.js'
+import {serviceAreaIssue,serviceAreaNoticeMarkup} from './service-area.js'
 import {preferredDateField,preferredDateMinimum,preferredDateIssue} from './date-preference.js'
 import { operatorMaySetStatus } from './rules.js'
 import {jobFilters,filterJobs,jobCounters,vatIncluded,sameOperatorSlot,staffVisitGapMinutes,validateAdminJobUpdate} from './staff-workflows.js'
@@ -318,7 +319,7 @@ export function mountConnected({app, services, supabase, authLinkIntent=null}) {
       '<label>Dirección del servicio<input name="street" placeholder="Calle o avenida" required maxlength="120" autocomplete="street-address"></label>'+
       '<label>Número, piso y puerta<input name="address_number" required maxlength="80"></label>'+
       '<div class="row"><label>Código postal<input name="postal_code" inputmode="numeric" maxlength="5" pattern="[0-9]{5}" required></label>'+
-      '<label>Municipio<input name="city" value="Barcelona" maxlength="90" required></label></div>'+
+      '<label>Municipio<input name="city" placeholder="Ej. Barcelona, Girona..." maxlength="90" required></label></div>'+serviceAreaNoticeMarkup()+
       '<label>Teléfono de contacto<input name="phone" type="tel" maxlength="25" required value="'+esc(profile?.phone||'')+'"></label>'+
       '<label>Descripción del problema<textarea name="description" maxlength="1800" placeholder="Explícanos lo que necesitas reparar..." required></textarea></label>'+unitQuantityMarkup(service)+
       '<label>Fotos (opcional, máximo 4)<input name="photos" type="file" accept="image/jpeg,image/png,image/webp,image/heic" multiple></label>'+
@@ -353,6 +354,8 @@ export function mountConnected({app, services, supabase, authLinkIntent=null}) {
         const fields=new FormData(form);
         const preferredError=preferredDateIssue(fields.get('preferred_date'));
         if(preferredError){message(preferredError,true);return;}
+        const areaError=serviceAreaIssue(fields.get('postal_code'),fields.get('city'));
+        if(areaError){message(areaError,true);return;}
         const images=[...(form.elements.photos.files||[])];
         const photoError=images.length?validateRequestPhotos(images):null;
         if(photoError){message(photoError,true);return;}
