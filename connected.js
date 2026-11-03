@@ -1246,7 +1246,7 @@ export function mountConnected({app, services, supabase, authLinkIntent=null}) {
           return message('El total no coincide con las partidas. Pulsa «Aplicar total al formulario» antes de guardar.',true);
       }
       const visitTime=madridVisitDateTimeToIso(date,original.scheduled_at);
-      if(visitTime.error)return message(visitTime.error,true);
+      if(visitTime.error)return message('Fecha y hora no válidas. '+visitTime.error,true);
       const stamp=visitTime.iso?new Date(visitTime.iso):null;
       const validation=validateAdminJobUpdate({status,operatorId:operator_id,scheduledAt:stamp?stamp.toISOString():null,price:quotedPrice});
       if(validation)return message(validation,true);
