@@ -86,14 +86,16 @@ test('V68: administración usa datos privados de consulta paginada y vuelve a co
   assert.ok(code.includes("baseJobs.eq('operator_id',staffUserId)"));
   assert.ok(code.includes("filter==='new'\n             ? fetchNewRequestsPage"));
   assert.ok(code.includes("fetchNewRequestsCount(supabase)"));
-  assert.ok(code.includes("const all=admin && filter==='new' ? newQueue.data : recent"));
+  assert.ok(code.includes("const all=admin && filter==='new' ? newQueue.data : admin && filter==='unassigned' ? unassignedQueue.data : recent"));
   assert.ok(code.includes("if(admin && newQueue?.error)"));
   assert.ok(code.includes("Recuento de todas las solicitudes nuevas del servidor"));
   assert.ok(code.includes('staff-new-pagination'));
   assert.ok(code.includes('data-new-page="prev"'));
   assert.ok(code.includes('data-new-page="next"'));
   assert.ok(code.includes('canAdvanceNewRequests(newRequestsPage,counts.new)'));
-  assert.ok(code.includes("if(btn.dataset.adminFilter!==adminFilter)newRequestsPage=0"));
+  assert.ok(code.includes("if(btn.dataset.adminFilter!==adminFilter){"));
+  assert.ok(code.includes("newRequestsPage=0;"));
+  assert.ok(code.includes("unassignedRequestsPage=0;"));
 });
 
 test('V68: conserva accesibilidad de la paginación y no declara emails activos',()=>{

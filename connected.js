@@ -15,6 +15,7 @@ import {preferredDateField,preferredDateMinimum,preferredDateIssue} from './date
 import { operatorMaySetStatus } from './rules.js'
 import {jobFilters,filterJobs,jobCounters,vatIncluded,sameOperatorSlot,staffVisitGapMinutes,validateAdminJobUpdate} from './staff-workflows.js'
 import {fetchNewRequestsCount,fetchNewRequestsPage,newRequestsPageCount,canAdvanceNewRequests} from './staff-inbox.js'
+import {fetchUnassignedRequestsCount,fetchUnassignedRequestsPage} from './staff-unassigned.js'
 import {staffProgressMarkup,staffDocument} from './staff-documents.js'
 import {shareAcceptedQuote} from './mobile-quote-share.js'
 import {shareVisitCalendar} from './mobile-calendar-share.js'
@@ -39,7 +40,7 @@ export function mountConnected({app, services, supabase, authLinkIntent=null}) {
   const iconFor = name => ({'Fontanería':'🚰','Albañilería':'🧱','Parquet':'🪵','Reformas integrales':'🏠'})[name] || '🛠️';
   const statusLabels = {new:'Nueva', quoted:'Presupuesto',accepted:'Aceptada',scheduled:'Programada',in_progress:'En curso',completed:'Terminada',cancelled:'Cancelada'};
   const validStatus = Object.keys(statusLabels);
-  let session=null, profile=null, currentView='home', adminFilter='all', newRequestsPage=0, lastCategory=null, pendingService=null, pendingView=null;
+  let session=null, profile=null, currentView='home', adminFilter='all', newRequestsPage=0, unassignedRequestsPage=0, lastCategory=null, pendingService=null, pendingView=null;
   let passwordSetupPending=authLinkIntent==='invite'||authLinkIntent==='recovery';
   // Cada lectura asíncrona queda asociada a la sesión y a su pantalla original.
   let authEpoch=0;
@@ -1025,18 +1026,23 @@ export function mountConnected({app, services, supabase, authLinkIntent=null}) {
     const baseJobs=supabase.from('service_requests')
       .select('id,customer_id,service_name,street,address_number,postal_code,city,phone,description,status,scheduled_at,operator_id,operator_name,price')
       .order('created_at',{ascending:false}).limit(150);
-    let jobs,team,newQueue;
+    let jobs,team,newQueue,unassignedQueue;
     try{
-      [jobs,team,newQueue]=await Promise.all([
+      [jobs,team,newQueue,unassignedQueue]=await Promise.all([
         admin ? baseJobs : baseJobs.eq('operator_id',staffUserId),
         admin ? supabase.from('profiles').select('id,full_name,role').eq('role','operator') : Promise.resolve({data:[],error:null}),
         admin
           ? (filter==='new'
              ? fetchNewRequestsPage(supabase,'id,customer_id,service_name,street,address_number,postal_code,city,phone,description,status,scheduled_at,operator_id,operator_name,price',newRequestsPage)
              : fetchNewRequestsCount(supabase))
+          : Promise.resolve({count:null,error:false}),
+        admin
+          ? (filter==='unassigned'
+             ? fetchUnassignedRequestsPage(supabase,'id,customer_id,service_name,street,address_number,postal_code,city,phone,description,status,scheduled_at,operator_id,operator_name,price',unassignedRequestsPage)
+             : fetchUnassignedRequestsCount(supabase))
           : Promise.resolve({count:null,error:false})
       ]);
-    }catch{jobs={data:null,error:new Error('Error de conexión')};team={data:[],error:null};newQueue={count:null,error:true};}
+    }catch{jobs={data:null,error:new Error('Error de conexión')};team={data:[],error:null};newQueue={count:null,error:true};unassignedQueue={count:null,error:true};}
     if(currentView!=='admin'||!isCurrentUser(staffUserId)||main.firstElementChild!==loadingScreen)return;
     if(jobs.error){
       main.innerHTML=`<section class="card">${backButton}<h2>Panel interno</h2><p>No se pudieron cargar los trabajos. Comprueba la conexión.</p><button type="button" data-reload-staff>Reintentar</button></section>`;
@@ -1053,24 +1059,37 @@ export function mountConnected({app, services, supabase, authLinkIntent=null}) {
       main.querySelector('[data-reload-staff]')?.addEventListener('click',()=>renderAdmin(filter));
       return;
     }
+    if(admin && unassignedQueue?.error){
+      main.innerHTML=`<section class="card">${backButton}<h2>Panel interno</h2><p>No se pudieron comprobar los trabajos sin operario. No se mostrará un recuento incompleto.</p><button type="button" data-reload-staff>Reintentar</button></section>`;
+      main.querySelector('[data-reload-staff]')?.addEventListener('click',()=>renderAdmin(filter));
+      return;
+    }
     if(admin && filter==='new' && newRequestsPage>=Math.max(1,newRequestsPageCount(newQueue.count))){
       newRequestsPage=0;
       void renderAdmin('new');
       return;
     }
+    if(admin && filter==='unassigned' && unassignedRequestsPage>=Math.max(1,newRequestsPageCount(unassignedQueue.count))){
+      unassignedRequestsPage=0;
+      void renderAdmin('unassigned');
+      return;
+    }
     const recent=jobs.data||[], operators=team.data||[];
-    const all=admin && filter==='new' ? newQueue.data : recent;
+    const all=admin && filter==='new' ? newQueue.data : admin && filter==='unassigned' ? unassignedQueue.data : recent;
     const counts=jobCounters(recent);
-    if(admin)counts.new=newQueue.count;
+    if(admin){
+      counts.new=newQueue.count;
+      counts.unassigned=unassignedQueue.count;
+    }
     const chosen=filterJobs(all,filter);
     const statuses=validStatus.map(x=>({id:x,label:statusLabels[x]}));
-    main.innerHTML=`<section class="card">${backButton}<h2>Panel interno · Reparado</h2><p class="notice">${admin && filter==='new'?'Solicitudes nuevas consultadas directamente en Supabase, de 50 en 50.':(admin?'Panel de administración':'Solicitudes asignadas a tu cuenta')+'. Máximo 150 recientes.'}</p>
-    ${admin?`<div class="staff-new-queue" role="status"><div><strong>${counts.new===0?'No hay solicitudes nuevas':counts.new+' solicitud(es) nueva(s)'}</strong><small>Recuento de todas las solicitudes nuevas del servidor, no solo de los últimos 150 trabajos. Consulta la bandeja por páginas; los avisos por correo dependen de una configuración externa.</small></div><div class="staff-queue-actions"><button type="button" data-admin-filter="new">Ver nuevas</button><button type="button" data-reload-staff>Actualizar solicitudes</button></div></div>`:''}
+    main.innerHTML=`<section class="card">${backButton}<h2>Panel interno · Reparado</h2><p class="notice">${admin && filter==='new'?'Solicitudes nuevas consultadas directamente en Supabase, de 50 en 50.':admin && filter==='unassigned'?'Trabajos sin operario consultados directamente en Supabase, de 50 en 50.':(admin?'Panel de administración':'Solicitudes asignadas a tu cuenta')+'. Máximo 150 recientes.'}</p>
+    ${admin?`<div class="staff-new-queue" role="status"><div><strong>${counts.new===0?'No hay solicitudes nuevas':counts.new+' solicitud(es) nueva(s)'}</strong><small>Recuento de todas las solicitudes nuevas del servidor y ${counts.unassigned} trabajos sin operario en total, no solo los últimos 150. Consulta ambas bandejas por páginas; los avisos por correo dependen de una configuración externa.</small></div><div class="staff-queue-actions"><button type="button" data-admin-filter="new">Ver nuevas</button><button type="button" data-admin-filter="unassigned">Ver sin operario</button><button type="button" data-reload-staff>Actualizar solicitudes</button></div></div>`:''}
     <div class="staff-summary">
       <div><strong>${counts.all}</strong><small>Trabajos recientes</small></div>
       <div><strong>${counts.pending}</strong><small>Pendientes</small></div>
       <div><strong>${counts.agenda}</strong><small>Programados / en curso</small></div>
-      <div><strong>${counts.unassigned}</strong><small>Sin operario</small></div>
+      <div><strong>${counts.unassigned}</strong><small>Sin operario${admin?' (total)':''}</small></div>
     </div>
     <div class="staff-filters" role="group" aria-label="Filtrar trabajos">${jobFilters.filter(f=>admin||f.id!=='unassigned').map(f=>`<button type="button" data-admin-filter="${f.id}" aria-pressed="${filter===f.id}">${esc(f.label)} (${counts[f.id]})</button>`).join('')}</div>
     ${admin?'<button type="button" class="review-moderation-entry" data-view="review-moderation">⭐ Revisar reseñas de clientes</button>':''}
@@ -1093,9 +1112,13 @@ export function mountConnected({app, services, supabase, authLinkIntent=null}) {
       </div><div class="staff-document-host" data-document-host="${esc(job.id)}"></div>
       <div class="photo-links" data-photo-output="${esc(job.id)}"></div>
     </article>`).join('')||'<section class="card"><p>No hay solicitudes en esta vista.</p></section>'}
-    ${admin && filter==='new'?`<nav class="staff-new-pagination" aria-label="Páginas de solicitudes nuevas"><span>Página ${newRequestsPage+1} de ${Math.max(1,newRequestsPageCount(counts.new))} · ${counts.new} solicitudes nuevas en total</span><div><button type="button" data-new-page="prev" ${newRequestsPage===0?'disabled':''}>← Anterior</button><button type="button" data-new-page="next" ${canAdvanceNewRequests(newRequestsPage,counts.new)?'':'disabled'}>Siguiente →</button></div></nav>`:''}`;
+    ${admin && filter==='new'?`<nav class="staff-new-pagination" aria-label="Páginas de solicitudes nuevas"><span>Página ${newRequestsPage+1} de ${Math.max(1,newRequestsPageCount(counts.new))} · ${counts.new} solicitudes nuevas en total</span><div><button type="button" data-new-page="prev" ${newRequestsPage===0?'disabled':''}>← Anterior</button><button type="button" data-new-page="next" ${canAdvanceNewRequests(newRequestsPage,counts.new)?'':'disabled'}>Siguiente →</button></div></nav>`:''}
+    ${admin && filter==='unassigned'?`<nav class="staff-new-pagination" aria-label="Páginas de trabajos sin operario"><span>Página ${unassignedRequestsPage+1} de ${Math.max(1,newRequestsPageCount(counts.unassigned))} · ${counts.unassigned} trabajos sin operario en total</span><div><button type="button" data-unassigned-page="prev" ${unassignedRequestsPage===0?'disabled':''}>← Anterior</button><button type="button" data-unassigned-page="next" ${canAdvanceNewRequests(unassignedRequestsPage,counts.unassigned)?'':'disabled'}>Siguiente →</button></div></nav>`:''}`;
     main.querySelectorAll('[data-admin-filter]').forEach(btn=>btn.addEventListener('click',()=>{
-      if(btn.dataset.adminFilter!==adminFilter)newRequestsPage=0;
+      if(btn.dataset.adminFilter!==adminFilter){
+        newRequestsPage=0;
+        unassignedRequestsPage=0;
+      }
       renderAdmin(btn.dataset.adminFilter);
     }));
     main.querySelectorAll('[data-reload-staff]').forEach(btn=>btn.addEventListener('click',()=>renderAdmin(adminFilter)));
@@ -1104,6 +1127,12 @@ export function mountConnected({app, services, supabase, authLinkIntent=null}) {
     });
     main.querySelector('[data-new-page="next"]')?.addEventListener('click',()=>{
       if(canAdvanceNewRequests(newRequestsPage,counts.new)){newRequestsPage++;renderAdmin('new')}
+    });
+    main.querySelector('[data-unassigned-page="prev"]')?.addEventListener('click',()=>{
+      if(unassignedRequestsPage>0){unassignedRequestsPage--;renderAdmin('unassigned')}
+    });
+    main.querySelector('[data-unassigned-page="next"]')?.addEventListener('click',()=>{
+      if(canAdvanceNewRequests(unassignedRequestsPage,counts.unassigned)){unassignedRequestsPage++;renderAdmin('unassigned')}
     });
     if(!admin){
       main.querySelectorAll('form[data-job-id]').forEach(form=>{
