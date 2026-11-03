@@ -296,7 +296,7 @@ export function renderCategory(services,id) {
 }
 export function serviceFormHeader(s) {
   const c=catFor(s[0]);
-  return '<div class="form-service-summary"><span class="summary-art">'+categoryArt(c.slug)+'</span><span><small>'+esc(c.title)+'</small><strong>'+esc(s[1])+'</strong><em>'+esc(priceFor(s))+' · '+(s[2]?'Material estándar, mano de obra e IVA incluidos':'Sujeto a presupuesto')+'</em></span></div>'+(serviceInclusions[s[1]]?'<p class="notice service-includes">'+esc(serviceInclusions[s[1]])+'</p>':'');
+  return '<div class="form-service-summary"><span class="summary-art">'+categoryArt(c.slug)+'</span><span><small>'+esc(c.title)+'</small><strong>'+esc(s[1])+'</strong><em>'+(s[2]?'Desde ':'')+esc(priceFor(s))+' · '+(s[2]?'Material estándar, mano de obra e IVA incluidos':'Sujeto a presupuesto')+'</em></span></div>'+(serviceInclusions[s[1]]?'<p class="notice service-includes">'+esc(serviceInclusions[s[1]])+'</p>':'');
 }
 export function formPeriodPicker() {
   return '<fieldset class="time-picker"><legend>Horario preferido</legend><label><input type="radio" name="preferred_period" value="Mañana (9:00–13:00)" checked><span>Mañana<small>9:00 – 13:00</small></span></label>'+
