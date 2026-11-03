@@ -1047,6 +1047,7 @@ export function mountConnected({app, services, supabase, authLinkIntent=null}) {
     const chosen=filterJobs(all,filter);
     const statuses=validStatus.map(x=>({id:x,label:statusLabels[x]}));
     main.innerHTML=`<section class="card">${backButton}<h2>Panel interno · Reparado</h2><p class="notice">${admin?'Panel de administración':'Solicitudes asignadas a tu cuenta'}. Máximo 150 recientes.</p>
+    ${admin?`<div class="staff-new-queue" role="status"><div><strong>${counts.new===0?'No hay solicitudes nuevas':counts.new+' solicitud(es) nueva(s)'}</strong><small>Entre los 150 trabajos recientes. Revisa esta bandeja; los avisos por correo dependen de una configuración externa.</small></div><div class="staff-queue-actions"><button type="button" data-admin-filter="new">Ver nuevas</button><button type="button" data-reload-staff>Actualizar solicitudes</button></div></div>`:''}
     <div class="staff-summary">
       <div><strong>${counts.all}</strong><small>Trabajos recientes</small></div>
       <div><strong>${counts.pending}</strong><small>Pendientes</small></div>
@@ -1075,6 +1076,7 @@ export function mountConnected({app, services, supabase, authLinkIntent=null}) {
       <div class="photo-links" data-photo-output="${esc(job.id)}"></div>
     </article>`).join('')||'<section class="card"><p>No hay solicitudes en esta vista.</p></section>'}`;
     main.querySelectorAll('[data-admin-filter]').forEach(btn=>btn.addEventListener('click',()=>renderAdmin(btn.dataset.adminFilter)));
+    main.querySelectorAll('[data-reload-staff]').forEach(btn=>btn.addEventListener('click',()=>renderAdmin(adminFilter)));
     if(!admin){
       main.querySelectorAll('form[data-job-id]').forEach(form=>{
         const job=all.find(j=>j.id===form.dataset.jobId);
