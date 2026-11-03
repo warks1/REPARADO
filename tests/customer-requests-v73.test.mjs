@@ -76,7 +76,7 @@ test('V73: solo listado de solicitudes del cliente, navegación y controles exis
  assert.ok(app.includes('data-requests-page="next"'));
  assert.ok(app.includes('data-requests-page="prev"'));
  assert.ok(app.includes('customerRequestsCanAdvance(requestedPage,count)'));
- assert.ok(app.includes('if(count>0 && requestedPage>=customerRequestsPageCount(count))return loadRequests(0)'));
+ assert.ok(app.includes('if(count>0 && requestedPage>=customerRequestsPageCount(count)){customerRequestsPage=0;return loadRequests();}'));
  assert.ok(app.includes('let customerRequestsPage=0;'));
  assert.ok(app.includes('await loadRequests();'));
  assert.ok(app.includes("async function loadRequests(){"));
