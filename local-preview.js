@@ -51,7 +51,7 @@ export function mountLocal({app,services}){
       '<label>Fotos (opcional)<input name="photos" type="file" accept="image/*" multiple></label>'+
       '<label>Fecha preferida<input name="preferred_date" type="date"></label>'+formPeriodPicker()+
       '<button type="submit">Guardar solicitud '+ '→</button></form>'+
-      '<p class="notice">Puedes probar el proceso completo. Sin conexión a Supabase, las solicitudes se guardan solo en este dispositivo y no se envían al equipo.</p>'+
+      '<p class="notice">Tarifa «desde» con material estándar, mano de obra e IVA del 21 % incluidos. El precio final se confirma antes del trabajo. Sin Supabase, las solicitudes se guardan solo en este dispositivo y no se envían al equipo.</p>'+
       '<p data-feedback role="status"></p></section></div>';
     main.querySelector('#local-request').addEventListener('submit',e=>{
       e.preventDefault();

@@ -323,7 +323,7 @@ export function mountConnected({app, services, supabase, authLinkIntent=null}) {
       '<div class="photo-preview" aria-live="polite"></div>'+
       '<label>Fecha preferida<input name="preferred_date" type="date"></label>'+formPeriodPicker()+
       '<button type="submit">Enviar solicitud →</button></form>'+
-      '<p class="notice">Precio orientativo, IVA incluido cuando se indica. Los trabajos especiales se valoran mediante presupuesto.</p>'+
+      '<p class="notice">Precio orientativo «desde»: incluye material estándar indicado, mano de obra e IVA del 21 %. Extras y supuestos no estándar se confirman por presupuesto.</p>'+
       '<p data-feedback class="feedback" role="status"></p></section></div>';
     const photos=main.querySelector('[name="photos"]');
     let photoUrls=[];
