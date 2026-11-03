@@ -382,7 +382,14 @@ export function mountConnected({app, services, supabase, authLinkIntent=null}) {
         }
         firstAttemptPayload=payloadText;
         const created=await submitRepairRequest({supabase,payload,submissionId});
-        if(created.error){message(created.error,true);return}
+        if(created.error){
+          // Solo un rechazo inequívoco del servidor permite editar y reintentar
+          // con la misma clave. En caídas de red se conserva el intento anterior
+          // para no producir solicitudes duplicadas.
+          if(created.rejected)firstAttemptPayload=null;
+          message(created.error,true);
+          return;
+        }
         recorded=true;
         if(!isCurrentUser(payload.customer_id)||main.querySelector('#new-request')!==form)return;
         const photosResult=images.length
