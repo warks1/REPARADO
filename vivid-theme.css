@@ -691,3 +691,14 @@ body,.shell,.customer-header,.customer-nav {background:#fff}
 .staff-queue-actions button:focus-visible{outline:3px solid #1276c9;outline-offset:3px}
 @media(max-width:540px){.staff-new-queue{padding:14px}.staff-queue-actions{width:100%}.staff-queue-actions button{flex:1 1 135px}}
 @media(prefers-reduced-motion:reduce){.staff-queue-actions button{transition:none!important}}
+
+/* V68 · Paginación de toda la bandeja de trabajos nuevos. */
+.staff-new-pagination{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;background:#f2f8ff;border:1px solid #c7deef;border-radius:14px;padding:14px 16px;margin:15px 0 24px}
+.staff-new-pagination span{font-size:13px;font-weight:700;color:#244b6b}
+.staff-new-pagination>div{display:flex;flex-wrap:wrap;gap:10px}
+.staff-new-pagination button{border:1px solid #b4d2ed;background:#fff;color:#1c5e91;padding:9px 14px;min-height:44px;border-radius:10px;font-size:13px;font-weight:750}
+.staff-new-pagination button:disabled{opacity:.45;cursor:not-allowed}
+.staff-new-pagination button:not(:disabled):hover{background:#e1f1ff}
+.staff-new-pagination button:focus-visible{outline:3px solid #1276c9;outline-offset:3px}
+@media(max-width:540px){.staff-new-pagination>div{width:100%}.staff-new-pagination button{flex:1}}
+@media(prefers-reduced-motion:reduce){.staff-new-pagination button{transition:none!important}}

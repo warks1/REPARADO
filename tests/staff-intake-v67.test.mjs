@@ -30,7 +30,7 @@ test('V67: administración ofrece botón para revisar y recargar solicitudes del
  assert.match(section,/data-reload-staff/);
  assert.match(section,/renderAdmin\(adminFilter\)/);
  assert.match(section,/Máximo 150 recientes/);
- assert.match(section,/Entre los 150 trabajos recientes/);
+ assert.match(section,/Recuento de todas las solicitudes nuevas del servidor/);
  assert.match(section,/los avisos por correo dependen de una configuración externa/);
 });
 
