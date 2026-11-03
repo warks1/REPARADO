@@ -896,10 +896,12 @@ export function mountConnected({app, services, supabase, authLinkIntent=null}) {
     });
   }
 
-  async function loadStaffChat(customerId, serviceName){
+  async function loadStaffChat(customerId, serviceName, page=0){
     if(!userIsStaff() || !session)return renderHome();
     currentView='staff-chat';
     const staffUserId=session.user.id;
+    const chatEpoch=authEpoch;
+    const requestedPage=Number.isSafeInteger(page)&&page>=0?page:0;
     const box=document.createElement('section');
     box.className='card';
     const back=document.createElement('button');
@@ -914,18 +916,18 @@ export function mountConnected({app, services, supabase, authLinkIntent=null}) {
     main.replaceChildren(box);
     let result;
     try{
-      result=await supabase.from('messages').select('sender_id,body,created_at')
-        .eq('customer_id',customerId).order('created_at',{ascending:true}).limit(300);
-    }catch{result={error:new Error('Fallo de conexión')};}
-    if(currentView!=='staff-chat'||!isCurrentUser(staffUserId)||!box.isConnected)return;
+      result=await fetchCustomerChatPage(supabase,customerId,requestedPage);
+    }catch{result={error:true};}
+    if(currentView!=='staff-chat'||!isCurrentUser(staffUserId)||!box.isConnected||authEpoch!==chatEpoch)return;
     history.replaceChildren();
     if(result.error){
       history.textContent='No se pudieron cargar los mensajes. Comprueba la conexión.';
       const retry=document.createElement('button');
-      retry.type='button';retry.textContent='Reintentar';retry.addEventListener('click',()=>loadStaffChat(customerId,serviceName));
+      retry.type='button';retry.textContent='Reintentar';retry.addEventListener('click',()=>loadStaffChat(customerId,serviceName,requestedPage));
       box.append(retry);
       return;
     }
+    if(result.count>0&&requestedPage>=customerChatPageCount(result.count))return loadStaffChat(customerId,serviceName,0);
     for(const row of result.data||[]){
       const p=document.createElement('p');
       p.className=row.sender_id===staffUserId?'me':'';
@@ -934,6 +936,29 @@ export function mountConnected({app, services, supabase, authLinkIntent=null}) {
     }
     if(!history.childNodes.length)history.textContent='No hay mensajes todavía.';
     history.scrollTop=history.scrollHeight;
+    if(result.count>customerChatPageSize){
+      const nav=document.createElement('nav');
+      nav.className='staff-new-pagination';
+      nav.setAttribute('aria-label','Páginas del chat del personal');
+      const summary=document.createElement('span');
+      summary.textContent='Página '+(requestedPage+1)+' de '+customerChatPageCount(result.count)+' · '+result.count+' mensajes';
+      const actions=document.createElement('div');
+      const newer=document.createElement('button');
+      newer.type='button';newer.textContent='← Más recientes';
+      newer.disabled=requestedPage===0;
+      newer.addEventListener('click',()=>loadStaffChat(customerId,serviceName,requestedPage-1));
+      const older=document.createElement('button');
+      older.type='button';older.textContent='Anteriores →';
+      older.disabled=!customerChatCanReadOlder(requestedPage,result.count);
+      older.addEventListener('click',()=>loadStaffChat(customerId,serviceName,requestedPage+1));
+      actions.append(newer,older);
+      nav.append(summary,actions);
+      box.append(nav);
+    }
+    const refresh=document.createElement('button');
+    refresh.type='button';refresh.textContent='Actualizar conversación';
+    refresh.addEventListener('click',()=>loadStaffChat(customerId,serviceName,0));
+    box.append(refresh);
     const form=document.createElement('form');
     const label=document.createElement('label');
     label.textContent='Responder al cliente';
@@ -958,7 +983,7 @@ export function mountConnected({app, services, supabase, authLinkIntent=null}) {
         });
         if(!isCurrentUser(staffUserId)||!box.isConnected||currentView!=='staff-chat')return;
         if(error)throw error;
-        await loadStaffChat(customerId,serviceName);
+        await loadStaffChat(customerId,serviceName,0);
       }catch{
         if(isCurrentUser(staffUserId)&&box.isConnected)
           feedback.textContent='No se pudo confirmar el mensaje. Revisa el chat antes de reenviarlo.';
