@@ -62,6 +62,6 @@ test('V72: agenda real utiliza Europe/Madrid al ver y guardar visitas',()=>{
   assert.ok(app.includes('Fecha y hora (Cataluña)'));
   assert.ok(app.includes('madridDateTimeInput(job.scheduled_at)'));
   assert.ok(app.includes('madridVisitDateTimeToIso(date,original.scheduled_at)'));
-  assert.ok(app.includes("if(visitTime.error)return message(visitTime.error,true)"));
+  assert.ok(app.includes("if(visitTime.error)return message('Fecha y hora no válidas. '+visitTime.error,true)"));
   assert.ok(!app.includes('const stamp=date?new Date(date):null'));
 });
