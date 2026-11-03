@@ -10,7 +10,7 @@ test('V62: la auditoría de producción es estrictamente de solo lectura',()=>{
   assert.match(code,/^\s*with\s+checks\s+as\s*\(/i);
   assert.doesNotMatch(code,/\b(?:insert|update|delete|truncate|alter|create|drop|grant|revoke|copy|call|execute)\b/i);
   assert.match(code,/select\s+control\s*,\s*case\s+when\s+ok\s+then/i);
-  assert.doesNotMatch(code,/\*/); // No consultar registros completos mediante SELECT *.
+  assert.doesNotMatch(code,/\bselect\s+\*/i); // No consultar registros completos mediante SELECT *.
 });
 
 test('V62: catorce controles de permisos, RLS e integridad V60',()=>{
