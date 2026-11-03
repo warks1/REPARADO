@@ -6,6 +6,7 @@ import {makeLocalCollection,restoreLocalCollection,localBackupLimit} from './loc
 
 import {appHeader,bottomNavigation,renderLanding,renderCategory,serviceFormHeader,formPeriodPicker,priceFor,esc,setActiveNav,matchServices,serviceRow,featuredServices,showAllCategories} from './customer-ui.js';
 import {unitQuantityMarkup,bindUnitQuantity} from './unit-pricing.js';
+import {preferredDateField,preferredDateMinimum,preferredDateIssue,validExistingPreferredDate,todayInCatalonia} from './date-preference.js';
 
 // La misma interfaz que verá el cliente: si faltan credenciales, se conservan
 // solicitudes locales para probar la navegación, sin simular envíos a operarios.
@@ -50,14 +51,17 @@ export function mountLocal({app,services}){
       '<label>Teléfono de contacto<input name="phone" type="tel" value="'+esc(p.phone||'')+'" required maxlength="25"></label>'+
       '<label>Descripción del problema<textarea name="description" placeholder="Cuéntanos qué necesitas reparar..." maxlength="1800" required></textarea></label>'+unitQuantityMarkup(s)+
       '<label>Fotos (opcional)<input name="photos" type="file" accept="image/*" multiple></label>'+
-      '<label>Fecha preferida<input name="preferred_date" type="date"></label>'+formPeriodPicker()+
+      preferredDateField()+formPeriodPicker()+
       '<button type="submit">Guardar solicitud '+ '→</button></form>'+
       '<p class="notice">Tarifa «desde» con material estándar, mano de obra e IVA del 21 % incluidos. El precio final se confirma antes del trabajo. Sin Supabase, las solicitudes se guardan solo en este dispositivo y no se envían al equipo.</p>'+
       '<p data-feedback role="status"></p></section></div>';
     const readUnitQuote=bindUnitQuantity(main.querySelector('#local-request'),s);
     main.querySelector('#local-request').addEventListener('submit',e=>{
       e.preventDefault();
+      preferredDateMinimum(e.currentTarget.elements.preferred_date);
       const data=new FormData(e.currentTarget);
+      const dateError=preferredDateIssue(data.get('preferred_date'));
+      if(dateError){main.querySelector('[data-feedback]').textContent=dateError;return;}
       const areaQuote=readUnitQuote();
       if(['invalid','unavailable'].includes(areaQuote?.status)){
         main.querySelector('[data-feedback]').textContent='La cantidad no es válida. Corrígela o deja el campo vacío.';
@@ -182,7 +186,7 @@ export function mountLocal({app,services}){
       '<p class="notice">El resguardo no es una factura. La copia contiene teléfono y dirección: guárdala de forma segura.</p>'+
       localReceipt(x)+
       '<h3>Preferencias de visita</h3><form id="local-edit-request">'+
-      '<label>Fecha preferida<input type="date" name="preferred_date" value="'+esc(validLocalDate(x.date)?x.date:'')+'"></label>'+
+      '<label>Fecha preferida (opcional)<input type="date" name="preferred_date" min="'+todayInCatalonia()+'" value="'+esc(validExistingPreferredDate(x.date))+'"></label>'+
       '<label>Horario<select name="preferred_period"><option value="Mañana (9:00–13:00)">Mañana (9:00–13:00)</option><option value="Tarde (13:00–17:00)">Tarde (13:00–17:00)</option><option value="Indiferente">Indiferente</option></select></label>'+
       '<button type="submit" class="primary-cta">Guardar preferencias</button></form>'+
       '<div class="flex-actions"><button type="button" class="local-delete" data-local-delete="'+esc(x.id)+'">Eliminar solicitud local</button></div>'+
@@ -191,8 +195,10 @@ export function mountLocal({app,services}){
     form.elements.preferred_period.value=['Mañana (9:00–13:00)','Tarde (13:00–17:00)','Indiferente'].includes(x.period)?x.period:'Indiferente';
     form.addEventListener('submit',e=>{
       e.preventDefault();
+      preferredDateMinimum(form.elements.preferred_date);
       const date=form.elements.preferred_date.value;
-      if(date && !validLocalDate(date)){main.querySelector('[data-feedback]').textContent='La fecha no es válida.';return}
+      const dateError=preferredDateIssue(date);
+      if(dateError){main.querySelector('[data-feedback]').textContent=dateError;return}
       const all=saved();
       const index=all.findIndex(row=>String(row.id)===String(id));
       if(index<0){requests();return}
