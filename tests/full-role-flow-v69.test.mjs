@@ -12,12 +12,12 @@ test('V69: prueba de roles se niega a tocar bases remotas y revierte todo',()=>{
   assert.match(python,/settings\.get\('dbname'\)!='reparado_test'/);
   assert.match(python,/finally:\s+[\s\S]*?db\.rollback\(\)/);
   assert.match(python,/select count\(\*\) from public\.service_requests where id=%s/);
-  assert.doesNotMatch(python,/\bdb\.commit\(\)/g,function(){}); // Se valida el scope más abajo.
+  assert.ok(python.indexOf('db.commit()') < python.indexOf('job_id=None')); // Solo confirma migraciones locales previas.
   assert.match(python,/Los cambios de datos/);
 });
 
 test('V69: test cubre cliente, segundo cliente, admin y operario',()=>{
-  for(const part of ['CUSTOMER','OTHER','OPERATOR','ADMIN','REPARADO_V66_PREFERRED_DATE_PAST',
+  for(const part of ['CUSTOMER','OTHER','OPERATOR','ADMIN','migration-v66-preferred-date.sql',
     'client_submission_id','quoted','accepted','scheduled','in_progress','completed',
     'accepted_price','accepted_at','ROLLBACK']){
     assert.ok(python.includes(part),part);
