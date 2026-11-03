@@ -6,6 +6,7 @@ import {makeLocalCollection,restoreLocalCollection,localBackupLimit} from './loc
 
 import {appHeader,bottomNavigation,renderLanding,renderCategory,serviceFormHeader,formPeriodPicker,priceFor,esc,setActiveNav,matchServices,serviceRow,featuredServices,showAllCategories} from './customer-ui.js';
 import {unitQuantityMarkup,bindUnitQuantity} from './unit-pricing.js';
+import {serviceAreaIssue,serviceAreaNoticeMarkup} from './service-area.js';
 import {preferredDateField,preferredDateMinimum,preferredDateIssue,validExistingPreferredDate,todayInCatalonia} from './date-preference.js';
 
 // La misma interfaz que verá el cliente: si faltan credenciales, se conservan
@@ -47,7 +48,7 @@ export function mountLocal({app,services}){
       '<form id="local-request">'+
       '<label>Dirección del servicio<input name="street" value="'+esc(p.street||'')+'" placeholder="Calle o avenida" required maxlength="120"></label>'+
       '<label>Número, piso y puerta<input name="address_number" value="'+esc(p.address_number||'')+'" required maxlength="80"></label>'+
-      '<div class="row"><label>Código postal<input name="postal_code" value="'+esc(p.postal_code||'')+'" inputmode="numeric" pattern="[0-9]{5}" maxlength="5" required></label><label>Municipio<input name="city" value="'+esc(p.city||'Barcelona')+'" required maxlength="90"></label></div>'+
+      '<div class="row"><label>Código postal<input name="postal_code" value="'+esc(p.postal_code||'')+'" inputmode="numeric" pattern="[0-9]{5}" maxlength="5" required></label><label>Municipio<input name="city" value="'+esc(p.city||'')+'" placeholder="Ej. Barcelona, Girona..." required maxlength="90"></label></div>'+serviceAreaNoticeMarkup()+
       '<label>Teléfono de contacto<input name="phone" type="tel" value="'+esc(p.phone||'')+'" required maxlength="25"></label>'+
       '<label>Descripción del problema<textarea name="description" placeholder="Cuéntanos qué necesitas reparar..." maxlength="1800" required></textarea></label>'+unitQuantityMarkup(s)+
       '<label>Fotos (opcional)<input name="photos" type="file" accept="image/*" multiple></label>'+
@@ -62,6 +63,8 @@ export function mountLocal({app,services}){
       const data=new FormData(e.currentTarget);
       const dateError=preferredDateIssue(data.get('preferred_date'));
       if(dateError){main.querySelector('[data-feedback]').textContent=dateError;return;}
+      const zoneError=serviceAreaIssue(data.get('postal_code'),data.get('city'));
+      if(zoneError){main.querySelector('[data-feedback]').textContent=zoneError;return;}
       const areaQuote=readUnitQuote();
       if(['invalid','unavailable'].includes(areaQuote?.status)){
         main.querySelector('[data-feedback]').textContent='La cantidad no es válida. Corrígela o deja el campo vacío.';
@@ -74,7 +77,7 @@ export function mountLocal({app,services}){
       const requests=saved();
       requests.unshift({id:globalThis.crypto?.randomUUID?.()||String(Date.now()),category:s[0],service:s[1],
         street:String(data.get('street')||''),address:String(data.get('address_number')||''),
-        postal_code:String(data.get('postal_code')||''),city:String(data.get('city')||''),
+        postal_code:String(data.get('postal_code')||'').trim(),city:String(data.get('city')||'').trim(),
         phone:String(data.get('phone')||''),description:String(data.get('description')||''),
         period:String(data.get('preferred_period')||''),date:String(data.get('preferred_date')||''),
         price:s[3]?0:s[2],
