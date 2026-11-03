@@ -12,6 +12,7 @@ import {appHeader,bottomNavigation,setActiveNav,renderLanding,renderCategory,ser
 import {unitQuantityMarkup,bindUnitQuantity,unitQuantityDescription} from './unit-pricing.js'
 import {serviceAreaIssue,serviceAreaNoticeMarkup} from './service-area.js'
 import {preferredDateField,preferredDateMinimum,preferredDateIssue} from './date-preference.js'
+import {madridDateTimeInput,madridDateTimeText,madridVisitDateTimeToIso} from './staff-timezone.js'
 import { operatorMaySetStatus } from './rules.js'
 import {jobFilters,filterJobs,jobCounters,vatIncluded,sameOperatorSlot,staffVisitGapMinutes,validateAdminJobUpdate} from './staff-workflows.js'
 import {fetchNewRequestsCount,fetchNewRequestsPage,newRequestsPageCount,canAdvanceNewRequests} from './staff-inbox.js'
@@ -56,7 +57,7 @@ export function mountConnected({app, services, supabase, authLinkIntent=null}) {
     if(node){node.textContent=text;node.className=error?'feedback error':'feedback'}
   };
   const backButton = `<button type="button" class="back" data-back>← Volver</button>`;
-  const safeTime = raw => raw ? new Date(raw).toLocaleString('es-ES') : 'Sin fecha';
+  const safeTime = madridDateTimeText;
   const userIsStaff = () => profile && ['admin','operator'].includes(profile.role);
   // UI privada de forma predeterminada. No sustituye cerrar registros en Supabase Auth.
   const openRegistration=publicRegistrationEnabled(import.meta.env?.VITE_REPARADO_ALLOW_PUBLIC_REGISTRATION);
@@ -1103,7 +1104,7 @@ export function mountConnected({app, services, supabase, authLinkIntent=null}) {
         <label>Precio confirmado (€ IVA incluido)<input type="number" name="price" min="0" max="999999" step="0.01" value="${job.price==null?'':esc(job.price)}" placeholder="Pendiente de presupuesto"></label><p class="staff-vat" data-vat-preview>${job.price==null?'Indica un importe para ver base e IVA.':(()=>{const breakdown=vatIncluded(job.price);return breakdown?'Base '+money(breakdown.base)+' · IVA 21 % '+money(breakdown.vat):'Precio no válido';})()}</p>
         ${admin?'<button type="button" class="quote-toggle" data-quote-toggle aria-expanded="false">Desglosar presupuesto</button><div class="quote-builder" hidden><p class="notice">Calculadora interna. Las partidas no se envían ni se guardan en Supabase. Utiliza «Aplicar total» y después «Guardar cambios» para guardar únicamente el precio total.</p><div data-quote-lines></div><div class="quote-actions"><button type="button" data-quote-add>Añadir partida</button><button type="button" data-quote-apply>Aplicar total al formulario</button></div><p data-quote-summary role="status">Añade una partida para calcular el presupuesto.</p></div>':''}
         <label>Operario<select name="operator_id"><option value="">Sin asignar</option>${operators.map(op=>`<option value="${esc(op.id)}" ${job.operator_id===op.id?'selected':''}>${esc(op.full_name||'Operario')}</option>`).join('')}</select></label>
-        <label>Fecha y hora<input type="datetime-local" name="scheduled_at" value="${job.scheduled_at?new Date(job.scheduled_at).toLocaleString('sv-SE').replace(' ','T').slice(0,16):''}"></label>
+        <label>Fecha y hora (Cataluña)<input type="datetime-local" name="scheduled_at" value="${madridDateTimeInput(job.scheduled_at)}"></label>
         <div class="flex-actions"><button type="submit">Guardar cambios</button><button type="button" data-photos="${esc(job.id)}" data-owner="${esc(job.customer_id)}">Ver fotos</button><button type="button" data-staff-chat="${esc(job.customer_id)}" data-chat-service="${esc(job.service_name)}">💬 Chat</button></div>
       </form><div class="staff-documents-toolbar">
         <button type="button" data-doc-kind="order" data-doc-job="${esc(job.id)}">Orden de trabajo</button>
@@ -1244,8 +1245,9 @@ export function mountConnected({app, services, supabase, authLinkIntent=null}) {
         if(quotedPrice===null||Math.round(quotedPrice*100)!==Math.round(quote.total*100))
           return message('El total no coincide con las partidas. Pulsa «Aplicar total al formulario» antes de guardar.',true);
       }
-      const stamp=date?new Date(date):null;
-      if(stamp&&!Number.isFinite(stamp.getTime()))return message('Fecha y hora no válidas.',true);
+      const visitTime=madridVisitDateTimeToIso(date,original.scheduled_at);
+      if(visitTime.error)return message(visitTime.error,true);
+      const stamp=visitTime.iso?new Date(visitTime.iso):null;
       const validation=validateAdminJobUpdate({status,operatorId:operator_id,scheduledAt:stamp?stamp.toISOString():null,price:quotedPrice});
       if(validation)return message(validation,true);
       if(operator_id&&!operators.some(op=>op.id===operator_id))return message('Operario no encontrado en el personal autorizado.',true);
