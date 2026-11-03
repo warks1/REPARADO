@@ -64,6 +64,23 @@ with psycopg.connect(dsn) as db:
         'supabase/migration-v66-preferred-date.sql'
     ]:
         db.execute((ROOT/path).read_text(encoding='utf-8'))
+    # El test histórico de V4–V11 concede SELECT; el Supabase Test hospedado
+    # usa GRANT por COLUMNA para INSERT y UPDATE de service_requests.
+    # Emular sus permisos reales en esta base EFÍMERA, sin abrir GRANT a la
+    # tabla completa ni permitir escritura de precio/estado al crear trabajos.
+    db.execute("""grant insert (
+      customer_id,service_name,category,street,address_number,
+      postal_code,city,phone,preferred_date,description,client_submission_id
+    ) on public.service_requests to authenticated""")
+    db.execute("""grant update (
+      price,scheduled_at,status,operator_id,operator_name
+    ) on public.service_requests to authenticated""")
+    assert not db.execute("""select has_table_privilege(
+      'authenticated','public.service_requests','INSERT')""").fetchone()[0]
+    assert not db.execute("""select has_column_privilege(
+      'authenticated','public.service_requests','status','INSERT')""").fetchone()[0]
+    assert db.execute("""select has_column_privilege(
+      'authenticated','public.service_requests','client_submission_id','INSERT')""").fetchone()[0]
     db.commit()
 
 with psycopg.connect(dsn) as db:
@@ -78,10 +95,10 @@ with psycopg.connect(dsn) as db:
             # 1. Un cliente introduce una solicitud válida en Cataluña.
             job_id=db.execute("""insert into public.service_requests(
                 customer_id,service_name,category,street,address_number,
-                postal_code,city,phone,status,preferred_date,client_submission_id
+                postal_code,city,phone,preferred_date,client_submission_id
               ) values (
                 %s,'Sustitución de grifo','Fontanería','Calle Ejemplo','5',
-                '08001','Barcelona','000000000','new',%s,%s
+                '08001','Barcelona','000000000',%s,%s
               ) returning id""",(CUSTOMER,future,KEY)).fetchone()[0]
             assert job_id is not None
             own=db.execute("select status::text,preferred_date from public.service_requests where id=%s",
