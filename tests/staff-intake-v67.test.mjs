@@ -26,7 +26,7 @@ test('V67: administración ofrece botón para revisar y recargar solicitudes del
  assert.ok(start>=0);
  const section=code.slice(start,end>start?end:undefined);
  assert.match(section,/staff-new-queue/);
- assert.match(section,/data-admin-filter=\\"new\\"/);
+ assert.ok(section.includes('data-admin-filter="new"'));
  assert.match(section,/data-reload-staff/);
  assert.match(section,/renderAdmin\(adminFilter\)/);
  assert.match(section,/Máximo 150 recientes/);
@@ -37,7 +37,7 @@ test('V67: administración ofrece botón para revisar y recargar solicitudes del
 test('V67: la bandeja está limitada a administrador, sin mostrar datos a clientes u operarios',()=>{
  assert.ok(code.includes("if(!userIsStaff()){renderHome();return}"));
  assert.ok(code.includes('admin ? baseJobs : baseJobs.eq(\'operator_id\',staffUserId)'));
- assert.match(code,/\$\{admin\?\`<div class=\\"staff-new-queue\\"/);
+ assert.ok(code.includes('${admin?`<div class="staff-new-queue"'));
  assert.ok(theme.includes('.staff-new-queue{'));
  assert.ok(theme.includes('.staff-queue-actions button:focus-visible'));
  assert.ok(theme.includes('@media(max-width:540px)'));
