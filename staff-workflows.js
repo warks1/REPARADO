@@ -7,6 +7,7 @@ export const jobStatusLabels={
 };
 export const jobFilters=[
   {id:'all',label:'Todos'},
+  {id:'new',label:'Nuevas'},
   {id:'pending',label:'Pendientes'},
   {id:'unassigned',label:'Sin operario'},
   {id:'agenda',label:'Agenda'},
@@ -16,6 +17,7 @@ export const jobFilters=[
 export function filterJobs(jobs,filter='all'){
   const source=Array.isArray(jobs)?jobs:[];
   const filtered=source.filter(j=>{
+    if(filter==='new')return j.status==='new';
     if(filter==='pending')return ['new','quoted','accepted'].includes(j.status);
     if(filter==='unassigned')return !j.operator_id&&!['completed','cancelled'].includes(j.status);
     if(filter==='agenda')return ['scheduled','in_progress'].includes(j.status);
@@ -31,6 +33,7 @@ export function jobCounters(jobs){
   const source=Array.isArray(jobs)?jobs:[];
   return {
     all:source.length,
+    new:filterJobs(source,'new').length,
     pending:filterJobs(source,'pending').length,
     unassigned:filterJobs(source,'unassigned').length,
     agenda:filterJobs(source,'agenda').length,

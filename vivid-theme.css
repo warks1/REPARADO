@@ -679,3 +679,15 @@ body,.shell,.customer-header,.customer-nav {background:#fff}
  .billing-draft-preview .request-document-print{display:block!important;position:absolute;inset:0 auto auto 0;width:100%;border:0;padding:0;background:white!important}
  .billing-draft-print .receipt-warning{border:2px solid #ba613b!important;color:#843e22!important}
 }
+
+/* V67 · Bandeja de nuevas solicitudes; disponible solo en el panel privado admin. */
+.staff-new-queue{display:flex;justify-content:space-between;gap:16px;align-items:center;flex-wrap:wrap;padding:17px 18px;margin:15px 0;background:linear-gradient(110deg,#fff6ec,#fffdfb);border:1px solid #f6d7b2;border-radius:16px}
+.staff-new-queue>div:first-child{flex:1 1 230px;display:flex;flex-direction:column;gap:6px}
+.staff-new-queue strong{color:#8a410d;font-size:17px}
+.staff-new-queue small{color:#5b6170;font-size:12px;line-height:1.5}
+.staff-queue-actions{display:flex;gap:8px;flex-wrap:wrap}
+.staff-queue-actions button{border-radius:11px;min-height:44px;padding:10px 14px;font-size:12px;font-weight:750;background:#fff;color:#8a410d;border:1px solid #e1b786;cursor:pointer}
+.staff-queue-actions button:first-child{background:#e86b27;color:#fff;border-color:#e86b27}
+.staff-queue-actions button:focus-visible{outline:3px solid #1276c9;outline-offset:3px}
+@media(max-width:540px){.staff-new-queue{padding:14px}.staff-queue-actions{width:100%}.staff-queue-actions button{flex:1 1 135px}}
+@media(prefers-reduced-motion:reduce){.staff-queue-actions button{transition:none!important}}
