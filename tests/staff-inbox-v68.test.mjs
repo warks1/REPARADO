@@ -93,7 +93,9 @@ test('V68: administración usa datos privados de consulta paginada y vuelve a co
   assert.ok(code.includes('data-new-page="prev"'));
   assert.ok(code.includes('data-new-page="next"'));
   assert.ok(code.includes('canAdvanceNewRequests(newRequestsPage,counts.new)'));
-  assert.ok(code.includes("if(btn.dataset.adminFilter!==adminFilter)newRequestsPage=0"));
+  assert.ok(code.includes("if(btn.dataset.adminFilter!==adminFilter){"));
+  assert.ok(code.includes("newRequestsPage=0;"));
+  assert.ok(code.includes("unassignedRequestsPage=0;"));
 });
 
 test('V68: conserva accesibilidad de la paginación y no declara emails activos',()=>{
