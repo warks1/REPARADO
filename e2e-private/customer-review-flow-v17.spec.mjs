@@ -41,7 +41,8 @@ async function setup(page){
      // El mock representa Content-Range de PostgREST para devolver count.
      return route.fulfill({
        status:200,contentType:'application/json',
-       headers:{'content-range':'0-'+(rows.length-1)+'/'+rows.length,'range-unit':'items'},
+       headers:{'content-range':'0-'+(rows.length-1)+'/'+rows.length,'range-unit':'items',
+         'access-control-expose-headers':'Content-Range','access-control-allow-origin':'*'},
        body:JSON.stringify(rows)
      });
    }
