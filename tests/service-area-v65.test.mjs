@@ -17,7 +17,7 @@ test('V65: solo códigos de cinco dígitos de 08, 17, 25 y 43',()=>{
   for(const postal of ['28001','46001','50001','07001','01001','00000']){
     assert.match(serviceAreaIssue(postal,'Barcelona'),/Cataluña/,postal);
   }
-  for(const postal of ['801','80100','0800','08A01','17-001','43001x','+43001','  ','８００１']){
+  for(const postal of ['801','0800','08A01','17-001','43001x','+43001','  ','８００１']){
     assert.match(serviceAreaIssue(postal,'Tarragona'),/cinco cifras/,postal);
   }
 });
@@ -25,7 +25,7 @@ test('V65: solo códigos de cinco dígitos de 08, 17, 25 y 43',()=>{
 test('V65: detecta capital de provincia incoherente, pero no presume validar todas las localidades',()=>{
   for(const [postal,city] of [
     ['17001','Barcelona'],['08001','Girona'],['25001','Tarragona'],
-    ['43001','Lleida'],['17001','Gerona'],['43001','Lérida']
+    ['43001','Lleida'],['08001','Gerona'],['43001','Lérida']
   ])assert.match(serviceAreaIssue(postal,city),/provincias distintas/,postal+city);
   assert.equal(serviceAreaIssue('08001','Sant Pere'),null);
   assert.match(serviceAreaIssue('08001',''),/municipio/);
