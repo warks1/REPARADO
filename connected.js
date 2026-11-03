@@ -10,6 +10,7 @@ import { mountReviewModeration } from './review-moderation.js';
 import { mountReviews } from './reviews.js';
 import {appHeader,bottomNavigation,setActiveNav,renderLanding,renderCategory,serviceFormHeader,formPeriodPicker,serviceRow,matchServices,featuredServices,showAllCategories} from './customer-ui.js'
 import {unitQuantityMarkup,bindUnitQuantity,unitQuantityDescription} from './unit-pricing.js'
+import {preferredDateField,preferredDateMinimum,preferredDateIssue} from './date-preference.js'
 import { operatorMaySetStatus } from './rules.js'
 import {jobFilters,filterJobs,jobCounters,vatIncluded,sameOperatorSlot,staffVisitGapMinutes,validateAdminJobUpdate} from './staff-workflows.js'
 import {staffProgressMarkup,staffDocument} from './staff-documents.js'
@@ -322,7 +323,7 @@ export function mountConnected({app, services, supabase, authLinkIntent=null}) {
       '<label>Descripción del problema<textarea name="description" maxlength="1800" placeholder="Explícanos lo que necesitas reparar..." required></textarea></label>'+unitQuantityMarkup(service)+
       '<label>Fotos (opcional, máximo 4)<input name="photos" type="file" accept="image/jpeg,image/png,image/webp,image/heic" multiple></label>'+
       '<div class="photo-preview" aria-live="polite"></div>'+
-      '<label>Fecha preferida<input name="preferred_date" type="date"></label>'+formPeriodPicker()+
+      preferredDateField()+formPeriodPicker()+
       '<button type="submit">Enviar solicitud →</button></form>'+
       '<p class="notice">Precio orientativo «desde»: incluye material estándar indicado, mano de obra e IVA del 21 %. Extras y supuestos no estándar se confirman por presupuesto.</p>'+
       '<p data-feedback class="feedback" role="status"></p></section></div>';
@@ -348,7 +349,10 @@ export function mountConnected({app, services, supabase, authLinkIntent=null}) {
       let recorded=false;
       const uploadEpoch=authEpoch;
       try{
+        preferredDateMinimum(form.elements.preferred_date);
         const fields=new FormData(form);
+        const preferredError=preferredDateIssue(fields.get('preferred_date'));
+        if(preferredError){message(preferredError,true);return;}
         const images=[...(form.elements.photos.files||[])];
         const photoError=images.length?validateRequestPhotos(images):null;
         if(photoError){message(photoError,true);return;}
