@@ -1,11 +1,11 @@
 import {contactLinksMarkup} from './contact-emails.js';
 import { mountReviews } from './reviews.js';
 import {requestStorageKey,profileStorageKey,messageDraftStorageKey,safeReadJSON,localRequests,localProfile,localWrite,localAgenda,localSummary,localDateLabel,validLocalDate} from './local-data.js';
-import {localReceipt,localRequestBackup,localBackupName,historicalEvents,readableTimestamp} from './local-document.js';
+import {localReceipt,localRequestBackup,localBackupName,historicalEvents,readableTimestamp,localPriceLabel} from './local-document.js';
 import {makeLocalCollection,restoreLocalCollection,localBackupLimit} from './local-backup.js';
 
 import {appHeader,bottomNavigation,renderLanding,renderCategory,serviceFormHeader,formPeriodPicker,priceFor,esc,setActiveNav,matchServices,serviceRow,featuredServices,showAllCategories} from './customer-ui.js';
-import {unitQuantityMarkup,bindUnitQuantity,unitQuantityDescription,unitQuoteText} from './unit-pricing.js';
+import {unitQuantityMarkup,bindUnitQuantity} from './unit-pricing.js';
 
 // La misma interfaz que verá el cliente: si faltan credenciales, se conservan
 // solicitudes locales para probar la navegación, sin simular envíos a operarios.
@@ -71,10 +71,11 @@ export function mountLocal({app,services}){
       requests.unshift({id:globalThis.crypto?.randomUUID?.()||String(Date.now()),category:s[0],service:s[1],
         street:String(data.get('street')||''),address:String(data.get('address_number')||''),
         postal_code:String(data.get('postal_code')||''),city:String(data.get('city')||''),
-        phone:String(data.get('phone')||''),description:String(data.get('description')||'')+
-          unitQuantityDescription(areaQuote)+(areaQuote?.status==='estimate'?'\n'+unitQuoteText(areaQuote):''),
+        phone:String(data.get('phone')||''),description:String(data.get('description')||''),
         period:String(data.get('preferred_period')||''),date:String(data.get('preferred_date')||''),
-        price:s[3]?0:s[2],status:'Pendiente (local)',created_at:new Date().toISOString(),
+        price:s[3]?0:s[2],
+        ...(s[3]?{unit_name:s[3],unit_rate:s[2],unit_quantity:areaQuote?.quantity??null}:{}),
+        status:'Pendiente (local)',created_at:new Date().toISOString(),
         history:[{type:'created',at:new Date().toISOString()}]});
       if(!persist(requests)){
         main.querySelector('[data-feedback]').textContent='No se ha podido guardar. Comprueba el almacenamiento de este navegador y vuelve a intentarlo.';
@@ -169,7 +170,7 @@ export function mountLocal({app,services}){
       '<p><b>Dirección:</b> '+esc([x.street,x.address,x.postal_code,x.city].filter(Boolean).join(', '))+'</p>'+
       '<p><b>Teléfono:</b> '+esc(x.phone||'No indicado')+'</p>'+
       '<p><b>Descripción:</b> '+esc(x.description||'No indicada')+'</p>'+
-      '<p><b>Precio:</b> '+(Number(x.price)>0?esc(Number(x.price).toFixed(2).replace('.',',')+' € · orientativo, IVA incluido'):'Por presupuesto')+'</p>'+
+      '<p><b>Precio orientativo:</b> '+esc(localPriceLabel(x))+'</p>'+
       '<h3>Seguimiento de esta solicitud</h3>'+
       '<p class="notice">Historial local de las acciones realizadas en este dispositivo; no refleja asignaciones ni trabajos del equipo.</p>'+
       '<ol class="local-timeline">'+(historicalEvents(x).length
