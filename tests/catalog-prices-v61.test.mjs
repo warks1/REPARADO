@@ -45,3 +45,11 @@ test('V61: categoría y formulario muestran condiciones, materiales e IVA',()=>{
  const reforma=serviceFormHeader(services.find(s=>s[1]==='Reforma integral de baño'));
  assert.ok(reforma.includes('Por presupuesto'));
 });
+
+test('V71: detalle de solicitud indica tarifa desde sin presentar presupuesto cerrado',()=>{
+ const form=name=>serviceFormHeader(services.find(s=>s[1]===name));
+ assert.ok(form('Sustitución de grifo').includes('<em>Desde 175,00 € · Material estándar'));
+ assert.ok(form('Instalación de parquet/laminado').includes('<em>Desde 49,00 € / m² · Material estándar'));
+ assert.ok(form('Reforma integral de baño').includes('<em>Por presupuesto · Sujeto a presupuesto'));
+ assert.ok(!form('Reforma integral de baño').includes('Desde Por presupuesto'));
+});
