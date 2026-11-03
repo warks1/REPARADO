@@ -44,7 +44,8 @@ export function mountConnected({app, services, supabase, authLinkIntent=null}) {
   const statusLabels = {new:'Nueva', quoted:'Presupuesto',accepted:'Aceptada',scheduled:'Programada',in_progress:'En curso',completed:'Terminada',cancelled:'Cancelada'};
   const validStatus = Object.keys(statusLabels);
   let session=null, profile=null, currentView='home', adminFilter='all', newRequestsPage=0, unassignedRequestsPage=0, lastCategory=null, pendingService=null, pendingView=null;
-  let customerRequestsPage=0,customerChatPage=0;
+  let customerRequestsPage=0;
+  let customerChatPage=0;
   let passwordSetupPending=authLinkIntent==='invite'||authLinkIntent==='recovery';
   // Cada lectura asíncrona queda asociada a la sesión y a su pantalla original.
   let authEpoch=0;
