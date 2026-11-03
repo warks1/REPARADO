@@ -1,6 +1,8 @@
 // Resguardos informativos y copias locales. NO son facturas ni citas confirmadas.
+import {services} from './catalog-data.js';
+import {unitQuote,unitQuoteText} from './unit-pricing.js';
 const escape=value=>String(value??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
-const fields=['id','category','service','street','address','postal_code','city','phone','description','date','period','price','status','created_at','updated_at'];
+const fields=['id','category','service','street','address','postal_code','city','phone','description','date','period','price','unit_name','unit_rate','unit_quantity','status','created_at','updated_at'];
 export function readableTimestamp(value){
   const ms=Date.parse(value||'');
   if(!Number.isFinite(ms))return 'Sin fecha registrada';
@@ -14,11 +16,25 @@ export function historicalEvents(record){
       at:e.at
     }));
 }
-export function localReceipt(record){
+// Las solicitudes anteriores a V63 pueden conservar en price un precio POR m².
+ // Detectar el servicio por su catálogo evita presentar esa cifra como total.
+export function localPriceLabel(record){
   const r=record||{};
-  const price=Number(r.price)>0&&Number.isFinite(Number(r.price))
+  const catalogService=services.find(s=>s[1]===r.service);
+  const unit=r.unit_name||catalogService?.[3];
+  if(unit){
+    const recordedRate=Number(r.unit_rate)>0?Number(r.unit_rate):
+      Number(r.price)>0?Number(r.price):Number(catalogService?.[2]);
+    const q=unitQuote([r.category,r.service,recordedRate,unit],r.unit_quantity);
+    return unitQuoteText(q)||'Pendiente de presupuesto por cantidad.';
+  }
+  return Number(r.price)>0&&Number.isFinite(Number(r.price))
     ?Number(r.price).toLocaleString('es-ES',{minimumFractionDigits:2,maximumFractionDigits:2})+' € (IVA incluido, orientativo)'
     :'Pendiente de presupuesto';
+}
+export function localReceipt(record){
+  const r=record||{};
+  const price=localPriceLabel(r);
   const row=(label,value)=>'<div class="receipt-row"><dt>'+escape(label)+'</dt><dd>'+escape(value||'No indicado')+'</dd></div>';
   const visit=(r.date||'')+' '+(r.period||'');
   return '<section class="request-document-print" aria-label="Resguardo local de solicitud">'+
