@@ -17,6 +17,7 @@ import { operatorMaySetStatus } from './rules.js'
 import {jobFilters,filterJobs,jobCounters,vatIncluded,sameOperatorSlot,staffVisitGapMinutes,validateAdminJobUpdate} from './staff-workflows.js'
 import {fetchNewRequestsCount,fetchNewRequestsPage,newRequestsPageCount,canAdvanceNewRequests} from './staff-inbox.js'
 import {fetchUnassignedRequestsCount,fetchUnassignedRequestsPage} from './staff-unassigned.js'
+import {fetchCustomerChatPage,customerChatPageSize,customerChatPageCount,customerChatCanReadOlder} from './customer-chat-page.js'
 import {fetchCustomerRequestsPage,customerRequestsPageSize,customerRequestsPageCount,customerRequestsCanAdvance} from './customer-requests-page.js'
 import {staffProgressMarkup,staffDocument} from './staff-documents.js'
 import {shareAcceptedQuote} from './mobile-quote-share.js'
@@ -44,6 +45,7 @@ export function mountConnected({app, services, supabase, authLinkIntent=null}) {
   const validStatus = Object.keys(statusLabels);
   let session=null, profile=null, currentView='home', adminFilter='all', newRequestsPage=0, unassignedRequestsPage=0, lastCategory=null, pendingService=null, pendingView=null;
   let customerRequestsPage=0;
+  let customerChatPage=0;
   let passwordSetupPending=authLinkIntent==='invite'||authLinkIntent==='recovery';
   // Cada lectura asíncrona queda asociada a la sesión y a su pantalla original.
   let authEpoch=0;
@@ -95,7 +97,7 @@ export function mountConnected({app, services, supabase, authLinkIntent=null}) {
       if(!session){pendingService=null;pendingView=view;showLogin();return}
       if(view==='requests'){customerRequestsPage=0;loadRequests();}
       else if(view==='agenda')loadAgenda();
-      else if(view==='chat')loadChat();
+      else if(view==='chat'){customerChatPage=0;loadChat();}
       else if(view==='profile')loadProfile();
       else if(view==='notifications')loadNotifications();
       else if(view==='invoices')loadInvoices();
@@ -119,7 +121,7 @@ export function mountConnected({app, services, supabase, authLinkIntent=null}) {
       // Supabase usa global por defecto: cerrar solo este dispositivo.
       const {error}=await supabase.auth.signOut({scope:'local'});
       if(error)throw error;
-      session=null;profile=null;pendingService=null;pendingView=null;customerRequestsPage=0;
+      session=null;profile=null;pendingService=null;pendingView=null;customerRequestsPage=0;customerChatPage=0;
       renderHome();
       return true;
     }catch{
@@ -586,13 +588,20 @@ export function mountConnected({app, services, supabase, authLinkIntent=null}) {
     setActiveNav(app,'chat');
     currentView='chat';main.innerHTML=`<section class="card">${backButton}<h2>Chat con Reparado</h2><p>Cargando…</p></section>`;
     const userId=session?.user?.id,loadingScreen=main.firstElementChild;
+    const epoch=authEpoch;
     if(!userId)return showLogin();
-    let data,error;
+    const requestedPage=Number.isSafeInteger(customerChatPage)&&customerChatPage>=0?customerChatPage:0;
+    let data,error,count;
     try{
-      ({data,error}=await supabase.from('messages').select('sender_id,body,created_at').eq('customer_id',userId).order('created_at'));
-    }catch{error=new Error('No se pudo cargar el chat. Comprueba la conexión.');}
-    if(currentView!=='chat'||!isCurrentUser(userId)||main.firstElementChild!==loadingScreen)return;
-    main.innerHTML=`<section class="card">${backButton}<h2>Chat con Reparado</h2>${error?'<p>No se pudo abrir el chat. Comprueba la conexión.</p><button type="button" data-view="chat">Reintentar</button>':`<div id="messages">${(data||[]).map(r=>`<p class="${r.sender_id===session.user.id?'me':''}">${esc(r.body)}</p>`).join('')||'<p>Sin mensajes todavía.</p>'}</div><form id="chat-form"><label>Mensaje<input name="body" maxlength="2000" required placeholder="Escribe aquí…"></label><button type="submit">Enviar</button></form><p data-feedback role="status"></p>`}</section>`;
+      ({data,error,count}=await fetchCustomerChatPage(supabase,userId,requestedPage));
+    }catch{error=true;}
+    if(currentView!=='chat'||!isCurrentUser(userId)||authEpoch!==epoch||main.firstElementChild!==loadingScreen)return;
+    if(!error&&count>0&&requestedPage>=customerChatPageCount(count)){customerChatPage=0;return loadChat();}
+    const pager=!error&&count>customerChatPageSize?`<nav class="staff-new-pagination customer-chat-pagination" aria-label="Páginas del chat"><span>Página ${requestedPage+1} de ${customerChatPageCount(count)} · ${count} mensajes</span><div><button type="button" data-chat-page="newer" ${requestedPage===0?'disabled':''}>← Más recientes</button><button type="button" data-chat-page="older" ${customerChatCanReadOlder(requestedPage,count)?'':'disabled'}>Anteriores →</button></div></nav>`:'';
+    main.innerHTML=`<section class="card">${backButton}<h2>Chat con Reparado</h2>${error?'<p>No se pudo abrir el chat. Comprueba la conexión.</p><button type="button" data-view="chat">Reintentar</button>':`<div id="messages">${(data||[]).map(r=>`<p class="${r.sender_id===session.user.id?'me':''}">${esc(r.body)}</p>`).join('')||'<p>Sin mensajes todavía.</p>'}</div>${pager}<p><button type="button" data-refresh-chat>Actualizar conversación</button></p><form id="chat-form"><label>Mensaje<input name="body" maxlength="2000" required placeholder="Escribe aquí…"></label><button type="submit">Enviar</button></form><p data-feedback role="status"></p>`}</section>`;
+    main.querySelector('[data-chat-page="newer"]')?.addEventListener('click',()=>{if(requestedPage>0){customerChatPage=requestedPage-1;void loadChat()}});
+    main.querySelector('[data-chat-page="older"]')?.addEventListener('click',()=>{if(customerChatCanReadOlder(requestedPage,count)){customerChatPage=requestedPage+1;void loadChat()}});
+    main.querySelector('[data-refresh-chat]')?.addEventListener('click',()=>{customerChatPage=0;void loadChat()});
     const form=main.querySelector('#chat-form');
     if(form)form.addEventListener('submit',async e=>{
       e.preventDefault();
@@ -606,6 +615,7 @@ export function mountConnected({app, services, supabase, authLinkIntent=null}) {
         const {error}=await supabase.from('messages').insert({customer_id:authorId,sender_id:authorId,body});
         if(!isCurrentUser(authorId)||!form.isConnected||currentView!=='chat')return;
         if(error)throw error;
+        customerChatPage=0;
         await loadChat();
       }catch{
         if(isCurrentUser(authorId)&&form.isConnected&&currentView==='chat')
