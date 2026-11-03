@@ -12,10 +12,11 @@ const jobs=[
 ];
 test('panel interno: estadísticas y filtros no ocultan el catálogo',()=>{
  assert.equal(jobStatuses.length,7);
- assert.deepEqual(jobCounters(jobs),{all:7,pending:2,unassigned:1,agenda:3,active:1,finished:2});
+ assert.deepEqual(jobCounters(jobs),{all:7,new:1,pending:2,unassigned:1,agenda:3,active:1,finished:2});
  assert.deepEqual(filterJobs(jobs,'agenda').map(j=>j.id),['g','c','d']);
  assert.deepEqual(filterJobs(jobs,'finished').map(j=>j.id),['e','f']);
  assert.deepEqual(filterJobs(jobs,'pending').map(j=>j.id),['a','b']);
+ assert.deepEqual(filterJobs(jobs,'new').map(j=>j.id),['a']);
 });
 test('IVA 21 % incluido: desglosar no aumenta el precio al cliente',()=>{
  assert.deepEqual(vatIncluded(121),{total:121,base:100,vat:21,percent:21});
