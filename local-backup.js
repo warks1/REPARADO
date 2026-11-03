@@ -70,6 +70,23 @@ export function restoreLocalCollection(content,existing=[]){
       throw new Error('Solicitud '+(idx+1)+': precio inválido.');
     clean.price=source.price;
   }
+  // Tarifas unitarias: no restaurar un número por m² como si fuera importe total.
+  const unitFields=['unit_name','unit_rate','unit_quantity'];
+  if(unitFields.some(key=>source[key]!==undefined&&source[key]!==null)){
+    if(!['m','m²'].includes(source.unit_name)||
+       typeof source.unit_rate!=='number'||!Number.isFinite(source.unit_rate)||
+       source.unit_rate<=0||source.unit_rate>100000)
+      throw new Error('Solicitud '+(idx+1)+': tarifa por unidad inválida.');
+    clean.unit_name=source.unit_name;
+    clean.unit_rate=source.unit_rate;
+    if(source.unit_quantity!==undefined&&source.unit_quantity!==null){
+      const q=source.unit_quantity;
+      if(typeof q!=='number'||!Number.isFinite(q)||q<=0||q>10000||
+         Math.abs(Math.round(q*100)-q*100)>0.000001)
+        throw new Error('Solicitud '+(idx+1)+': cantidad por unidad inválida.');
+      clean.unit_quantity=q;
+    }
+  }
   clean.status='Pendiente (local)';
   if(source.history!==undefined){
    if(!Array.isArray(source.history)||source.history.length>30)
