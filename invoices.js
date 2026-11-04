@@ -1,21 +1,43 @@
 import {checkInvoiceAmounts,formatInvoiceEuro,invoiceStatusLabels} from './invoice-math.js';
 // Lista de documentos emitidos al cliente. No crea facturas fiscales.
-export async function renderInvoices({main,supabase,session,onRefresh}) {
+// V76: facturas visibles por páginas privadas; no truncar el historial a 50.
+export const invoicePageSize=50;
+export function invoicePageCount(count){
+  return Number.isSafeInteger(count)&&count>=0 ? Math.max(1,Math.ceil(count/invoicePageSize)) : 0;
+}
+export function invoiceCanAdvance(page,count){
+  return Number.isSafeInteger(page)&&page>=0&&page+1<invoicePageCount(count);
+}
+export async function fetchInvoicesPage(supabase,userId,page=0){
+  if(!supabase||typeof userId!=='string'||!userId.trim()||
+     !Number.isSafeInteger(page)||page<0||page>100000)
+    return {data:null,count:null,error:true};
+  try{
+    const {data,count,error}=await supabase.from('invoices')
+      .select('number,subtotal,vat,total,status,created_at',{count:'exact'})
+      .eq('customer_id',userId).neq('status','draft')
+      .order('created_at',{ascending:false})
+      .order('id',{ascending:false})
+      .range(page*invoicePageSize,(page+1)*invoicePageSize-1);
+    if(error||!Array.isArray(data)||!Number.isSafeInteger(count)||count<0)
+      return {data:null,count:null,error:true};
+    return {data,count,error:false};
+  }catch{
+    return {data:null,count:null,error:true};
+  }
+}
+export async function renderInvoices({main,supabase,session,onRefresh,page=0}) {
   const loading=document.createElement('section');loading.className='card';
   const cancel=document.createElement('button');cancel.type='button';cancel.className='back';
   cancel.dataset.back='';cancel.textContent='← Volver';loading.append(cancel);
   const wait=document.createElement('p');wait.textContent='Consultando mis facturas…';loading.append(wait);
   main.replaceChildren(loading);
   const userId=session?.user?.id;
-  let data,error;
-  try{
-    if(!userId)throw new Error('Sesión no disponible');
-    ({data,error}=await supabase.from('invoices')
-      .select('number,subtotal,vat,total,status,created_at')
-      .eq('customer_id',userId).neq('status','draft')
-      .order('created_at',{ascending:false}).limit(50));
-  }catch{error=new Error('No se pudo conectar');}
+  const {data,count,error}=await fetchInvoicesPage(supabase,userId,page);
   if(!onRefresh()||main.firstElementChild!==loading||!loading.isConnected)return;
+  // Si se han eliminado registros de la última página, volver a la última existente.
+  if(!error&&count>0&&page>=invoicePageCount(count))
+    return renderInvoices({main,supabase,session,onRefresh,page:invoicePageCount(count)-1});
   const section=document.createElement('section');section.className='card';
   const back=document.createElement('button');back.type='button';back.className='back';
   back.dataset.back='';back.textContent='← Volver';section.append(back);
@@ -50,6 +72,28 @@ export async function renderInvoices({main,supabase,session,onRefresh}) {
       card.append(issue);
     }
     section.append(card);
+  }
+  if(!error&&count>invoicePageSize){
+    const pages=invoicePageCount(count);
+    const nav=document.createElement('nav');
+    nav.className='staff-new-pagination customer-invoices-pagination';
+    nav.setAttribute('aria-label','Páginas de mis facturas');
+    const info=document.createElement('span');
+    info.textContent='Página '+(page+1)+' de '+pages+' · '+count+' documentos';
+    const controls=document.createElement('div');
+    const prev=document.createElement('button');
+    prev.type='button';prev.textContent='← Anterior';prev.disabled=page===0;
+    const next=document.createElement('button');
+    next.type='button';next.textContent='Siguiente →';next.disabled=!invoiceCanAdvance(page,count);
+    const changePage=nextPage=>{
+      if(!onRefresh()||main.firstElementChild!==section||!section.isConnected)return;
+      void renderInvoices({main,supabase,session,onRefresh,page:nextPage});
+    };
+    prev.addEventListener('click',()=>{if(page>0)changePage(page-1)});
+    next.addEventListener('click',()=>{if(invoiceCanAdvance(page,count))changePage(page+1)});
+    controls.append(prev,next);
+    nav.append(info,controls);
+    section.append(nav);
   }
   main.replaceChildren(section);
 }
