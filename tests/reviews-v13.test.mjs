@@ -53,7 +53,8 @@ test('en modo conectado solo se valoran trabajos finalizados; modo local no fing
  const sql=readFileSync(new URL('../supabase/migration-v13.sql',import.meta.url),'utf8');
  assert.ok(connected.includes('mountReviews(main,{supabase,session,selectedRequestId:selectedReviewRequestId})'));
  assert.ok(local.includes('mountReviews(main)'));
- assert.ok(reviews.includes(".eq('status','completed')"));
+ const reviewable=readFileSync(new URL('../reviewable-requests.js',import.meta.url),'utf8');
+ assert.ok(reviewable.includes(".eq('status','completed')"));
  assert.ok(reviews.includes(".eq('status','approved')"));
  assert.ok(reviews.includes("feedback.textContent='Valoración recibida."));
  assert.ok(reviews.includes('La valoración no se ha enviado a REPARADO.'));
@@ -117,7 +118,11 @@ test('V17: solo las solicitudes completadas tienen botón de valoración y se pr
  assert.ok(connected.includes("row.id===requestId && row.status==='completed'"));
  assert.ok(connected.includes('renderHome(requestId)'));
  assert.ok(connected.includes('selectedRequestId:selectedReviewRequestId'));
- assert.ok(reviews.includes(".select('id,service_name').eq('customer_id',session.user.id).eq('status','completed')"));
+ const eligible=readFileSync(new URL('../reviewable-requests.js',import.meta.url),'utf8');
+ assert.ok(eligible.includes(".eq('customer_id',userId)"));
+ assert.ok(eligible.includes(".eq('status','completed')"));
+ assert.ok(eligible.includes(".eq('id',selectedRequestId)"));
+ assert.ok(reviews.includes('fetchReviewableRequests(supabase,session.user.id,selectedRequestId)'));
  assert.ok(reviews.includes('const requested=data.find(row=>row.id===selectedRequestId)'));
  assert.ok(reviews.includes('form.elements.request_id.value=requested.id'));
  assert.ok(reviews.includes('escapeText(row.service_name'));
