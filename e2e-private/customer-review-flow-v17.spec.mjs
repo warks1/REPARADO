@@ -19,7 +19,7 @@ const jobs=[
  {id:newId,service_name:'Cambio de sifón',status:'new',price:60,
   street:'Calle de prueba',address_number:'2',city:'Barcelona',scheduled_at:null}
 ];
-async function setup(page){
+async function setup(page,{oldCompletedJob=false}={}){
  const session={access_token:jwt(),refresh_token:'fake-refresh',token_type:'bearer',expires_in:7200,
  expires_at:Math.floor(Date.now()/1000)+7200,user:customer};
  await page.addInitScript(({session})=>{
@@ -36,9 +36,15 @@ async function setup(page){
    if(p==='/rest/v1/profiles')return respond({id:customerId,full_name:'Cuenta de prueba',
      phone:'',role:'customer'},true);
    if(p==='/rest/v1/service_requests'&&req.method()==='GET'){
-     const rows=url.searchParams.get('status')==='eq.completed'?[jobs[0]]:jobs;
-     // V73 solicita recuento exacto con Prefer: count=exact.
-     // El mock representa Content-Range de PostgREST para devolver count.
+     // V80: un trabajo terminado antiguo puede estar fuera de los 50
+     // más recientes pero seguir siendo valorable por su propietario.
+     const isCompleted=url.searchParams.get('status')==='eq.completed';
+     const isTarget=url.searchParams.get('id')==='eq.'+completedId;
+     const fiftyRecent=Array.from({length:50},(_,i)=>({
+       id:'d0000000-0000-4000-8000-'+String(i+1).padStart(12,'0'),
+       service_name:'Servicio reciente '+(i+1)
+     }));
+     const rows=isCompleted?(oldCompletedJob?(isTarget?[jobs[0]]:fiftyRecent):[jobs[0]]):jobs;
      return route.fulfill({
        status:200,contentType:'application/json',
        headers:{'content-range':'0-'+(rows.length-1)+'/'+rows.length,'range-unit':'items',
@@ -80,4 +86,22 @@ test('solo trabajos terminados ofrecen valoración; se preselecciona el correcto
    customer_id:customerId,request_id:completedId,rating:4,
    comment:'Reparación correcta y servicio puntual.'
  });
+});
+
+test('V80: un cliente puede valorar un trabajo completado fuera de los 50 recientes',async({page})=>{
+  const writes=await setup(page,{oldCompletedJob:true});
+  await page.goto('/');
+  await page.locator('.customer-nav [data-view="requests"]').click();
+  const rate=page.locator('[data-rate-request="'+completedId+'"]');
+  await expect(rate).toBeVisible();
+  await rate.click();
+  const section=page.locator('#reparado-reviews');
+  await expect(section.locator('#reparado-review-form')).toBeVisible();
+  await expect(section.locator('select[name=request_id]')).toHaveValue(completedId);
+  await expect(section.locator('[data-review-mode-info]')).toContainText('Cambio de grifo');
+  await section.locator('textarea[name=comment]').fill('Trabajo antiguo terminado correctamente.');
+  await section.getByRole('button',{name:'Enviar valoración'}).click();
+  await expect(section.locator('[data-review-feedback]')).toContainText('pendiente de revisión');
+  expect(writes).toHaveLength(1);
+  expect(writes[0].request_id).toBe(completedId);
 });
