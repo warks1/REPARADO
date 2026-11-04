@@ -53,7 +53,8 @@ test('en modo conectado solo se valoran trabajos finalizados; modo local no fing
  const sql=readFileSync(new URL('../supabase/migration-v13.sql',import.meta.url),'utf8');
  assert.ok(connected.includes('mountReviews(main,{supabase,session,selectedRequestId:selectedReviewRequestId})'));
  assert.ok(local.includes('mountReviews(main)'));
- assert.ok(reviews.includes(".eq('status','completed')"));
+ const reviewable=readFileSync(new URL('../reviewable-requests.js',import.meta.url),'utf8');
+ assert.ok(reviewable.includes(".eq('status','completed')"));
  assert.ok(reviews.includes(".eq('status','approved')"));
  assert.ok(reviews.includes("feedback.textContent='Valoración recibida."));
  assert.ok(reviews.includes('La valoración no se ha enviado a REPARADO.'));
