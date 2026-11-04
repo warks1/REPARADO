@@ -17,6 +17,7 @@ import { operatorMaySetStatus } from './rules.js'
 import {jobFilters,filterJobs,jobCounters,vatIncluded,sameOperatorSlot,staffVisitGapMinutes,validateAdminJobUpdate} from './staff-workflows.js'
 import {fetchNewRequestsCount,fetchNewRequestsPage,newRequestsPageCount,canAdvanceNewRequests} from './staff-inbox.js'
 import {fetchUnassignedRequestsCount,fetchUnassignedRequestsPage} from './staff-unassigned.js'
+import {fetchStaffSupportPage,staffSupportPageSize,staffSupportPageCount,staffSupportCanAdvance} from './staff-support-page.js'
 import {fetchCustomerChatPage,customerChatPageSize,customerChatPageCount,customerChatCanReadOlder} from './customer-chat-page.js'
 import {fetchCustomerRequestsPage,customerRequestsPageSize,customerRequestsPageCount,customerRequestsCanAdvance} from './customer-requests-page.js'
 import {staffProgressMarkup,staffDocument} from './staff-documents.js'
@@ -998,28 +999,65 @@ export function mountConnected({app, services, supabase, authLinkIntent=null}) {
       '<h2>Incidencias de clientes</h2><p class="notice">Solo administración. Los detalles son privados; no los envíes por correo ni los compartas fuera del panel.</p>'+
       '<p data-issues-status role="status">Cargando…</p><div data-issues-list></div></section>';
     const root=main.querySelector('#reparado-support-admin'),status=root.querySelector('[data-issues-status]'),list=root.querySelector('[data-issues-list]');
+    const pager=document.createElement('nav');
+    pager.className='staff-new-pagination support-admin-pagination';
+    pager.setAttribute('aria-label','Páginas de incidencias pendientes');
+    root.append(pager);
     const adminUserId=session.user.id;
     const available=()=>root.isConnected&&currentView==='support-admin'&&isCurrentUser(adminUserId)&&profile?.role==='admin';
-    let refreshSeq=0;
+    let refreshSeq=0,supportPage=0;
     async function refresh(){
       const seq=++refreshSeq;
+      status.textContent='Consultando incidencias…';
       try{
-        const {data,error}=await supabase.from('support_reports')
-          .select('id,subject,description,context,status,created_at')
-          .in('status',['open','reviewing']).order('created_at',{ascending:false}).limit(100);
+        const {data,count,error}=await fetchStaffSupportPage(supabase,supportPage);
         if(!available()||seq!==refreshSeq)return;
-        if(error)throw error;
-        status.textContent=(data?.length||0)+' incidencias abiertas o en revisión.';
-        list.innerHTML=(data||[]).map(item=>'<article class="support-ticket" data-support-ticket="'+esc(item.id)+'">'+
+        if(error)throw new Error('No se pudo leer la bandeja');
+        // Cuando se resuelve la última incidencia de una página, retroceder.
+        if(count>0&&supportPage>=staffSupportPageCount(count)){
+          supportPage=staffSupportPageCount(count)-1;
+          return refresh();
+        }
+        if(count===0&&supportPage!==0){supportPage=0;return refresh();}
+        status.textContent=count+' incidencias abiertas o en revisión.';
+        list.innerHTML=data.map(item=>'<article class="support-ticket" data-support-ticket="'+esc(item.id)+'">'+
           '<strong>'+esc(item.subject)+'</strong> <small>'+esc(item.context)+' · '+esc(item.status)+'</small>'+
           '<p>'+esc(item.description)+'</p>'+
           '<div class="flex-actions"><button type="button" data-support-status="reviewing" data-ticket-id="'+esc(item.id)+'">En revisión</button>'+
           '<button type="button" data-support-status="resolved" data-ticket-id="'+esc(item.id)+'">Marcar resuelta</button></div></article>').join('')||
           '<p>No hay incidencias pendientes.</p>';
-      }catch{if(available()&&seq===refreshSeq)status.textContent='No se pueden cargar las incidencias. Revisa conexión y permisos.';}
+        pager.replaceChildren();
+        if(count>staffSupportPageSize){
+          const info=document.createElement('span');
+          info.textContent='Página '+(supportPage+1)+' de '+staffSupportPageCount(count);
+          const controls=document.createElement('div');
+          const prev=document.createElement('button');
+          prev.type='button';prev.dataset.supportPage='prev';prev.textContent='← Anterior';
+          prev.disabled=supportPage===0;
+          const next=document.createElement('button');
+          next.type='button';next.dataset.supportPage='next';next.textContent='Siguiente →';
+          next.disabled=!staffSupportCanAdvance(supportPage,count);
+          controls.append(prev,next);pager.append(info,controls);
+        }
+      }catch{
+        if(available()&&seq===refreshSeq){
+          list.replaceChildren();
+          status.textContent='No se pueden cargar las incidencias. Revisa conexión y permisos.';
+          pager.innerHTML='<button type="button" data-support-page="retry">Reintentar</button>';
+        }
+      }
     }
     const savingReports=new Set();
     root.addEventListener('click',async event=>{
+      const pageButton=event.target.closest('[data-support-page]');
+      if(pageButton){
+        if(!available()||pageButton.disabled)return;
+        const action=pageButton.dataset.supportPage;
+        if(action==='retry'){void refresh();return;}
+        if(action==='prev'&&supportPage>0){supportPage--;void refresh();return;}
+        if(action==='next'&&!pageButton.disabled){supportPage++;void refresh();}
+        return;
+      }
       const b=event.target.closest('[data-support-status]');
       if(!b||b.disabled||!available())return;
       const next=b.dataset.supportStatus,id=b.dataset.ticketId;
