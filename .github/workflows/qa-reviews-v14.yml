@@ -5,6 +5,9 @@ on:
     paths:
       - 'reviews.js'
       - 'review-moderation.js'
+      - 'review-moderation-page.js'
+      - 'tests/review-moderation-v81.test.mjs'
+      - 'e2e-private/review-moderation-v16.spec.mjs'
       - 'connected.js'
       - 'supabase/migration-v15.sql'
       - 'tests/review-moderation.test.mjs'
@@ -20,6 +23,9 @@ on:
     paths:
       - 'reviews.js'
       - 'review-moderation.js'
+      - 'review-moderation-page.js'
+      - 'tests/review-moderation-v81.test.mjs'
+      - 'e2e-private/review-moderation-v16.spec.mjs'
       - 'connected.js'
       - 'supabase/migration-v15.sql'
       - 'tests/review-moderation.test.mjs'
@@ -54,6 +60,8 @@ jobs:
         run: npx playwright test e2e/reviews-unified.spec.mjs --project=iphone-390 --project=android-412
       - name: Verificar valoraciones reales simuladas y acceso privado
         run: npx playwright test --config playwright.invite.config.mjs e2e-private/reviews-unified.spec.mjs --project=iphone --project=android
+      - name: Verificar bandeja de moderación en iPhone y Android
+        run: npx playwright test --config playwright.invite.config.mjs e2e-private/review-moderation-v16.spec.mjs --project=iphone --project=android
 
   moderation-rls:
     runs-on: ubuntu-latest
