@@ -21,6 +21,7 @@ import {fetchUnassignedRequestsCount,fetchUnassignedRequestsPage} from './staff-
 import {fetchStaffSupportPage,staffSupportPageSize,staffSupportPageCount,staffSupportCanAdvance} from './staff-support-page.js'
 import {fetchCustomerChatPage,customerChatPageSize,customerChatPageCount,customerChatCanReadOlder} from './customer-chat-page.js'
 import {fetchCustomerRequestsPage,customerRequestsPageSize,customerRequestsPageCount,customerRequestsCanAdvance} from './customer-requests-page.js'
+import {fetchCustomerChatPage,customerChatPageSize,customerChatPageCount,customerChatCanReadOlder} from './customer-chat-page.js'
 import {staffProgressMarkup,staffDocument} from './staff-documents.js'
 import {shareAcceptedQuote} from './mobile-quote-share.js'
 import {shareVisitCalendar} from './mobile-calendar-share.js'
