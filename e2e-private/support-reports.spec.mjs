@@ -15,7 +15,7 @@ const jwt=id=>{
   return enc({alg:'HS256',typ:'JWT'})+'.'+enc({sub:id,role:'authenticated',
     aud:'authenticated',exp:Math.floor(Date.now()/1000)+7200})+'.signature';
 };
-async function setup(page,role){
+async function setup(page,role,{initialReports=[]}={}){
   const uid=role==='admin'?adminId:customerId;
   const session={access_token:jwt(uid),refresh_token:'fake',token_type:'bearer',expires_in:7200,
     expires_at:Math.floor(Date.now()/1000)+7200,user:person(uid)};
@@ -23,7 +23,7 @@ async function setup(page,role){
     localStorage.setItem('sb-reparado-test-placeholder-auth-token',JSON.stringify(s));
   },session);
   const writes=[];
-  const ownReports=[];
+  const ownReports=initialReports.slice();
   await page.route(fakeHost+'/**',route=>{
     const request=route.request(),url=new URL(request.url());
     const p=url.pathname;
@@ -46,14 +46,17 @@ async function setup(page,role){
       const rows=role==='admin'?[{id:reportId,subject:'No carga el chat',
         description:'El chat no abre tras pulsar Enviar.',context:'chat',
         status:'open',created_at:'2026-10-26T08:00:00Z'}]:ownReports;
-      // La bandeja de administración V77 solicita el contador real con
-      // Prefer: count=exact. Simular Content-Range como lo envía PostgREST.
-      if(role==='admin')return reply(rows,206,false,{
-        'content-range':'0-0/1',
+      // Supabase devuelve contador filtrado por RLS y páginas REST.
+      const offset=Number(url.searchParams.get('offset')||0);
+      const limit=Number(url.searchParams.get('limit')||rows.length);
+      const start=Number.isSafeInteger(offset)&&offset>=0?offset:0;
+      const result=rows.slice(start,start+Math.max(0,limit));
+      const range=result.length?start+'-'+(start+result.length-1)+'/'+rows.length:'*/'+rows.length;
+      return reply(result,200,false,{
+        'content-range':range,
         'access-control-expose-headers':'content-range',
         'access-control-allow-origin':'*'
       });
-      return reply(rows);
     }
     if(p==='/rest/v1/support_reports'&&request.method()==='PATCH'){
       writes.push(JSON.parse(request.postData()||'{}'));return reply([{id:reportId,status:'resolved'}],200);
@@ -102,4 +105,27 @@ test('administrador ve y resuelve incidencias, el cliente no recibe controles',a
   await expect(list.locator('.support-ticket')).toHaveCount(1);
   await list.getByRole('button',{name:'Marcar resuelta'}).click();
   await expect.poll(()=>writes.some(item=>item.status==='resolved')).toBe(true);
+});
+
+test('V78: cliente navega más de quince incidencias anteriores sin ver descripciones',async({page})=>{
+  const saved=Array.from({length:17},(_,i)=>({
+    id:'b0000000-0000-4000-8000-'+String(101+i).padStart(12,'0'),
+    subject:'Incidencia '+String(i+1).padStart(2,'0'),
+    status:'resolved',description:'Dato confidencial del caso '+i,
+    created_at:'2026-10-26T08:00:00Z'
+  }));
+  await setup(page,'customer',{initialReports:saved});
+  await page.goto('/');
+  await page.locator('.customer-nav [data-view="profile"]').click();
+  const history=page.locator('#customer-support-history');
+  await expect(history.locator('[data-support-history]')).toHaveCount(15);
+  await expect(history.locator('[data-support-history-list]')).toContainText('Incidencia 01');
+  await expect(history).toContainText('Página 1 de 2');
+  await history.getByRole('button',{name:/Siguiente/}).click();
+  await expect(history.locator('[data-support-history]')).toHaveCount(2);
+  await expect(history.locator('[data-support-history-list]')).toContainText('Incidencia 17');
+  await expect(history.locator('[data-support-history-list]')).not.toContainText('Dato confidencial');
+  await history.getByRole('button',{name:/Anterior/}).click();
+  await expect(history.locator('[data-support-history]')).toHaveCount(15);
+  await expect(history.locator('[data-support-history-list]')).toContainText('Incidencia 01');
 });
