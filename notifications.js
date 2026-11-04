@@ -1,13 +1,17 @@
-import {fetchOwnNotifications,markOwnNotificationRead} from './notifications-data.js';
+import {fetchOwnNotifications,markOwnNotificationRead,notificationsPageSize,notificationsPageCount,notificationsCanAdvance} from './notifications-data.js';
 
 // Los avisos de otra cuenta nunca deben pintar la pantalla ni marcarse como leídos.
-export async function renderNotifications({main,supabase,session,onRefresh,isStaff=false}) {
+export async function renderNotifications({main,supabase,session,onRefresh,isStaff=false,page=0}) {
   const userId=session?.user?.id;
   if(!userId||!onRefresh())return;
   main.innerHTML='<section class="card"><button type="button" class="back" data-back>← Volver</button><h2>Mis avisos</h2><p>Cargando…</p></section>';
   const loading=main.firstElementChild;
-  const {rows,error}=await fetchOwnNotifications(supabase,userId);
+  const {rows,count,error}=await fetchOwnNotifications(supabase,userId,page);
   if(!onRefresh()||main.firstElementChild!==loading||!loading.isConnected)return;
+  if(!error&&((count===0&&page!==0)||(count>0&&page>=notificationsPageCount(count)))){
+    const lastPage=Math.max(0,notificationsPageCount(count)-1);
+    return renderNotifications({main,supabase,session,onRefresh,isStaff,page:lastPage});
+  }
 
   const card=document.createElement('section');card.className='card';
   const current=()=>card.isConnected&&onRefresh();
@@ -54,6 +58,26 @@ export async function renderNotifications({main,supabase,session,onRefresh,isSta
       });
     }
     card.append(article);
+  }
+  if(!error&&count>notificationsPageSize){
+    const nav=document.createElement('nav');
+    nav.className='staff-new-pagination customer-notifications-pagination';
+    nav.setAttribute('aria-label','Páginas de mis avisos');
+    const info=document.createElement('span');
+    info.textContent='Página '+(page+1)+' de '+notificationsPageCount(count)+' · '+count+' avisos';
+    const actions=document.createElement('div');
+    const prev=document.createElement('button');
+    prev.type='button';prev.textContent='← Anterior';prev.disabled=page===0;
+    const next=document.createElement('button');
+    next.type='button';next.textContent='Siguiente →';
+    next.disabled=!notificationsCanAdvance(page,count);
+    const changePage=target=>{
+      if(!current()||main.firstElementChild!==card)return;
+      void renderNotifications({main,supabase,session,onRefresh,isStaff,page:target});
+    };
+    prev.addEventListener('click',()=>{if(page>0)changePage(page-1)});
+    next.addEventListener('click',()=>{if(notificationsCanAdvance(page,count))changePage(page+1)});
+    actions.append(prev,next);nav.append(info,actions);card.append(nav);
   }
   main.replaceChildren(card);
 }

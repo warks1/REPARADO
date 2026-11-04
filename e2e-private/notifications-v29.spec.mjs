@@ -13,7 +13,7 @@ function jwt(){
    sub:userId,role:'authenticated',aud:'authenticated',exp:Math.floor(Date.now()/1000)+7200
  })+'.fake';
 }
-async function setup(page){
+async function setup(page,{history=null}={}){
  const session={access_token:jwt(),refresh_token:'fake-refresh',token_type:'bearer',
    expires_in:7200,expires_at:Math.floor(Date.now()/1000)+7200,user:customer};
  await page.addInitScript(({session})=>{
@@ -23,9 +23,9 @@ async function setup(page){
  const updates=[];
  await page.route(host+'/**',async route=>{
    const request=route.request(),url=new URL(request.url()),path=url.pathname;
-   const reply=(value,status=200,one=false)=>route.fulfill({
+   const reply=(value,status=200,one=false,headers={})=>route.fulfill({
      status,contentType:one?'application/vnd.pgrst.object+json':'application/json',
-     body:JSON.stringify(value)
+     headers,body:JSON.stringify(value)
    });
    if(path==='/auth/v1/user')return reply(customer,200,true);
    if(path==='/rest/v1/profiles')return reply({id:userId,role:'customer',full_name:'Cliente de prueba',phone:''},200,true);
@@ -37,8 +37,17 @@ async function setup(page){
        reads++;
        // Error funcional 400 sin reintentos automáticos del SDK: comprueba el aviso y el botón Reintentar.
        if(reads===1)return reply({message:'INTERNAL_SECRET_DO_NOT_SHOW'},400);
-       return reply([{id:noticeId,user_id:userId,title:'Aviso de reparación',
-         body:'Tu solicitud se ha actualizado.',read:false,created_at:'2026-10-26T12:00:00Z'}]);
+       const rows=history||[{id:noticeId,user_id:userId,title:'Aviso de reparación',
+         body:'Tu solicitud se ha actualizado.',read:false,created_at:'2026-10-26T12:00:00Z'}];
+       const start=Number(url.searchParams.get('offset')||0);
+       const limit=Number(url.searchParams.get('limit')||rows.length);
+       const visible=rows.slice(start,start+limit);
+       const contentRange=visible.length?start+'-'+(start+visible.length-1)+'/'+rows.length:'*/'+rows.length;
+       return reply(visible,200,false,{
+         'content-range':contentRange,
+         'access-control-expose-headers':'content-range',
+         'access-control-allow-origin':'*'
+       });
      }
      if(request.method()==='PATCH'){
        updates.push({url:url.toString(),body:request.postDataJSON()});
@@ -68,4 +77,25 @@ test('V29: perfil permite abrir avisos, reintentar fallo de red y confirmar lect
  expect(fake.updates[0].url).toContain('user_id=eq.'+userId);
  expect(fake.updates[0].url).toContain('id=eq.'+noticeId);
  expect(fake.updates[0].body).toEqual({read:true});
+});
+
+test('V79: recuperar avisos anteriores en páginas de 50 sin mezclarlos',async({page})=>{
+ const history=Array.from({length:52},(_,i)=>({
+   id:'aviso-'+(i+1),title:'Notificación '+String(i+1).padStart(2,'0'),
+   body:'Estado de la solicitud '+(i+1),read:true,created_at:'2026-10-26T12:00:00Z'
+ }));
+ await setup(page,{history});
+ await page.goto('/');
+ await page.getByRole('button',{name:'Mi perfil'}).click();
+ await page.getByRole('button',{name:/Mis avisos/}).click();
+ await expect(page.locator('main')).toContainText('No se pudieron cargar tus avisos');
+ await page.getByRole('button',{name:'Reintentar'}).click();
+ await expect(page.locator('main .request')).toHaveCount(50);
+ await expect(page.locator('main')).toContainText('Página 1 de 2');
+ await page.getByRole('button',{name:/Siguiente/}).click();
+ await expect(page.locator('main .request')).toHaveCount(2);
+ await expect(page.locator('main')).toContainText('Notificación 52');
+ await page.getByRole('button',{name:/Anterior/}).click();
+ await expect(page.locator('main .request')).toHaveCount(50);
+ await expect(page.locator('main')).toContainText('Notificación 01');
 });
