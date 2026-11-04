@@ -1,3 +1,4 @@
+import {fetchReviewableRequests,recentReviewableLimit} from './reviewable-requests.js';
 // Reseñas publicadas: exclusivamente comentarios reales, aprobados por administración.
 // Nunca se crean opiniones ni puntuaciones de demostración para la portada.
 const escapeText=value=>String(value??'').replace(/[&<>"']/g,c=>({
@@ -125,9 +126,7 @@ export async function mountReviews(main,{supabase=null,session=null,selectedRequ
     return;
   }
   try{
-    const {data,error}=await supabase.from('service_requests')
-      .select('id,service_name').eq('customer_id',session.user.id).eq('status','completed').limit(50);
-    if(error)throw error;
+    const data=await fetchReviewableRequests(supabase,session.user.id,selectedRequestId);
     if(!root.isConnected)return;
     if(!data?.length){
       note.textContent='Podrás valorar un trabajo cuando aparezca como terminado en tu cuenta.';
@@ -141,7 +140,7 @@ export async function mountReviews(main,{supabase=null,session=null,selectedRequ
       form.elements.request_id.value=requested.id;
       note.textContent='Valora el trabajo terminado: '+String(requested.service_name||'servicio seleccionado')+'. La publicación requiere revisión.';
     }else{
-      note.textContent='Solo puedes valorar solicitudes tuyas que consten como terminadas. La publicación requiere revisión.';
+      note.textContent='Se muestran los '+recentReviewableLimit+' trabajos terminados más recientes como máximo. Para valorar otro anterior, entra en Mis solicitudes y pulsa «Valorar este trabajo». La publicación requiere revisión.';
     }
     form.addEventListener('submit',async e=>{
       e.preventDefault();
