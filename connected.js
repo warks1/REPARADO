@@ -1,4 +1,5 @@
 import {supportHistoryMarkup} from './support-ticket-ui.js';
+import {fetchSupportHistoryPage,supportHistoryPageSize,supportHistoryPageCount,supportHistoryCanAdvance} from './customer-support-page.js';
 import {submitSupportIssue,supportIssueFailureMessage} from './support-submission.js';
 import {readOwnDeletionStatus,submitOwnDeletionRequest,ownDeletionLabel} from './account-deletion.js';
 import {createPushSessionManager} from './push-session.js';
@@ -740,29 +741,63 @@ export function mountConnected({app, services, supabase, authLinkIntent=null}) {
 
     const historyPanel=main.querySelector('#customer-support-history');
     const supportOwnerId=session.user.id;
-    let historyRequestSeq=0;
+    let historyRequestSeq=0,supportHistoryPage=0;
+    const historyPager=document.createElement('nav');
+    historyPager.className='staff-new-pagination customer-support-pagination';
+    historyPager.setAttribute('aria-label','Páginas de mis incidencias');
+    historyPanel?.append(historyPager);
     const refreshSupportHistory=async()=>{
-      if(!historyPanel||!isCurrentUser(supportOwnerId)||currentView!=='profile')return;
+      if(!historyPanel||!isCurrentUser(supportOwnerId)||currentView!=='profile'||!historyPanel.isConnected)return;
       const uid=supportOwnerId,requestSeq=++historyRequestSeq;
       const list=historyPanel.querySelector('[data-support-history-list]');
       const note=historyPanel.querySelector('[data-support-history-status]');
       note.textContent='Consultando incidencias…';
       try{
-        // RLS devuelve solo las incidencias del cliente, no las de otros usuarios.
-        const {data,error}=await supabase.from('support_reports')
-          .select('id,subject,status,created_at')
-          .order('created_at',{ascending:false}).limit(15);
+        // La columna user_id es privada; el servidor aplica RLS al contar y paginar.
+        const {data,count,error}=await fetchSupportHistoryPage(supabase,uid,supportHistoryPage);
         if(!historyPanel.isConnected||currentView!=='profile'||!isCurrentUser(uid)||requestSeq!==historyRequestSeq)return;
-        if(error)throw error;
+        if(error)throw new Error('No se pudo consultar el historial');
+        if((count===0&&supportHistoryPage!==0)||
+           (count>0&&supportHistoryPage>=supportHistoryPageCount(count))){
+          supportHistoryPage=0;
+          return refreshSupportHistory();
+        }
         list.innerHTML=supportHistoryMarkup(data);
-        note.textContent=(data?.length||0)+' incidencias visibles en esta cuenta.';
+        note.textContent=count+' incidencias registradas en esta cuenta.';
+        historyPager.replaceChildren();
+        if(count>supportHistoryPageSize){
+          const span=document.createElement('span');
+          span.textContent='Página '+(supportHistoryPage+1)+' de '+supportHistoryPageCount(count);
+          const actions=document.createElement('div');
+          const prev=document.createElement('button');
+          prev.type='button';prev.dataset.supportHistoryPage='prev';
+          prev.textContent='← Anterior';prev.disabled=supportHistoryPage===0;
+          const next=document.createElement('button');
+          next.type='button';next.dataset.supportHistoryPage='next';
+          next.textContent='Siguiente →';
+          next.disabled=!supportHistoryCanAdvance(supportHistoryPage,count);
+          actions.append(prev,next);historyPager.append(span,actions);
+        }
       }catch{
-        if(historyPanel.isConnected&&currentView==='profile'&&isCurrentUser(uid)&&requestSeq===historyRequestSeq)
+        if(historyPanel.isConnected&&currentView==='profile'&&isCurrentUser(uid)&&requestSeq===historyRequestSeq){
+          list.replaceChildren();
+          historyPager.replaceChildren();
           note.textContent='No se pueden consultar las incidencias. Comprueba la conexión y pulsa Actualizar estados.';
+        }
       }
     };
+    historyPager.addEventListener('click',event=>{
+      const button=event.target.closest('[data-support-history-page]');
+      if(!button||button.disabled||!isCurrentUser(supportOwnerId)||
+        currentView!=='profile'||!historyPanel.isConnected)return;
+      const direction=button.dataset.supportHistoryPage;
+      if(direction==='prev'&&supportHistoryPage>0)supportHistoryPage--;
+      else if(direction==='next')supportHistoryPage++;
+      else return;
+      void refreshSupportHistory();
+    });
     historyPanel?.querySelector('[data-refresh-support]')?.addEventListener('click',refreshSupportHistory);
-    refreshSupportHistory();
+    void refreshSupportHistory();
     const issueForm=main.querySelector('#reparado-issue-report');
     let issueReportId=crypto.randomUUID(),previousIssuePayload=null;
     issueForm.addEventListener('submit',async event=>{
@@ -804,6 +839,7 @@ export function mountConnected({app, services, supabase, authLinkIntent=null}) {
           issueForm.reset();
           previousIssuePayload=null;
           issueReportId=crypto.randomUUID();
+          supportHistoryPage=0;
           void refreshSupportHistory();
         }
       }catch{

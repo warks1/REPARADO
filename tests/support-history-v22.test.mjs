@@ -32,11 +32,13 @@ test('hay límite de historial visible y fechas malformadas no rompen la interfa
 });
 test('consultas del historial ocurren solo autenticadas y sin leer user_id ajeno',()=>{
  const code=readFileSync(new URL('../connected.js',import.meta.url),'utf8');
+ const clientPage=readFileSync(new URL('../customer-support-page.js',import.meta.url),'utf8');
  assert.ok(code.includes("id=\"customer-support-history\""));
  assert.ok(code.includes("!userIsStaff()?"));
- assert.ok(code.includes(".select('id,subject,status,created_at')"));
+ assert.ok(clientPage.includes(".select('id,subject,status,created_at',{count:'exact'})"));
+ assert.ok(code.includes("fetchSupportHistoryPage(supabase,uid,supportHistoryPage)"));
  assert.ok(code.includes("isCurrentUser(uid)"));
  assert.ok(code.includes("data-refresh-support"));
  assert.ok(code.includes('refreshSupportHistory();'));
- assert.ok(!code.includes(".select('id,subject,status,created_at,user_id')"));
+ assert.ok(!clientPage.includes(".select('id,subject,status,created_at,user_id')"));
 });
