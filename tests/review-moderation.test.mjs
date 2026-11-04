@@ -41,7 +41,8 @@ test('solo el rol admin puede abrir moderación desde el cliente conectado',()=>
   assert.ok(code.includes("profile?.role==='admin'"));
   assert.ok(code.includes('data-view="review-moderation"'));
   const module=readFileSync(new URL('../review-moderation.js',import.meta.url),'utf8');
-  assert.ok(module.includes(".eq('status','pending')"));
+  const query=readFileSync(new URL('../review-moderation-page.js',import.meta.url),'utf8');
+  assert.ok(query.includes(".eq('status','pending')"));
   assert.ok(module.includes(".update({status})"));
   assert.ok(module.includes(".select('id,status')"));
   assert.ok(module.includes('if(!data||data.length!==1)'));
