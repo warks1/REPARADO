@@ -27,9 +27,9 @@ async function setup(page,role){
   await page.route(fakeHost+'/**',route=>{
     const request=route.request(),url=new URL(request.url());
     const p=url.pathname;
-    const reply=(obj,status=200,one=false)=>route.fulfill({status,
+    const reply=(obj,status=200,one=false,headers={})=>route.fulfill({status,
       contentType:one?'application/vnd.pgrst.object+json':'application/json',
-      body:JSON.stringify(obj)});
+      headers,body:JSON.stringify(obj)});
     if(p==='/auth/v1/user')return reply(person(uid),200,true);
     if(p==='/rest/v1/profiles')return reply({id:uid,full_name:'Prueba',phone:'',role},200,true);
     if(p==='/rest/v1/account_deletion_requests')return reply([],200);
@@ -43,9 +43,17 @@ async function setup(page,role){
       return reply([],201);
     }
     if(p==='/rest/v1/support_reports'&&request.method()==='GET'){
-      return reply(role==='admin'?[{id:reportId,subject:'No carga el chat',
+      const rows=role==='admin'?[{id:reportId,subject:'No carga el chat',
         description:'El chat no abre tras pulsar Enviar.',context:'chat',
-        status:'open',created_at:'2026-10-26T08:00:00Z'}]:ownReports);
+        status:'open',created_at:'2026-10-26T08:00:00Z'}]:ownReports;
+      // La bandeja de administración V77 solicita el contador real con
+      // Prefer: count=exact. Simular Content-Range como lo envía PostgREST.
+      if(role==='admin')return reply(rows,206,false,{
+        'content-range':'0-0/1',
+        'access-control-expose-headers':'content-range',
+        'access-control-allow-origin':'*'
+      });
+      return reply(rows);
     }
     if(p==='/rest/v1/support_reports'&&request.method()==='PATCH'){
       writes.push(JSON.parse(request.postData()||'{}'));return reply([{id:reportId,status:'resolved'}],200);
