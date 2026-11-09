@@ -178,7 +178,7 @@ export async function mountOperatorWork({main,supabase,requestId,userId,role,isA
     screen.querySelector('[data-work-finish]')?.addEventListener('click',()=>transact(
       ()=>completeOperatorWork({
         supabase,requestId,operatorId:userId,description:notes.value,isActive
-      }),'Servicio cerrado correctamente.'));
+      }),'Servicio finalizado y cerrado correctamente.'));
     // Enlaces firmados breves: Storage privado, nunca URLs públicas permanentes.
     const gallery=screen.querySelector('[data-work-gallery]');
     for(const photo of photos){
