@@ -189,3 +189,33 @@ test('V84: propietario ve directorios de clientes y operarios, sin correos Auth'
  await people.locator('[data-owner-contact]').click();
  await expect(page.locator('#reparado-owner-calendar')).toBeVisible();
 });
+
+
+test('V88: desde equipo abrir agenda filtrada, programar con técnico sugerido y saltar semana',async({page})=>{
+ await setup(page,'admin');
+ await page.goto('/');
+ const owner=page.locator('#reparado-owner-dashboard');
+ await owner.locator('[data-owner-target="owner-operators"]').click();
+ const directory=page.locator('#reparado-owner-people');
+ await expect(directory.locator('.owner-person')).toHaveCount(1);
+ await directory.locator('[data-owner-contact]').click();
+ const calendar=page.locator('#reparado-owner-calendar');
+ await expect(calendar).toBeVisible();
+ const filter=calendar.locator('[data-owner-operator-filter]');
+ await expect(filter).toHaveValue(operatorId);
+ await expect(calendar.locator('.owner-day')).toHaveCount(7);
+ await expect(calendar.locator('.owner-accepted-job')).toHaveCount(1);
+ await calendar.locator('.owner-accepted-job [data-owner-edit]').click();
+ await expect(calendar.locator('[name="operator"]')).toHaveValue(operatorId);
+ await calendar.locator('[data-owner-cancel]').click();
+ await calendar.locator('[data-owner-date]').fill('2027-01-14');
+ await calendar.locator('[data-owner-date]').dispatchEvent('change');
+ await expect(calendar.locator('[data-owner-week-label]')).toContainText('ene');
+ await expect(filter).toHaveValue(operatorId);
+ await calendar.locator('[data-owner-today]').click();
+ await expect(calendar.locator('.owner-day')).toHaveCount(7);
+ await filter.selectOption('');
+ await expect(filter).toHaveValue('');
+ await calendar.locator('[data-owner-back]').click();
+ await expect(owner).toBeVisible();
+});
