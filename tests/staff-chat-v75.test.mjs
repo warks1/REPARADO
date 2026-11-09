@@ -30,7 +30,7 @@ test('V75: solo personal autorizado consulta mensajes y se descarta una sesión 
  assert.ok(staff.includes("currentView!=='staff-chat'||!isCurrentUser(staffUserId)||!box.isConnected||authEpoch!==chatEpoch"));
  assert.ok(staff.includes("if(!body||!isCurrentUser(staffUserId)||send.disabled)return"));
  assert.ok(staff.includes("customer_id:customerId,sender_id:staffUserId,body"));
- assert.ok(staff.includes("await loadStaffChat(customerId,serviceName,0)"));
+ assert.ok(staff.includes("await loadStaffChat(customerId,serviceName,0,returnView)"));
  assert.ok(staff.includes("p.textContent=row.body"));
  assert.ok(staff.includes("finally{send.disabled=false}"));
 });
@@ -38,7 +38,7 @@ test('V75: solo personal autorizado consulta mensajes y se descarta una sesión 
 test('V75: error de red no se presenta como chat vacío ni bloquea recuperación',()=>{
  assert.ok(staff.includes("if(result.error){"));
  assert.ok(staff.includes("No se pudieron cargar los mensajes. Comprueba la conexión."));
- assert.ok(staff.includes("retry.addEventListener('click',()=>loadStaffChat(customerId,serviceName,requestedPage))"));
+ assert.ok(staff.includes("retry.addEventListener('click',()=>loadStaffChat(customerId,serviceName,requestedPage,returnView))"));
  assert.ok(staff.includes("result.count>0&&requestedPage>=customerChatPageCount(result.count)"));
- assert.ok(staff.includes("return loadStaffChat(customerId,serviceName,0)"));
+ assert.ok(staff.includes("return loadStaffChat(customerId,serviceName,0,returnView)"));
 });

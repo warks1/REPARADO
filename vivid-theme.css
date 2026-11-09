@@ -733,3 +733,109 @@ body,.shell,.customer-header,.customer-nav {background:#fff}
 @media(prefers-reduced-motion:reduce){
  .theme-electricity .float-slow{animation:none!important}
 }
+
+/* V84 · Área privada del propietario. No se muestra a clientes ni operarios. */
+.owner-header-launch{display:inline-flex;align-items:center;justify-content:center;min-height:42px;padding:9px 13px;
+  border:1px solid #efaa7d;border-radius:999px;color:#fff;background:linear-gradient(135deg,#f87835,#d95116);
+  font-size:12px;font-weight:800;box-shadow:0 4px 14px #f8783526;white-space:nowrap}
+.owner-header-launch[hidden],.owner-visit-editor[hidden]{display:none!important}
+.owner-header-launch:focus-visible,.owner-workspace button:focus-visible,.owner-calendar button:focus-visible,
+.owner-inbox button:focus-visible,.owner-mail a:focus-visible{outline:3px solid #1778c9;outline-offset:3px}
+.owner-workspace,.owner-calendar,.owner-inbox,.owner-mail{max-width:100%;min-width:0;overflow-wrap:anywhere}
+.owner-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:18px;flex-wrap:wrap;margin:5px 0 18px}
+.owner-heading h1,.owner-mail h1{margin:4px 0 8px;font-size:clamp(24px,3.5vw,35px);line-height:1.13;color:#172c4f}
+.owner-heading p{margin:4px 0;color:#5b6e8a}
+.owner-eyebrow{color:#d86528!important;letter-spacing:.14em;font-size:10px;font-weight:900}
+.owner-heading>button,.owner-calendar [data-owner-all]{min-height:44px;border-radius:12px;background:#fff2e9;
+  color:#9b470e;border:1px solid #f5bf9f;font-size:13px;font-weight:800;padding:10px 14px}
+.owner-info,.owner-calendar [data-owner-calendar-feedback],.owner-inbox [data-owner-messages-status]{
+  color:#455b76;background:#f2f7fd;border:1px solid #dfe9f4;border-radius:12px;padding:12px 15px;font-size:13px}
+.owner-metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:16px 0 23px}
+.owner-metric{padding:15px 14px;border:1px solid #dfe6f1;border-radius:16px;background:#fff;
+  min-height:97px;display:flex;flex-direction:column;justify-content:space-between}
+.owner-metric small{color:#68788e;font-size:12px;font-weight:700}
+.owner-metric strong{font-size:clamp(23px,3.2vw,35px);color:#173b64;font-variant-numeric:tabular-nums}
+.owner-workspace>h2,.owner-calendar h2{font-size:19px;margin:20px 0 14px;color:#19385b}
+.owner-modules{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:13px}
+.owner-module{display:flex;min-width:0;width:100%;align-items:center;text-align:left;gap:12px;
+  background:#fff;color:#1a3355;border:1px solid #dbe5f0;border-radius:16px;padding:16px 14px;
+  box-shadow:0 3px 14px #163d6510;min-height:94px;cursor:pointer}
+.owner-module:hover,.owner-appointment:hover,.owner-message-row:hover{border-color:#f3a274;background:#fffaf5}
+.owner-module-icon{font-size:23px;display:grid;place-items:center;background:#eef5ff;width:45px;height:45px;border-radius:13px;flex:none}
+.owner-module-copy{display:flex;flex-direction:column;min-width:0;gap:5px}
+.owner-module-copy strong{font-size:14px;color:#233750}
+.owner-module-copy small{font-size:12px;color:#62738b;line-height:1.45}
+.owner-module-arrow{font-size:26px;margin-left:auto;color:#f17032}
+.owner-security{font-size:12px;color:#738099;line-height:1.5;margin:18px 0 8px}
+.owner-calendar-controls{display:flex;align-items:center;justify-content:space-between;gap:9px;flex-wrap:wrap;
+  background:#f4f8fe;border:1px solid #d6e4f2;border-radius:14px;padding:10px;margin-bottom:14px}
+.owner-calendar-controls button{min-height:44px;padding:10px;border:1px solid #cbdcf0;border-radius:10px;
+  background:#fff;color:#205688;font-size:12px;font-weight:800}
+.owner-calendar-controls strong{font-size:13px;color:#1c4164}
+.owner-week-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:8px;margin:16px 0}
+.owner-day{min-width:0;min-height:142px;border:1px solid #dce7f3;border-radius:12px;padding:8px;background:#fafcff}
+.owner-day h3{font-size:12px;text-transform:capitalize;text-align:center;margin:3px 0 9px;color:#365a7a}
+.owner-day-empty{text-align:center;font-size:11px;color:#9ba6b5}
+.owner-appointment{display:flex;flex-direction:column;gap:4px;width:100%;text-align:left;border:1px solid #f6c6a4;
+  background:#fff2e6;border-radius:9px;padding:8px;color:#25405e;font-size:11px;overflow-wrap:anywhere;cursor:pointer;margin:5px 0}
+.owner-appointment b{color:#b34f14;font-variant-numeric:tabular-nums;font-size:12px}
+.owner-appointment small{color:#586f81}
+.owner-pending-visits{margin-top:20px}
+.owner-pending-visits>p{font-size:12px;color:#697b91}
+.owner-accepted-job{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;
+  padding:13px;border-bottom:1px solid #e0e6ee}
+.owner-accepted-job>div{display:flex;flex-direction:column;gap:4px;min-width:0}
+.owner-accepted-job strong{font-size:13px;color:#22446d}
+.owner-accepted-job small{font-size:12px;color:#64788b}
+.owner-accepted-job button,.owner-calendar-actions button{min-height:44px;border:1px solid #f3b48e;background:#f47c39;
+  color:white;border-radius:10px;font-weight:750;font-size:12px;padding:10px 14px}
+.owner-visit-editor{margin-top:18px;padding:15px;background:#f7fbff;border:1px solid #bfd5ea;border-radius:15px}
+.owner-visit-editor form{display:grid;gap:12px}
+.owner-visit-editor label{display:grid;gap:7px;font-size:13px;color:#28486b;font-weight:750}
+.owner-visit-editor input,.owner-visit-editor select{width:100%;max-width:100%;min-width:0;box-sizing:border-box;
+  border:1px solid #bbcddd;background:white;border-radius:9px;min-height:44px;padding:10px;font-size:14px}
+.owner-calendar-actions{display:flex;gap:12px;flex-wrap:wrap}
+.owner-calendar-actions button[data-owner-cancel]{background:white;color:#315b7d;border-color:#cad8e7}
+.owner-message-row{display:flex;flex-direction:column;gap:6px;width:100%;text-align:left;background:#fff;
+  border:1px solid #dbe4ef;border-radius:12px;color:#223c59;padding:14px 15px;margin:10px 0;overflow-wrap:anywhere}
+.owner-message-row strong{font-size:14px}.owner-message-row span{font-size:13px;color:#435a74}
+.owner-message-row small{font-size:11px;color:#77869b}
+.owner-mail-links{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:16px 0}
+.owner-mail-links>div{padding:16px;border:1px solid #dbe6ef;background:#fafcff;border-radius:14px;overflow-wrap:anywhere}
+.owner-mail-links strong{font-size:13px}.owner-mail-links p{font-size:13px;color:#485d79;margin:7px 0 0}
+.owner-external-mail{display:inline-flex;padding:12px 15px;min-height:44px;border-radius:12px;color:white;
+  background:#d7652b;font-size:13px;font-weight:800;text-decoration:none;align-items:center}
+@media(max-width:900px){.owner-week-grid{grid-template-columns:repeat(4,minmax(0,1fr))}}
+@media(max-width:620px){
+  .owner-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .owner-modules{grid-template-columns:1fr}
+  .owner-week-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .owner-mail-links{grid-template-columns:1fr}
+  .owner-header-launch{font-size:11px;padding:8px 10px}
+  .header-actions{gap:5px}
+  .owner-calendar-controls strong{order:-1;width:100%;text-align:center}
+  .owner-calendar-controls button{flex:1}
+}
+@media(max-width:365px){.owner-week-grid{grid-template-columns:1fr}.owner-header-launch{font-size:10px;padding:7px 8px}}
+@media(prefers-reduced-motion:reduce){.owner-workspace *,.owner-calendar *{transition:none!important;scroll-behavior:auto!important}}
+
+/* Cabecera del titular: dos filas en móvil sin ocultar ubicación ni accesos. */
+@media(max-width:680px){
+ .customer-header.owner-active .header-main{flex-wrap:wrap;row-gap:7px}
+ .customer-header.owner-active .header-actions{
+   width:100%;max-width:100%;justify-content:space-between;flex-wrap:wrap
+ }
+ .customer-header.owner-active .header-actions .owner-header-launch{margin-left:auto}
+ .customer-header.owner-active .brand{width:100%}
+}
+/* V84 · Directorio privado: tarjetas accesibles de clientes y operarios. */
+.owner-directory{max-width:100%;min-width:0}
+.owner-person{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:14px;
+  border:1px solid #dce7f3;background:#fcfdff;border-radius:13px;padding:14px 16px;margin:10px 0}
+.owner-person>div{display:flex;flex-direction:column;gap:6px;min-width:0;overflow-wrap:anywhere}
+.owner-person strong{color:#1b3b5c;font-size:14px}
+.owner-person small{color:#657b91;font-size:12px}
+.owner-person button{border:1px solid #f4b388;border-radius:11px;background:#f07730;
+  color:#fff;font-size:12px;font-weight:800;padding:10px 14px;min-height:44px}
+.owner-person button:focus-visible{outline:3px solid #1778c9;outline-offset:3px}
+@media(max-width:420px){.owner-person button{width:100%}}

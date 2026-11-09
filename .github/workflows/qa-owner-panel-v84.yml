@@ -1,0 +1,61 @@
+name: REPARADO V84 · Panel privado del propietario y calendario
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'connected.js'
+      - 'owner-dashboard.js'
+      - 'owner-calendar.js'
+      - 'owner-messages.js'
+      - 'owner-people.js'
+      - 'vivid-theme.css'
+      - 'tests/owner-panel-v84.test.mjs'
+      - 'e2e-private/owner-panel-v84.spec.mjs'
+      - '.github/workflows/qa-owner-panel-v84.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'connected.js'
+      - 'owner-dashboard.js'
+      - 'owner-calendar.js'
+      - 'owner-messages.js'
+      - 'owner-people.js'
+      - 'vivid-theme.css'
+      - 'tests/owner-panel-v84.test.mjs'
+      - 'e2e-private/owner-panel-v84.spec.mjs'
+      - '.github/workflows/qa-owner-panel-v84.yml'
+permissions:
+  contents: read
+jobs:
+  unit-and-build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: {node-version: '22'}
+      - run: npm install --no-audit --no-fund
+      - name: Verificar roles propietario, calendario y regresión completa
+        run: npm test
+      - name: Compilar web
+        run: npm run build
+  owner-mobile:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: {node-version: '22'}
+      - run: npm install --no-audit --no-fund
+      - name: Instalar navegadores de prueba
+        run: npx playwright install --with-deps chromium webkit
+      - name: Acceso exclusivo y calendario en iPhone y Android simulados
+        run: npx playwright test --config playwright.invite.config.mjs e2e-private/owner-panel-v84.spec.mjs --project=iphone --project=android
+      - name: Conservar trazas de errores
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: owner-panel-v84-traces
+          path: test-results
+          if-no-files-found: warn
+          retention-days: 7
