@@ -204,7 +204,9 @@ test('V84: bandeja de mensajes internos paginada, recuento exacto y nombres priv
 test('V84: el propietario es exclusivamente admin; ni clientes ni operarios tienen el acceso',()=>{
  const src=readFileSync(new URL('../connected.js',import.meta.url),'utf8');
  const nav=readFileSync(new URL('../customer-ui.js',import.meta.url),'utf8');
- assert.ok(src.includes("ownerEntry.hidden=!(session&&profile?.role==='admin')"));
+ assert.ok(src.includes("const allowed=Boolean(session&&profile?.role==='admin')"));
+ assert.ok(src.includes('ownerEntry.hidden=!allowed;'));
+ assert.ok(src.includes("classList.toggle('owner-active',allowed)"));
  assert.ok(src.includes("const ownerOnly=()=>Boolean(session?.user?.id&&profile?.role==='admin')"));
  assert.ok(src.includes("if(!ownerOnly()){if(!session)showLogin();else renderHome();return}"));
  assert.ok(src.includes("else if(profile?.role==='admin'&&!destination)showOwnerDashboard()"));
