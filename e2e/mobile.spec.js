@@ -9,10 +9,9 @@ test('portada real por categorías, imágenes y navegación sin desbordamiento',
   await expect(page.locator('.category-tile')).toHaveCount(6);
   await expect(page.locator('.customer-nav button')).toHaveCount(5);
   await expect(page.locator('.promo-banner')).toBeVisible();
-  // La portada conserva los cinco dibujos 3D; cuatro PNG transparentes
-  // y el SVG de Manitas sin modificar.
+  // Se comprueban las seis ilustraciones: cuatro PNG y dos SVG transparentes.
   const photos=page.locator('.category-tile img.category-photo');
-  await expect(photos).toHaveCount(5);
+  await expect(photos).toHaveCount(6);
   for (const photo of await photos.all()){
     await photo.scrollIntoViewIfNeeded();
     await expect.poll(()=>photo.evaluate(img=>
@@ -276,12 +275,13 @@ test('Manitas navega, abre servicios y mantiene el ancho en móvil',async({page}
  await expect(page.locator('.category-view h1')).toHaveText('Manitas');
 });
 
-test('las cuatro ilustraciones tienen exactamente la oscilación suave de Manitas',async({page},testInfo)=>{
+test('las seis ilustraciones tienen exactamente la oscilación suave de Manitas',async({page},testInfo)=>{
   await page.goto('/');
   const manitas=page.locator('.theme-handyman img.category-photo');
-  await expect(manitas).toHaveAttribute('src',/handyman[.]svg/);
+  await expect(manitas).toHaveAttribute('src',/handyman-transparent[.]svg/);
+  await manitas.scrollIntoViewIfNeeded();
   // Se compara el nombre, la duración y el desplazamiento en fotogramas
-  // renderizados de Manitas con cada uno de los otros cuatro iconos.
+  // renderizados de Manitas con el resto de categorías.
   const readMotion=async locator=>locator.evaluate(async el=>{
     const style=getComputedStyle(el);
     const anim=el.getAnimations().find(a=>a.animationName==='illustration-bob');
@@ -294,7 +294,8 @@ test('las cuatro ilustraciones tienen exactamente la oscilación suave de Manita
     anim.play();
     return {name:style.animationName,duration:style.animationDuration,travel:Math.abs(half-initial)};
   });
-  const reference=await readMotion(manitas);
+  // V93 anima el contenedor HTML de las seis ilustraciones, no el IMG.
+  const reference=await readMotion(page.locator('.theme-handyman .category-motion'));
   expect(reference.name).toContain('illustration-bob');
   expect(reference.travel).toBeGreaterThan(5);
   expect(reference.travel).toBeLessThan(7);
@@ -322,6 +323,18 @@ test('las cuatro ilustraciones tienen exactamente la oscilación suave de Manita
     expect(Math.abs(current.travel-reference.travel)).toBeLessThan(.5);
     expect(current.travel).toBeLessThan(7);
   }
+  // Electricidad también comparte la animación; su SVG no se inspecciona
+  // como si fuera un PNG al leer la transparencia en canvas.
+  const electricity=page.locator('.category-tile.theme-electricity');
+  const electricityArt=electricity.locator('img.category-restored');
+  await expect(electricityArt).toHaveAttribute('src',/electricity-transparent[.]svg/);
+  await electricityArt.scrollIntoViewIfNeeded();
+  await expect.poll(()=>electricityArt.evaluate(img=>img.complete&&img.naturalWidth>=200),{timeout:12000}).toBeTruthy();
+  const electricityMotion=await readMotion(electricity.locator('.category-motion'));
+  expect(electricityMotion.name).toContain('illustration-bob');
+  expect(electricityMotion.duration).toBe(reference.duration);
+  expect(Math.abs(electricityMotion.travel-reference.travel)).toBeLessThan(.5);
+  expect(electricityMotion.travel).toBeLessThan(7);
   const dir=join(testInfo.outputDir,'evidencia-visual');
   mkdirSync(dir,{recursive:true});
   await page.screenshot({path:join(dir,'mismo-movimiento-manitas-'+testInfo.project.name+'.png'),fullPage:true});

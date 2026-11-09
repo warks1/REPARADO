@@ -38,3 +38,21 @@ y Manitas, además de la batería completa y la compilación.
 
 **No confundir una prueba de navegador con un lanzamiento en App Store o Google
 Play; la activación del entorno comercial sigue pendiente por separado.**
+
+## V97 · Regresión móvil y web publicada
+
+Después de V93, dos pruebas antiguas seguían esperando cinco imágenes o cuatro
+elementos `category-restored`, y una buscaba el archivo
+`handyman.svg` ya sustituido. Esos controles hacían fallar GitHub Actions
+aunque la página tuviera correctamente las seis tarjetas.
+
+- `e2e/live-production.spec.js` comprueba las seis ilustraciones cargadas
+  desde el despliegue publicado, incluidas Manitas y Electricidad.
+- `e2e/mobile.spec.js` comprueba las seis imágenes y compara la oscilación
+  real de los contenedores `category-motion`; los cuatro PNG conservan la
+  inspección de transparencia y se prueba la carga del SVG de Electricidad.
+- `.github/workflows/mobile-qa.yml` ejecuta esta batería también al abrir
+  o actualizar una pull request, no solo después de integrar a `main`.
+
+Las pruebas no modifican la apariencia ni certifican funcionamiento comercial.
+Revisar los resultados de Actions en la pull request antes de integrar.
