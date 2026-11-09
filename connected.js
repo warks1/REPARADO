@@ -7,6 +7,7 @@ import {validateRequestPhotos} from './request-photos.js';
 import {uploadPhotosWithRecovery} from './photo-retry.js';
 import {submitRepairRequest} from './request-submission.js';
 import {contactLinksMarkup} from './contact-emails.js';
+import {manitasPricingNotice,manitasMaterialQuestionMarkup,manitasMaterialRequestNote} from './catalog-data.js';
 import { mountReviewModeration } from './review-moderation.js';
 import { mountReviews } from './reviews.js';
 import {appHeader,bottomNavigation,setActiveNav,renderLanding,renderCategory,serviceFormHeader,formPeriodPicker,serviceRow,matchServices,featuredServices,showAllCategories} from './customer-ui.js'
@@ -332,11 +333,12 @@ export function mountConnected({app, services, supabase, authLinkIntent=null}) {
       '<label>Municipio<input name="city" placeholder="Ej. Barcelona, Girona..." maxlength="90" required></label></div>'+serviceAreaNoticeMarkup()+
       '<label>Teléfono de contacto<input name="phone" type="tel" maxlength="25" required value="'+esc(profile?.phone||'')+'"></label>'+
       '<label>Descripción del problema<textarea name="description" maxlength="1800" placeholder="Explícanos lo que necesitas reparar..." required></textarea></label>'+unitQuantityMarkup(service)+
+      (service[0]==='Manitas'?manitasMaterialQuestionMarkup:'')+
       '<label>Fotos (opcional, máximo 4)<input name="photos" type="file" accept="image/jpeg,image/png,image/webp,image/heic" multiple></label>'+
       '<div class="photo-preview" aria-live="polite"></div>'+
       preferredDateField()+formPeriodPicker()+
       '<button type="submit">Enviar solicitud →</button></form>'+
-      '<p class="notice">Precio orientativo «desde»: incluye material estándar indicado, mano de obra e IVA del 21 %. Extras y supuestos no estándar se confirman por presupuesto.</p>'+
+      '<p class="notice">'+(service[0]==='Manitas'?esc(manitasPricingNotice):'Precio orientativo «desde»: incluye material estándar indicado, mano de obra e IVA del 21 %. Extras y supuestos no estándar se confirman por presupuesto.')+'</p>'+
       '<p data-feedback class="feedback" role="status"></p></section></div>';
     const photos=main.querySelector('[name="photos"]');
     let photoUrls=[];
@@ -380,7 +382,7 @@ export function mountConnected({app, services, supabase, authLinkIntent=null}) {
           address_number:String(fields.get('address_number')).trim(),postal_code:String(fields.get('postal_code')).trim(),
           city:String(fields.get('city')).trim(),phone:String(fields.get('phone')).trim(),
           preferred_date:fields.get('preferred_date')||null,
-          description:String(fields.get('description')).trim()+unitQuantityDescription(areaQuote)+'\nHorario preferido: '+String(fields.get('preferred_period')||'Indiferente')
+          description:String(fields.get('description')).trim()+unitQuantityDescription(areaQuote)+manitasMaterialRequestNote(service,fields.get('manitas_material'))+'\nHorario preferido: '+String(fields.get('preferred_period')||'Indiferente')
         };
         // Si la conexión se corta, repetir la misma operación, no crear otra.
         // Impedir que un usuario cambie el formulario y reutilice una clave
