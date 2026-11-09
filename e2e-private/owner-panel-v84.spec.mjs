@@ -26,7 +26,7 @@ async function setup(page,role='admin',inboxRpc=false){
    key:'sb-reparado-test-placeholder-auth-token',session
  });
  const counts=[],updates=[],reads=[],peopleQueries=[],conversationReads=[];
- let currentStatus='accepted',scheduledAt=null,assignedTo=null;
+ let currentStatus='accepted',scheduledAt=null,assignedTo=null,ownerHasRead=false;
  const job=()=>({id:jobId,service_name:'Instalación de grifo',
    status:currentStatus,operator_id:assignedTo,
    operator_name:assignedTo?'Operario de pruebas':null,
@@ -60,6 +60,13 @@ async function setup(page,role='admin',inboxRpc=false){
    }
    if(path==='/rest/v1/customer_reviews')return output([],false,0);
    if(path==='/rest/v1/support_reports')return output([],false,0);
+   if(path==='/rest/v1/rpc/reparado_mark_owner_chat_read'&&method==='POST'){
+     reads.push('owner-read');
+     if(role!=='admin')return route.fulfill({status:403,
+       contentType:'application/json',body:'{"code":"42501"}'});
+     ownerHasRead=true;
+     return output(true,false,1);
+   }
    if(path==='/rest/v1/rpc/reparado_owner_conversations'&&method==='POST'){
      conversationReads.push('conversations');
      if(role!=='admin')return route.fulfill({status:403,contentType:'application/json',
@@ -69,7 +76,7 @@ async function setup(page,role='admin',inboxRpc=false){
      return output({total:1,rows:[{
        customer_id:clientId,last_message_id:'e0000000-0000-4000-8000-000000000005',
        sender_id:clientId,last_message_at:'2026-11-09T10:00:00Z',
-       last_body:'¿Cuándo podéis venir?'
+       last_body:'¿Cuándo podéis venir?',has_unread:!ownerHasRead
      }]},false,1);
    }
    if(path==='/rest/v1/messages'&&method==='GET'){
@@ -268,4 +275,32 @@ test('V90: inbox del propietario agrupa por conversación cuando hay RPC segura'
  expect(called.reads).toHaveLength(0); // no se consulta la lista legacy
  await inbox.locator('[data-owner-open-chat]').click();
  await expect(page.locator('#messages')).toContainText('¿Cuándo podéis venir?');
+});
+
+test('V91: al abrir chat real del propietario se guarda el estado y desaparece pendiente',async({page})=>{
+ const calls=await setup(page,'admin',true);
+ await page.goto('/');
+ await page.locator('[data-owner-target="owner-messages"]').click();
+ const inbox=page.locator('#reparado-owner-messages');
+ await expect(inbox.locator('.owner-unread-label')).toContainText('Pendiente de leer');
+ await inbox.locator('[data-owner-open-chat]').click();
+ await expect(page.locator('#messages')).toContainText('¿Cuándo podéis venir?');
+ await expect.poll(()=>calls.reads.includes('owner-read')).toBe(true);
+ await page.locator('.back').first().click();
+ await expect(page.locator('#reparado-owner-messages .owner-read-label')).toContainText('Leído');
+ await expect(inbox.locator('.owner-unread-label')).toHaveCount(0);
+});
+
+test('V91: operario no puede navegar a la bandeja privada ni registrar lecturas',async({page})=>{
+ const calls=await setup(page,'operator',true);
+ await page.goto('/');
+ await expect(page.locator('#reparado-owner-messages')).toHaveCount(0);
+ await page.evaluate(()=>{
+  const fake=document.createElement('button');
+  fake.dataset.view='owner-messages';
+  document.querySelector('.shell')?.append(fake);
+  fake.click();fake.remove();
+ });
+ await expect(page.locator('#reparado-owner-messages')).toHaveCount(0);
+ expect(calls.reads.includes('owner-read')).toBe(false);
 });
