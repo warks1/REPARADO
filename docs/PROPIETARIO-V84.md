@@ -27,6 +27,9 @@ panel debe ser exclusivo del titular.
   La hora se convierte con zona `Europe/Madrid` y detecta cambios DST.
 - **Mensajes de clientes**: bandeja de conversaciones en la app, 30
   mensajes por página, abrir un chat, leer historial y responder.
+- **Directorio de clientes y operarios**: 30 perfiles por página, nombre y
+  teléfono registrados en la app; abrir chat de cliente o el calendario
+  para programar al personal. Sin mostrar contraseñas ni emails de Auth.
 - **Trabajos terminados y facturación**: documentos y borradores
   de factura privados; **no** se emiten facturas fiscales automáticas.
 - **Incidencias de clientes** y **reseñas**: acceso a los módulos
