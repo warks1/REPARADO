@@ -897,3 +897,18 @@ body,.shell,.customer-header,.customer-nav {background:#fff}
 @media(max-width:460px){.owner-people-search{grid-template-columns:1fr 1fr}
   .owner-people-search label{grid-column:1/-1}
   .owner-people-search button{width:100%}}
+
+/* V91 · Mensajes pendientes y leídos, indicados también mediante texto. */
+.owner-message-row .owner-unread-label,
+.owner-message-row .owner-read-label{
+  display:inline-flex;align-items:center;width:max-content;max-width:100%;
+  font-size:12px;font-weight:800;border-radius:999px;padding:3px 9px;
+  margin-bottom:5px;line-height:1.6
+}
+.owner-message-row .owner-unread-label{
+  color:#733206;background:#ffedd5;border:1px solid #f59f52
+}
+.owner-message-row .owner-read-label{
+  color:#29556d;background:#e8f2f9;border:1px solid #accbdc
+}
+.owner-read-feedback{font-size:13px;color:#975122}
