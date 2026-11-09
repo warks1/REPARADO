@@ -90,9 +90,12 @@ async function setup(page,role='admin',inboxRpc=false,history=false){
    if(path==='/rest/v1/service_requests'&&method==='GET'){
      if(history&&String(url.searchParams.get('status')).includes('completed')&&
        String(url.searchParams.get('status')).includes('cancelled')){
-       const range=(request.headers()['range']||'0-49').match(/(\d+)-(\d+)/);
-       const start=range?Number(range[1]):0;
-       const end=range?Number(range[2]):49;
+       // Supabase usa offset/limit en la URL; Range es alternativa HTTP.
+       const range=(request.headers()['range']||'').match(/(\d+)-(\d+)/);
+       const start=Number(url.searchParams.get('offset')??range?.[1]??0);
+       const limit=Number(url.searchParams.get('limit')??50);
+       const end=url.searchParams.has('limit')?start+limit-1:
+         range?Number(range[2]):start+49;
        const rows=Array.from({length:153},(_,i)=>({
          id:'e0000000-0000-4000-8000-'+String(i+100).padStart(12,'0'),
          customer_id:clientId,service_name:'Trabajo terminado '+(i+1),
