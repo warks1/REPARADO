@@ -11,7 +11,7 @@ function jwt(id){
    exp:Math.floor(Date.now()/1000)+3600
  })+'.fake-signature';
 }
-async function setup(page){
+async function setup(page,initialStatus='scheduled'){
  const user={id:operatorId,email:'operario@example.invalid',role:'authenticated',
    aud:'authenticated',app_metadata:{provider:'email',providers:['email']},
    user_metadata:{},created_at:'2026-10-01T00:00:00Z'};
@@ -20,7 +20,7 @@ async function setup(page){
  await page.addInitScript(({key,session})=>localStorage.setItem(key,JSON.stringify(session)),{
    key:'sb-reparado-test-placeholder-auth-token',session
  });
- let status='scheduled',description='',report=false,photoNames=[],uploads=0,finished=0;
+ let status=initialStatus,description='',report=false,photoNames=[],uploads=0,finished=0;
  const requests=[];
  const job=()=>({
    id:requestId,customer_id:'c0000000-0000-4000-8000-000000000003',
@@ -139,4 +139,19 @@ test('V100: no se puede cerrar desde la pantalla sin descripción válida',async
  await work.locator('[data-work-finish]').click();
  await expect(work.locator('[data-work-feedback]')).toContainText('al menos 20');
  expect(state.get().finished).toBe(0);
+});
+
+test('V100: servicio antiguo ya en curso permite preparar parte sin reiniciar su estado',async({page})=>{
+ const state=await setup(page,'in_progress');
+ await page.goto('/');
+ await page.locator('.customer-nav [data-view="profile"]').click();
+ await page.locator('[data-view="admin"]').click();
+ await page.locator('[data-work-detail]').first().click();
+ const work=page.locator('#reparado-operator-work');
+ await expect(work.locator('[data-work-start]')).toContainText('Preparar parte de trabajo');
+ await expect(work.locator('[data-work-finish]')).toHaveCount(0);
+ await work.locator('[data-work-start]').click();
+ await expect(work.locator('[name="work_description"]')).toBeVisible();
+ await expect(work.locator('[data-work-finish]')).toBeVisible();
+ expect(state.get().status).toBe('in_progress');
 });
