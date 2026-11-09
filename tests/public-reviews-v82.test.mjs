@@ -76,7 +76,7 @@ test('V82: la media del subconjunto no debe presentarse como media global',()=>{
   assert.deepEqual(verifiedReviewSummary(snippet),{count:2,average:3});
   const ui=readFileSync(new URL('../reviews.js',import.meta.url),'utf8');
   assert.ok(ui.includes("else if(total===stats.count)"));
-  assert.ok(ui.includes("' de media de las mostradas'"));
+  assert.ok(ui.includes("'/5 de media de las mostradas'"));
   assert.ok(ui.includes('publicReviewsHasMore(rawLoaded,total)'));
   assert.ok(ui.includes('rawLoaded+=result.data.length'));
   assert.ok(ui.includes("No se pudieron cargar más valoraciones. Puedes reintentarlo."));
