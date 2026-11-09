@@ -87,7 +87,7 @@ export async function mountOwnerPeople({main,supabase,role,isActive,onBack,onCha
     if(!btn||!active())return;
     const index=Number(btn.dataset.ownerContact);
     const person=Number.isSafeInteger(index)&&index>=0?people[index]:null;
-    if(!person||person.role!==role||!UUID.test(String(person.id)))return;
+    if(!person||person.role!==role||typeof person.id!=='string'||!person.id.trim())return;
     if(customers)onChat(person.id);
     else onCalendar();
   });
