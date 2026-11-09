@@ -1,8 +1,19 @@
 // Fotografías ilustrativas de servicios que antes solo mostraban un emoji.
 // Pexels: enlaces directos de imágenes publicadas bajo su licencia gratuita.
-// Se mantienen las 16 fotografías locales originales; estas nuevas requieren conexión.
+// Se mantienen las fotografías locales originales; las de Pexels requieren conexión.
 // Procedencia y condiciones: public/creditos-fotos-servicios.html
 const photos = new Map([
+  // V86 · Fotografías ilustrativas reales de electricidad con fuente Pexels.
+  ["Sustitución de enchufe estándar",5691590],
+  ["Sustitución de interruptor o conmutador",5691589],
+  ["Instalación de base de enchufe doble",5691588],
+  ["Nuevo punto de enchufe superficial",5691642],
+  ["Nuevo punto de luz con canalización vista",20500461],
+  ["Sustitución de diferencial estándar",9679179],
+  ["Sustitución de magnetotérmico estándar",27928760],
+  ["Diagnóstico de avería eléctrica doméstica",33694019],
+  ["Instalación de detector de movimiento para luz",10410250],
+  ["Instalación de timbre eléctrico sencillo",6407436],
   [
     "Cambio de sifón",
     16509869

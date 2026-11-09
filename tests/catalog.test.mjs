@@ -8,9 +8,9 @@ const services=[
  ['Parquet','Instalación de parquet/laminado',34,'m²'],
  ['Reformas integrales','Reforma integral de baño',0]
 ];
-test('las cinco categorías principales son distintas',()=>{
+test('las seis categorías principales son distintas',()=>{
  assert.deepEqual(categories.map(c=>c.id),
-  ['Fontanería','Albañilería','Parquet','Reformas integrales','Manitas']);
+  ['Fontanería','Albañilería','Parquet','Reformas integrales','Manitas','Electricidad']);
 });
 test('la portada contiene categorías y accesos de navegación',()=>{
  const screen=renderLanding(services);

@@ -1,5 +1,5 @@
 import { additionalServicePhoto } from './service-photos.js';
-import { catalogPricingNotice, manitasPricingNotice, servicePriceTerms, serviceInclusions } from './catalog-data.js';
+import { catalogPricingNotice, manitasPricingNotice, electricidadPricingNotice, servicePriceTerms, serviceInclusions } from './catalog-data.js';
 import { renderReviewsSection } from './reviews.js';
 
 // Diseño compartido entre la web, Android (Capacitor) y iOS (Capacitor).
@@ -9,7 +9,8 @@ export const categories = [
   {id:'Albañilería',slug:'masonry',title:'Albañilería y Pladur',short:'Paredes, tabiques, techos...',description:'Reparaciones, paredes, suelos y pladur.'},
   {id:'Parquet',slug:'parquet',title:'Parquet',short:'Instalación, reparación y restauración...',description:'Cuidado e instalación de suelos de madera.'},
   {id:'Reformas integrales',slug:'renovation',title:'Reformas',short:'Reformas parciales o integrales...',description:'Renovaciones parciales e integrales.'},
-  {id:'Manitas',slug:'handyman',title:'Manitas',short:'Montaje, ajustes y pequeñas reparaciones...',description:'Soluciones prácticas para pequeños trabajos del hogar.'}
+  {id:'Manitas',slug:'handyman',title:'Manitas',short:'Montaje, ajustes y pequeñas reparaciones...',description:'Soluciones prácticas para pequeños trabajos del hogar.'},
+  {id:'Electricidad',slug:'electricity',title:'Electricidad',short:'Enchufes, luces, averías y protecciones...',description:'Electricistas cualificados para instalaciones y reparaciones seguras.'}
 ];
 
 export function esc(value) {
@@ -42,6 +43,8 @@ export function ico(name,extra='') {
   return '<svg class="ui-icon '+extra+'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+(p[name]||p.star)+'</svg>';
 }
 const art={
+ electricity:'<svg viewBox="0 0 160 138" role="img" aria-label="Electricidad: cuadro y rayo"><defs><linearGradient id="elg" x1="0" x2="1" y1="0" y2="1"><stop stop-color="#d9f9ff"/><stop offset="1" stop-color="#43b5f8"/></linearGradient></defs><g class="float-slow"><rect x="36" y="19" width="87" height="102" rx="14" fill="url(#elg)" stroke="#1356a6" stroke-width="5"/><rect x="49" y="34" width="61" height="36" rx="7" fill="#eaf9ff" stroke="#4e8cc4" stroke-width="3"/><path d="M66 45v13M80 45v13M94 45v13" stroke="#1d589e" stroke-width="6" stroke-linecap="round"/><path d="m86 66-28 31h20l-8 23 35-38H85z" fill="#ffdf35" stroke="#f2a924" stroke-width="4" stroke-linejoin="round"/></g><circle cx="130" cy="34" r="7" fill="#ffffff" opacity=".8"/><circle cx="22" cy="107" r="5" fill="#ffd331"/></svg>',
+
  plumbing:'<svg viewBox="0 0 160 138" role="img" aria-label="Grifo azul"><defs><linearGradient id="tap" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#9ad9ff"/><stop offset=".43" stop-color="#167beb"/><stop offset="1" stop-color="#003aab"/></linearGradient><filter id="sh"><feDropShadow dx="0" dy="6" stdDeviation="4" flood-color="#2b75cf" flood-opacity=".29"/></filter></defs><g filter="url(#sh)"><path d="M49 49h52a19 19 0 0 1 19 19v19" fill="none" stroke="#063d94" stroke-width="27" stroke-linecap="round"/><path d="M49 49h52a19 19 0 0 1 19 19v19" fill="none" stroke="url(#tap)" stroke-width="21" stroke-linecap="round"/><rect x="20" y="36" width="41" height="27" rx="9" fill="url(#tap)" stroke="#1857bc" stroke-width="3"/><path d="M72 36V20M52 21h40" stroke="#134ead" stroke-width="12" stroke-linecap="round"/><path d="M72 36V20M52 21h40" stroke="#9bddff" stroke-width="6" stroke-linecap="round"/><rect x="107" y="81" width="28" height="13" rx="6" fill="url(#tap)"/></g><g class="drip"><path d="M120 103c-13 20-9 26 0 26s13-8 0-26z" fill="#36bbff"/></g><circle cx="145" cy="35" r="5" fill="#b4edff"/></svg>',
  masonry:'<svg viewBox="0 0 160 138" role="img" aria-label="Ladrillos y paleta"><defs><linearGradient id="br" x2="0" y2="1"><stop stop-color="#ffb259"/><stop offset="1" stop-color="#f06c26"/></linearGradient><linearGradient id="tr"><stop stop-color="#f7f8fb"/><stop offset="1" stop-color="#98a8bf"/></linearGradient></defs><g class="float-slow" stroke="#d96826" stroke-width="2"><rect x="50" y="72" width="53" height="26" rx="3" fill="url(#br)"/><rect x="106" y="72" width="43" height="26" rx="3" fill="url(#br)"/><rect x="75" y="100" width="55" height="26" rx="3" fill="#ffa453"/><rect x="21" y="100" width="51" height="26" rx="3" fill="#f88534"/><rect x="77" y="43" width="52" height="26" rx="3" fill="#ffa65a"/></g><g transform="rotate(-25 55 60)"><path d="M22 22 52 68 76 33z" fill="url(#tr)" stroke="#576879" stroke-width="3"/><path d="M51 57v37" stroke="#975a2e" stroke-width="13" stroke-linecap="round"/><path d="M51 65v30" stroke="#d59b63" stroke-width="6" stroke-linecap="round"/></g></svg>',
  parquet:'<svg viewBox="0 0 160 138" role="img" aria-label="Suelo de parquet"><defs><linearGradient id="wood" x2="1" y2="1"><stop stop-color="#eab978"/><stop offset="1" stop-color="#9a551b"/></linearGradient></defs><g class="float-slow" transform="translate(4 9) rotate(-13 80 70)"><path d="M7 52 118 25l31 54-111 28z" fill="#99531f" opacity=".35" transform="translate(0 8)"/><path d="M7 52 118 25l31 54-111 28z" fill="url(#wood)" stroke="#95531c" stroke-width="3"/><path d="M30 48 61 101M60 40l31 53M91 33l31 52" stroke="#f8dfa9" stroke-width="3"/><path d="M9 66 125 38M20 84l117-29M39 106l110-27" stroke="#92511d" stroke-width="2"/><path d="M19 56 120 31M45 96l89-22" stroke="#ffe2a4" stroke-width="2" opacity=".7"/></g></svg>',
@@ -79,6 +82,7 @@ export function categoryArt(slug) {
   // Restauramos las ilustraciones 3D del boceto aprobado. Sus nuevas versiones
   // PNG conservan cada dibujo original y tienen transparencia real donde los
   // recortes WebP originales incluían blancos, por lo que pueden animarse.
+  if(safe==='electricity')return '<div class="category-art art-electricity"><span class="category-motion">'+art.electricity+'</span></div>';
   if(safe!=='handyman'){
     const src=imageBase()+'categories/'+safe+'-transparent.png';
     return '<div class="category-art art-'+esc(safe)+'"><span class="category-motion">'+
@@ -162,7 +166,8 @@ export function featuredServices(services) {
     'Albañilería':'Tabique de Pladur',
     'Parquet':'Instalación de parquet/laminado',
     'Reformas integrales':'Reforma integral de baño',
-    'Manitas':'Montaje de mueble en kit (mediano)'
+    'Manitas':'Montaje de mueble en kit (mediano)',
+    'Electricidad':'Sustitución de enchufe estándar'
   };
   return categories.map(c=>{
     let i=services.findIndex(s=>s[0]===c.id && s[1]===preferred[c.id]);
@@ -213,7 +218,8 @@ const featuredServiceIndices={
  'Albañilería':[12,9,10,11],
  'Parquet':[16,21,17,18],
  'Reformas integrales':[22,23,24],
- 'Manitas':[25,29,31,27]
+ 'Manitas':[25,29,31,27],
+ 'Electricidad':[37,44,42,41]
 };
 const serviceViewLabels={
  'Reparación de fuga':'Reparación de fugas',
@@ -226,7 +232,8 @@ const catExamples={
  masonry:['Albañilería y Pladur','Paredes y techos'],
  parquet:['Parquet','Instalación y mantenimiento'],
  renovation:['Reformas','Baños, cocinas y viviendas'],
- handyman:['Manitas','Montaje y pequeñas reparaciones']
+ handyman:['Manitas','Montaje y pequeñas reparaciones'],
+ electricity:['Electricidad','Seguridad, enchufes e iluminación']
 };
 const handymanSymbols={
  'Montaje de mueble en kit (mediano)':'🪑',
@@ -259,7 +266,7 @@ const handymanPhotoKeys={
 export function serviceRow(s,i) {
   if(!s)return '';
   const cat=catFor(s[0]);
-  const symbol=handymanSymbols[s[1]] || (/grifo/i.test(s[1])?'🚰':/fuga/i.test(s[1])?'💧':/desatasco|sifón/i.test(s[1])?'🛁':/cisterna/i.test(s[1])?'🚽':/pladur/i.test(s[1])?'🧱':/alicatado/i.test(s[1])?'▦':/parquet|tabla|barniz/i.test(s[1])?'🪵':cat.slug==='renovation'?'🏡':'🛠️');
+  const symbol=(cat.slug==='electricity'?'⚡':handymanSymbols[s[1]]) || (/grifo/i.test(s[1])?'🚰':/fuga/i.test(s[1])?'💧':/desatasco|sifón/i.test(s[1])?'🛁':/cisterna/i.test(s[1])?'🚽':/pladur/i.test(s[1])?'🧱':/alicatado/i.test(s[1])?'▦':/parquet|tabla|barniz/i.test(s[1])?'🪵':cat.slug==='renovation'?'🏡':'🛠️');
   // Conservar las imágenes existentes de Fontanería y Manitas.
   const photo=cat.slug==='plumbing'?(/fuga/i.test(s[1])?'leak':/desatasco/i.test(s[1])?'drain':/termo/i.test(s[1])?'heater':/grifo/i.test(s[1])?'faucet':null):
     cat.slug==='handyman'?handymanPhotoKeys[s[1]]:null;
@@ -283,7 +290,7 @@ export function renderCategory(services,id) {
   return '<div class="customer-page category-view theme-'+c.slug+'">'+
      '<button class="screen-back" type="button" data-back aria-label="Volver">'+ico('back')+'</button>'+
      '<section class="category-hero"><div class="category-hero-copy"><h1>'+esc(c.title)+'</h1><p>'+esc(c.description)+'</p></div>'+categoryHeroArt(c.slug)+'</section>'+
-     '<p class="notice catalog-price-policy">'+esc(id==='Manitas'?manitasPricingNotice:catalogPricingNotice)+'</p>'+
+     '<p class="notice catalog-price-policy">'+esc(id==='Manitas'?manitasPricingNotice:id==='Electricidad'?electricidadPricingNotice:catalogPricingNotice)+'</p>'+
      '<div class="trust-badges"><span>'+ico('shield')+' Solicitud segura</span><span>'+ico('star')+' Atención personalizada</span><span>'+ico('wallet')+' Precios orientativos</span></div>'+
      '<div class="section-heading"><h2>Servicios más solicitados</h2></div>'+
      '<div class="category-services">'+ranked.map((x,i)=>i<4?serviceRow(x.s,x.i):serviceRow(x.s,x.i).replace('class="catalog-service"','class="catalog-service service-extra" hidden')).join('')+'</div>'+
