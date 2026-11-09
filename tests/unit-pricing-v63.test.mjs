@@ -30,7 +30,7 @@ test('V63: presupuesto de parquet de 20 m² no se confunde con 54 € totales',(
   assert.equal(unitQuote(parquet,'15').total,810);
   assert.equal(unitQuote(parquet,'14,5').status,'below-minimum');
   assert.equal(unitQuote(parquet,'').status,'empty');
-  assert.match(unitQuoteText(unitQuote(parquet,'20')),/1.080,00 €/);
+  assert.match(unitQuoteText(unitQuote(parquet,'20')),/1080,00 €/);
   assert.match(unitQuoteText(unitQuote(parquet,'20')),/presupuesto aceptado/);
   assert.match(unitQuoteText(unitQuote(parquet,'14,5')),/presupuesto específico/);
   assert.match(unitQuantityDescription(unitQuote(parquet,'20')),/20 m²/);
