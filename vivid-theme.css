@@ -854,3 +854,23 @@ body,.shell,.customer-header,.customer-nav {background:#fff}
 }
 .owner-calendar [data-owner-more]:disabled{opacity:.58;cursor:progress}
 .owner-calendar [data-owner-more][hidden]{display:none}
+
+
+/* V88 · Filtros del propietario, controles accesibles en pantallas táctiles. */
+.owner-calendar-filters{display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;margin:12px 0}
+.owner-calendar-filters label{display:flex;flex:1 1 220px;flex-direction:column;
+  gap:6px;min-width:0;font-size:12px;font-weight:800;color:#244869}
+.owner-calendar-filters select,.owner-calendar-filters input{
+  display:block;width:100%;max-width:100%;min-height:44px;
+  padding:8px 10px;border:1px solid #a8c2d8;border-radius:10px;
+  background:#fff;color:#173b5b;font:inherit;box-sizing:border-box
+}
+.owner-calendar-filters button{min-height:44px;padding:9px 14px;border:1px solid #b9d5e9;
+  background:#eaf4fd;color:#19517d;border-radius:10px;font-weight:800}
+.owner-calendar-filters :is(button,input,select):focus-visible{
+  outline:3px solid #ef8d54;outline-offset:2px
+}
+@media(max-width:620px){
+  .owner-calendar-filters{display:grid;grid-template-columns:1fr;gap:10px}
+  .owner-calendar-filters label,.owner-calendar-filters button{width:100%}
+}

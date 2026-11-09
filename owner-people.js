@@ -89,7 +89,7 @@ export async function mountOwnerPeople({main,supabase,role,isActive,onBack,onCha
     const person=Number.isSafeInteger(index)&&index>=0?people[index]:null;
     if(!person||person.role!==role||typeof person.id!=='string'||!person.id.trim())return;
     if(customers)onChat(person.id);
-    else onCalendar();
+    else onCalendar(person.id);
   });
   root.querySelector('[data-owner-people-back]').addEventListener('click',onBack);
   root.querySelector('[data-owner-people-refresh]').addEventListener('click',()=>{page=0;void load()});
