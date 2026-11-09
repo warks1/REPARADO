@@ -30,7 +30,7 @@ test('V61: importes finales estándar y piezas aportadas claramente identificada
  assert.equal(priceFor(one('Instalación de termo eléctrico')),'495,00 €');
  assert.equal(priceFor(one('Instalación de parquet/laminado')),'49,00 € / m²');
  assert.equal(priceFor(one('Instalación de soporte de TV en pared')),'109,00 €');
- assert.match(serviceInclusions['Montaje de mueble en kit (mediano)'],/lo aporta el cliente/);
+ assert.match(serviceInclusions['Montaje de mueble en kit (mediano)'],/(?:aportado por el cliente|los aporta el cliente)/);
  assert.match(serviceInclusions['Instalación de termo eléctrico'],/80 l/);
 });
 test('V61: categoría y formulario muestran condiciones, materiales e IVA',()=>{
