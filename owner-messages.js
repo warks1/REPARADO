@@ -1,4 +1,4 @@
-// REPARADO V84 · Bandeja de MENSAJES DENTRO DE LA APP, no correo Outlook.
+// REPARADO V90 · Bandeja de MENSAJES DENTRO DE LA APP, no correo Outlook.
 // Consultas restringidas por RLS a la cuenta administradora autenticada.
 export const ownerMessagesPageSize=30;
 const UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -35,6 +35,56 @@ export async function fetchOwnerMessagesPage(supabase,page=0){
   }catch{return {error:true}}
 }
 
+
+/** Bandeja real: una fila por cliente ordenada por su último mensaje.
+ * SECURITY INVOKER en SQL; RLS del servidor limita a la cuenta admin.
+ * No mostrar como «no leído»: el esquema no registra esa información. */
+export async function fetchOwnerConversationsPage(supabase,page=0){
+  if(!supabase||!Number.isSafeInteger(page)||page<0||page>100000)
+    return {error:true,unavailable:false};
+  if(typeof supabase.rpc!=='function')
+    return {error:true,unavailable:true};
+  try{
+    const {data,error}=await supabase.rpc('reparado_owner_conversations',{
+      p_offset:page*ownerMessagesPageSize,p_limit:ownerMessagesPageSize
+    });
+    if(error)return {error:true,unavailable:['PGRST202','42883'].includes(error.code)};
+    if(!data||!Array.isArray(data.rows)||
+       !Number.isSafeInteger(data.total)||data.total<0||
+       data.rows.length>ownerMessagesPageSize)
+      return {error:true,unavailable:false};
+    if(data.rows.some(r=>!UUID.test(String(r.customer_id))||
+       !UUID.test(String(r.last_message_id))||
+       !UUID.test(String(r.sender_id))||
+       typeof r.last_body!=='string'))
+      return {error:true,unavailable:false};
+    const rows=data.rows.map(r=>({
+      id:r.last_message_id,customer_id:r.customer_id,
+      sender_id:r.sender_id,body:r.last_body,created_at:r.last_message_at
+    }));
+    const ids=[...new Set(rows.map(r=>r.customer_id))];
+    let names={};
+    if(ids.length){
+      const result=await supabase.from('profiles')
+        .select('id,full_name').in('id',ids);
+      if(result?.error||!Array.isArray(result?.data))
+        return {error:true,unavailable:false};
+      names=Object.fromEntries(result.data.map(p=>[p.id,p.full_name||'Cliente']));
+    }
+    return {data:rows,count:data.total,names,error:false,mode:'conversations'};
+  }catch{return {error:true,unavailable:false}}
+}
+
+/** Compatibilidad: la versión anterior solo se usa si falta la RPC V90.
+ * Un error de permisos 42501 NO habilita la alternativa. */
+export async function fetchOwnerInboxPage(supabase,page=0){
+  const grouped=await fetchOwnerConversationsPage(supabase,page);
+  if(!grouped.error)return grouped;
+  if(!grouped.unavailable)return {error:true};
+  const legacy=await fetchOwnerMessagesPage(supabase,page);
+  return legacy.error?legacy:{...legacy,mode:'messages'};
+}
+
 export function ownerMessagePageCount(count){
   return Number.isSafeInteger(count)&&count>=0?
     Math.max(1,Math.ceil(count/ownerMessagesPageSize)):0;
@@ -68,7 +118,7 @@ export async function mountOwnerMessages({main,supabase,isActive,onBack,onConver
     const id=++sequence;
     status.textContent='Consultando mensajes privados…';
     prev.disabled=true;next.disabled=true;
-    const data=await fetchOwnerMessagesPage(supabase,page);
+    const data=await fetchOwnerInboxPage(supabase,page);
     if(!active()||id!==sequence)return;
     if(data.error){
       list.innerHTML='';
@@ -81,7 +131,10 @@ export async function mountOwnerMessages({main,supabase,isActive,onBack,onConver
       return load();
     }
     customers=data.data.filter(r=>UUID.test(String(r.customer_id)));
-    status.textContent=data.count+' mensajes internos en total. Se muestran 30 por página, no conversaciones ni emails no leídos.';
+    status.textContent=data.mode==='conversations'?
+      data.count+' conversaciones de clientes. Una fila por cliente, ordenadas por el último mensaje.':
+      data.count+' mensajes internos. Instala la actualización V90 para agruparlos por cliente.';
+    status.textContent+=' Los correos de Outlook y el estado no leído no se incluyen.';
     label.textContent='Página '+(page+1)+' de '+ownerMessagePageCount(data.count);
     prev.disabled=page===0;
     next.disabled=page+1>=ownerMessagePageCount(data.count);
