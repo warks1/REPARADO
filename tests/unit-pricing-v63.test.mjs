@@ -61,7 +61,7 @@ test('V63: copia local conserva cantidad/rate sin convertirlo en importe total',
     description:'Instalar parquet',status:'Pendiente (local)',price:0,
     unit_name:'m²',unit_rate:49,unit_quantity:20
   };
-  assert.match(localPriceLabel(request),/1.080,00 €/);
+  assert.match(localPriceLabel(request),/980,00 €/);
   assert.ok(localReceipt(request).includes('980,00 €'));
   const backup=makeLocalCollection([request],'2026-11-03T11:00:00.000Z');
   const restored=restoreLocalCollection(JSON.stringify(backup),[]);
