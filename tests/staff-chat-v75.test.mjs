@@ -30,7 +30,7 @@ test('V75: solo personal autorizado consulta mensajes y se descarta una sesión 
  assert.ok(staff.includes("currentView!=='staff-chat'||!isCurrentUser(staffUserId)||!box.isConnected||authEpoch!==chatEpoch"));
  assert.ok(staff.includes("if(!body||!isCurrentUser(staffUserId)||send.disabled)return"));
  assert.ok(staff.includes("customer_id:customerId,sender_id:staffUserId,body"));
- assert.ok(staff.includes("await loadStaffChat(customerId,serviceName,0)"));
+ assert.ok(staff.includes("await loadStaffChat(customerId,serviceName,0,returnView)"));
  assert.ok(staff.includes("p.textContent=row.body"));
  assert.ok(staff.includes("finally{send.disabled=false}"));
 });
