@@ -6,7 +6,7 @@ const sinkIndex=services.findIndex(item=>item[1]==='Sustitución de grifo');
 
 test('V85: Manitas muestra tarifas sin material, IVA incluido y accesorios del cliente',async({page})=>{
  await page.goto('/');
- await page.locator('[data-category-open="Manitas"]').click();
+ await page.locator('[data-category-open="Manitas"].category-tile').click();
  const notice=page.locator('.catalog-price-policy');
  await expect(notice).toContainText('MATERIAL NO INCLUIDO');
  await expect(notice).toContainText('IVA del 21 %');
@@ -25,7 +25,7 @@ test('V85: Manitas muestra tarifas sin material, IVA incluido y accesorios del c
 
 test('V85: Fontanería sigue indicando materiales incluidos',async({page})=>{
  await page.goto('/');
- await page.locator('[data-category-open="Fontanería"]').click();
+ await page.locator('[data-category-open="Fontanería"].category-tile').click();
  await expect(page.locator('.catalog-price-policy')).toContainText('materiales estándar descritos');
  await page.locator('[data-service="'+sinkIndex+'"]').click();
  await expect(page.locator('.form-service-summary')).toContainText('Material estándar, mano de obra e IVA incluidos');
