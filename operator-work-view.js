@@ -53,6 +53,7 @@ function viewMarkup(job,report,photos,{userId,role,preserve=''}) {
     '<h2>Fotografías del trabajo</h2><p data-work-photo-count>'+
       photos.length+' de '+MAX_WORK_PHOTOS+' fotografías adjuntas</p>'+
     '<div class="operator-work-gallery" data-work-gallery aria-label="Fotos del trabajo"></div>'+
+    '<button type="button" data-work-refresh>↻ Actualizar parte y fotografías</button>'+
     (finish?'<div class="operator-work-upload">'+
       '<label>Seleccionar fotos del trabajo <input type="file" data-work-files multiple '+
       'accept="image/jpeg,image/png,image/webp,image/heic"></label>'+
@@ -76,22 +77,28 @@ export async function mountOperatorWork({main,supabase,requestId,userId,role,isA
     !UUID.test(String(userId||''))||!['admin','operator'].includes(role))return;
   main.innerHTML='<section class="card" data-work-loading><h2>Parte de trabajo</h2>'+
     '<p>Cargando servicio asignado…</p></section>';
-  const loading=main.querySelector('[data-work-loading]');
   const active=()=>isActive()&&main.querySelector('#reparado-operator-work')!==null;
-  let busy=false,screen=null;
+  let busy=false,screen=null,renderGeneration=0;
   async function render(preserve=''){
     if(!isActive())return;
+    const generation=++renderGeneration,anchor=main.firstElementChild;
+    const stillHere=()=>isActive()&&generation===renderGeneration&&
+      main.firstElementChild===anchor;
     const query=supabase.from('service_requests')
       .select('id,service_name,status,operator_id,operator_name,street,address_number,city,description,scheduled_at,work_started_at,work_finished_at')
       .eq('id',requestId);
     if(role==='operator')query.eq('operator_id',userId);
     const response=await query.maybeSingle();
-    if(!isActive()||!main.contains(screen||loading))return;
+    if(!stillHere())return;
     if(response?.error||!response?.data){
       main.innerHTML='<section class="card"><h2>Parte de trabajo</h2>'+
         '<p>El servicio no está disponible para esta cuenta. Comprueba la conexión, los permisos y la migración V100.</p>'+
-        '<button type="button" data-work-back>← Volver</button></section>';
+        '<button type="button" data-work-back>← Volver</button>'+
+        '<button type="button" data-work-retry>↻ Reintentar carga</button></section>';
       main.querySelector('[data-work-back]')?.addEventListener('click',onBack);
+      main.querySelector('[data-work-retry]')?.addEventListener('click',()=>{
+        if(isActive())void render();
+      });
       return;
     }
     const job=response.data;
@@ -105,16 +112,24 @@ export async function mountOperatorWork({main,supabase,requestId,userId,role,isA
       if(!isActive())return;
       main.innerHTML='<section class="card"><h2>Parte de trabajo</h2>'+
         '<p data-work-error>'+esc(error.message)+'</p>'+
-        '<button type="button" data-work-back>← Volver</button></section>';
+        '<button type="button" data-work-back>← Volver</button>'+
+        '<button type="button" data-work-retry>↻ Reintentar carga</button></section>';
       main.querySelector('[data-work-back]')?.addEventListener('click',onBack);
+      main.querySelector('[data-work-retry]')?.addEventListener('click',()=>{
+        if(isActive())void render();
+      });
       return;
     }
-    if(!isActive()||!main.contains(screen||loading))return;
+    if(!stillHere())return;
     main.innerHTML=viewMarkup(job,report,photos,{userId,role,preserve});
     screen=main.querySelector('#reparado-operator-work');
-    const feedback=screen.querySelector('[data-work-feedback]');
     const notes=screen.querySelector('[name="work_description"]');
-    const show=text=>{if(active())feedback.textContent=text};
+    const show=text=>{
+      if(active()){
+        const feedback=main.querySelector('[data-work-feedback]');
+        if(feedback)feedback.textContent=text;
+      }
+    };
     const transact=async(action,success,retain=false)=>{
       if(!active()||busy)return;
       busy=true;
@@ -122,11 +137,11 @@ export async function mountOperatorWork({main,supabase,requestId,userId,role,isA
         btn.disabled=true;
       show('Guardando cambios en REPARADO…');
       try{
-        await action();
+        const result=await action();
         if(!active())return;
-        if(success)show(success);
         const currentText=retain?notes?.value||'':'';
         await render(currentText);
+        if(active())show(typeof result==='string'?result:success);
       }catch(e){if(active())show(e.message||'No se pudo completar la operación.')}
       finally{
         busy=false;
@@ -136,6 +151,10 @@ export async function mountOperatorWork({main,supabase,requestId,userId,role,isA
     };
     screen.querySelector('[data-work-back]')?.addEventListener('click',()=>{
       if(!busy&&isActive())onBack();
+    });
+    screen.querySelector('[data-work-refresh]')?.addEventListener('click',()=>{
+      if(busy||!active())return;
+      void render(notes?.value||'');
     });
     screen.querySelector('[data-work-start]')?.addEventListener('click',()=>transact(
       ()=>startOperatorWork({supabase,requestId,operatorId:userId,isActive}),
@@ -149,9 +168,12 @@ export async function mountOperatorWork({main,supabase,requestId,userId,role,isA
       const result=await uploadOperatorWorkPhotos({
         supabase,operatorId:userId,requestId,files,isActive
       });
-      if(result.failed)throw new Error(
-        'Se han guardado '+(result.uploaded+result.recovered)+
-        ' fotos, pero '+result.failed+' han fallado. Revisa las imágenes antes de cerrar.');
+      const saved=result.uploaded+result.recovered;
+      if(result.failed)return result.total+' foto(s) en el parte. '+
+        saved+' nueva(s) guardada(s), '+result.failed+' fallida(s). '+
+        'Selecciona de nuevo las fallidas para reintentarlas; las demás no se duplican.';
+      return 'Fotografías verificadas en el parte: '+result.total+
+        ' · nuevas: '+saved+' · ya existentes: '+result.alreadyPresent+'.';
     },'Fotos guardadas.',true));
     screen.querySelector('[data-work-finish]')?.addEventListener('click',()=>transact(
       ()=>completeOperatorWork({
