@@ -1,4 +1,4 @@
-# REPARADO V97 · Panel del propietario
+# REPARADO V98 · Panel del propietario
 
 ## Cómo entrar
 Iniciar sesión con la única cuenta que tenga el rol **admin** en Supabase.
@@ -227,3 +227,26 @@ Web: descarga local a petición del titular. iOS/Android: uso de la opción
 nativa de compartir, con archivo temporal en caché que se intenta borrar tras
 90 segundos. Guardarlo en un destino externo sigue siendo responsabilidad
 del titular. No hay envío automático a servicios de terceros.
+
+## V98 · Cuántas conversaciones faltan por leer
+
+El módulo **Mensajes de clientes** muestra «N sin leer» exclusivamente cuando
+el servidor confirma un número positivo de conversaciones con al menos un
+mensaje del cliente recibido después de la última marca de lectura.
+
+El recuento es individual para el administrador actual. No se basa en
+`localStorage` ni en la cantidad de filas de la primera página del inbox.
+Una marca de lectura real de la V91 elimina la conversación de este contador;
+los mensajes salientes del personal no cuentan como mensajes entrantes.
+
+La RPC `public.reparado_owner_unread_conversations()` usa
+`SECURITY INVOKER`, valida `auth.uid()` y
+`is_reparado_admin()`, y respeta las políticas RLS de
+`messages` y `owner_conversation_reads`. `anon` no puede ejecutarla.
+No devuelve textos, nombres ni datos personales: **solo un número**.
+
+Instalación: migración `supabase/migration-v98-owner-unread-count.sql`
+después de V91; primero REPARADO Test, luego producción tras revisión
+independiente. Si falta la RPC o falla la conexión, la insignia se
+omite; **jamás se inventa un cero**. Pulsar «Actualizar» vuelve a contar.
+Este número no incluye Outlook ni mensajes externos.

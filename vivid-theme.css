@@ -1063,3 +1063,13 @@ body,.shell,.customer-header,.customer-nav {background:#fff}
   .owner-export-form{display:grid;grid-template-columns:1fr;gap:10px}
   .owner-export-form label,.owner-export-form button{width:100%}
 }
+
+
+/* V98 · Recuento confirmado de conversaciones nuevas, solo en panel admin. */
+.owner-inbox-pending{
+  display:inline-flex;align-items:center;align-self:flex-start;
+  min-height:24px;max-width:100%;padding:3px 9px;
+  margin-top:4px;border:1px solid #f0c29b;border-radius:999px;
+  background:#fff1df;color:#90460f;font-size:12px;line-height:1.35;
+  font-weight:800;font-variant-numeric:tabular-nums
+}
