@@ -79,6 +79,11 @@ async function setup(page,role='admin',inboxRpc=false,history=false){
    }
    if(path==='/rest/v1/customer_reviews')return output([],false,0);
    if(path==='/rest/v1/support_reports')return output([],false,0);
+   if(path==='/rest/v1/rpc/reparado_owner_unread_conversations'&&method==='POST'){
+     if(role!=='admin')return route.fulfill({status:403,
+       contentType:'application/json',body:'{"code":"42501"}'});
+     return output(ownerHasRead?0:1,false,1);
+   }
    if(path==='/rest/v1/rpc/reparado_mark_owner_chat_read'&&method==='POST'){
      reads.push('owner-read');
      if(role!=='admin')return route.fulfill({status:403,
@@ -511,4 +516,30 @@ test('V97: cliente y operario no tienen botón para exportar el negocio',async({
  await page.goto('/');
  await expect(page.locator('[data-owner-target="owner-export"]')).toHaveCount(0);
  await expect(page.locator('#reparado-owner-work-export')).toHaveCount(0);
+});
+
+
+test('V98: el propietario ve conversaciones sin leer y desaparece el aviso tras abrir chat',async({page})=>{
+ const calls=await setup(page,'admin',true);
+ await page.goto('/');
+ const dashboard=page.locator('#reparado-owner-dashboard');
+ await expect(dashboard.locator('.owner-module[data-owner-target="owner-messages"] .owner-inbox-pending'))
+   .toHaveText('1 sin leer');
+ await dashboard.locator('.owner-module[data-owner-target="owner-messages"]').click();
+ const inbox=page.locator('#reparado-owner-messages');
+ await expect(inbox.locator('.owner-unread-label')).toContainText('Pendiente de leer');
+ await inbox.locator('[data-owner-open-chat]').click();
+ await expect(page.locator('#messages')).toContainText('¿Cuándo podéis venir?');
+ await expect.poll(()=>calls.reads.includes('owner-read')).toBe(true);
+ await page.getByRole('button',{name:'← Mensajes del propietario'}).click();
+ await inbox.locator('[data-owner-messages-back]').click();
+ await expect(dashboard).toBeVisible();
+ await expect(dashboard.locator('.owner-inbox-pending')).toHaveCount(0);
+});
+
+test('V98: el módulo privado no presenta contadores de conversaciones a operarios',async({page})=>{
+ await setup(page,'operator',true);
+ await page.goto('/');
+ await expect(page.locator('.owner-inbox-pending')).toHaveCount(0);
+ await expect(page.locator('#reparado-owner-dashboard')).toHaveCount(0);
 });
