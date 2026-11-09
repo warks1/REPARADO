@@ -25,7 +25,7 @@ async function setup(page,role='admin'){
  await page.addInitScript(({key,session})=>localStorage.setItem(key,JSON.stringify(session)),{
    key:'sb-reparado-test-placeholder-auth-token',session
  });
- const counts=[],updates=[],reads=[];
+ const counts=[],updates=[],reads=[],peopleQueries=[];
  let currentStatus='accepted',scheduledAt=null,assignedTo=null;
  const job=()=>({id:jobId,service_name:'Instalación de grifo',
    status:currentStatus,operator_id:assignedTo,
@@ -47,6 +47,7 @@ async function setup(page,role='admin'){
      return output(null,true,path.includes('service_requests')?1:0);
    }
    if(path==='/rest/v1/profiles'){
+     peopleQueries.push(url.searchParams.toString());
      if(url.searchParams.get('role')==='eq.customer')return output([{
        id:clientId,full_name:'Cliente de pruebas',phone:'600000000',role:'customer'
      }],false,1);
@@ -87,7 +88,7 @@ async function setup(page,role='admin'){
    }
    return route.fulfill({status:404,contentType:'application/json',body:'{}'});
  });
- return {counts,updates,reads};
+ return {counts,updates,reads,peopleQueries};
 }
 
 test('V84: administrador entra al centro privado y abre las diez secciones',async({page})=>{
@@ -218,4 +219,27 @@ test('V88: desde equipo abrir agenda filtrada, programar con técnico sugerido y
  await expect(filter).toHaveValue('');
  await calendar.locator('[data-owner-back]').click();
  await expect(owner).toBeVisible();
+});
+
+
+test('V89: titular busca contactos por nombre o teléfono y recupera el directorio entero',async({page})=>{
+ const called=await setup(page,'admin');
+ await page.goto('/');
+ await page.locator('[data-owner-target="owner-customers"]').click();
+ const people=page.locator('#reparado-owner-people');
+ const form=people.locator('[data-owner-people-search]');
+ await expect(form).toBeVisible();
+ await form.locator('[name="term"]').fill('  Cli%ente  ');
+ await form.getByRole('button',{name:'Buscar'}).click();
+ await expect(form.locator('[name="term"]')).toHaveValue('Cliente');
+ await expect(people.locator('[data-owner-people-status]')).toContainText('coincidencias');
+ expect(called.peopleQueries.some(v=>v.includes('full_name=ilike.'))).toBeTruthy();
+ await form.locator('[name="field"]').selectOption('phone');
+ await form.locator('[name="term"]').fill('600');
+ await form.getByRole('button',{name:'Buscar'}).click();
+ expect(called.peopleQueries.some(v=>v.includes('phone=ilike.'))).toBeTruthy();
+ await people.locator('[data-owner-people-clear]').click();
+ await expect(form.locator('[name="term"]')).toHaveValue('');
+ await expect(people.locator('[data-owner-people-status]')).toContainText('perfiles');
+ expect(called.peopleQueries.at(-1).includes('ilike.')).toBe(false);
 });
