@@ -526,9 +526,9 @@ test('V98: titular filtra CSV por fechas locales y al cambiarlas invalida la des
  await expect(root.locator('[data-owner-export-status]'))
    .toContainText('451 trabajo(s) preparados');
  expect(queries.length).toBeGreaterThan(0);
- expect(queries.some(q=>q.get('created_at')?.includes('gte.2026-10-28T22:00:00')))
+ expect(queries.some(q=>q.getAll('created_at').some(v=>v.includes('gte.2026-10-28T23:00:00'))))
    .toBeTruthy();
- expect(queries.some(q=>q.get('created_at')?.includes('lt.2026-10-29T23:00:00')))
+ expect(queries.some(q=>q.getAll('created_at').some(v=>v.includes('lt.2026-10-29T23:00:00'))))
    .toBeTruthy();
  const downloadEvent=page.waitForEvent('download');
  await root.locator('[data-owner-export-download]').click();
