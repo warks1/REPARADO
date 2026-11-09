@@ -15,7 +15,7 @@ function jwt(id){
  })+'.fake-signature';
 }
 
-async function setup(page,role='admin',inboxRpc=false){
+async function setup(page,role='admin',inboxRpc=false,history=false){
  const id=role==='admin'?adminId:role==='operator'?operatorId:clientId;
  const user={id,email:role+'@example.invalid',role:'authenticated',aud:'authenticated',
    app_metadata:{provider:'email',providers:['email']},
@@ -88,6 +88,21 @@ async function setup(page,role='admin',inboxRpc=false){
      }],false,1);
    }
    if(path==='/rest/v1/service_requests'&&method==='GET'){
+     if(history&&String(url.searchParams.get('status')).includes('completed')&&
+       String(url.searchParams.get('status')).includes('cancelled')){
+       const range=(request.headers()['range']||'0-49').match(/(\d+)-(\d+)/);
+       const start=range?Number(range[1]):0;
+       const end=range?Number(range[2]):49;
+       const rows=Array.from({length:53},(_,i)=>({
+         id:'e0000000-0000-4000-8000-'+String(i+100).padStart(12,'0'),
+         customer_id:clientId,service_name:'Trabajo terminado '+(i+1),
+         street:'Calle Ficticia',address_number:'1',postal_code:'08001',
+         city:'Barcelona',phone:'600000000',description:'Trabajo de prueba',
+         status:'completed',scheduled_at:null,operator_id:null,
+         operator_name:null,price:180
+       }));
+       return output(rows.slice(start,end+1),false,53);
+     }
      if(url.searchParams.has('operator_id'))return output([],false,0);
      if(url.searchParams.get('status')==='eq.accepted')
        return output(currentStatus==='accepted'?[job()]:[],false,currentStatus==='accepted'?1:0);
@@ -303,4 +318,19 @@ test('V91: operario no puede navegar a la bandeja privada ni registrar lecturas'
  });
  await expect(page.locator('#reparado-owner-messages')).toHaveCount(0);
  expect(calls.reads.includes('owner-read')).toBe(false);
+});
+
+test('V92: historial completo del titular muestra más de 150 mediante páginas reales',async({page})=>{
+ await setup(page,'admin',false,true);
+ await page.goto('/');
+ const button=page.locator('[data-owner-target="admin"][data-owner-filter="finished"]');
+ await button.click();
+ await expect(page.locator('.job-card')).toHaveCount(50);
+ const nav=page.locator('[aria-label="Páginas del historial de trabajos"]');
+ await expect(nav).toContainText('53 trabajos en este filtro');
+ await nav.locator('[data-staff-work-page="next"]').click();
+ await expect(page.locator('.job-card')).toHaveCount(3);
+ await expect(nav).toContainText('Página 2 de 2');
+ await nav.locator('[data-staff-work-page="prev"]').click();
+ await expect(page.locator('.job-card')).toHaveCount(50);
 });
