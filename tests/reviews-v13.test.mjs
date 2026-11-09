@@ -6,10 +6,10 @@ import {renderLanding,serviceRow} from '../customer-ui.js';
 import {missingServicePhotoNames,additionalServicePhoto} from '../service-photos.js';
 import {validateReview,renderReviewsSection,combineReviews,verifiedReviewSummary,reviewFeedMarkup} from '../reviews.js';
 
-test('cada uno de los 37 servicios incorpora fotografía, incluida toda categoría',()=>{
-  assert.equal(services.length,37);
-  assert.equal(missingServicePhotoNames.length,21);
-  assert.equal(new Set(missingServicePhotoNames).size,21);
+test('cada uno de los 47 servicios incorpora fotografía, incluida toda categoría',()=>{
+  assert.equal(services.length,47);
+  assert.equal(missingServicePhotoNames.length,31);
+  assert.equal(new Set(missingServicePhotoNames).size,31);
   for(const [i,s] of services.entries()){
     const html=serviceRow(s,i);
     assert.ok(html.includes('class="service-photo"'),'No tiene foto: '+s[1]);
@@ -17,7 +17,7 @@ test('cada uno de los 37 servicios incorpora fotografía, incluida toda categor�
     assert.ok(html.includes('service-photo-fallback'),'Falta respaldo offline: '+s[1]);
   }
 });
-test('las 21 nuevas fotografías tienen origen y crédito identificados',()=>{
+test('las 31 fotografías externas tienen origen y crédito identificados',()=>{
  const credits=readFileSync(new URL('../public/creditos-fotos-servicios.html',import.meta.url),'utf8');
  for(const service of missingServicePhotoNames){
   const photo=additionalServicePhoto(service);
