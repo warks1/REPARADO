@@ -18,7 +18,8 @@ SERVICIOS QUE PUEDES SOLICITAR
 • Fontanería: grifos, fugas de agua, sifones, desatascos, cisternas y termos.
 • Albañilería y pladur: alicatados, solados, tabiques, techos y pequeñas reparaciones.
 • Parquet: instalación, reparación de tablas, rodapiés, lijado y barnizado.
-• Manitas: montaje de muebles, estanterías, cortinas, persianas, lámparas y accesorios.
+• Manitas: montaje de muebles, estanterías, cortinas, persianas, lámparas y accesorios (material del cliente).
+• Electricidad: enchufes, interruptores, puntos de luz, diferenciales y pequeñas averías.
 • Reformas: baños, cocinas y viviendas, con valoración y presupuesto según el trabajo.
 
 CÓMO FUNCIONA
@@ -28,7 +29,7 @@ CÓMO FUNCIONA
 4. Comunícate con REPARADO mediante el chat y, una vez finalizado el servicio, comparte tu valoración.
 
 REPARACIONES CON INFORMACIÓN CLARA
-Los precios mostrados son orientativos y pueden variar en función de los materiales, la complejidad y el desplazamiento. Las fechas solicitadas son preferencias, no reservas confirmadas. Para enviar solicitudes y acceder al seguimiento necesitas una cuenta y conexión al servicio.
+Los precios son orientativos, con IVA del 21 % incluido, y pueden variar por complejidad, materiales y desplazamiento. Manitas no incluye materiales; las demás tarifas básicas contemplan el material estándar indicado. Las fechas solicitadas son preferencias, no reservas confirmadas. Para enviar solicitudes y acceder al seguimiento necesitas una cuenta y conexión al servicio.
 
 REPARADO está orientada a servicios de reparación y mantenimiento del hogar en Cataluña.
 
@@ -42,11 +43,11 @@ REPARADO está orientada a servicios de reparación y mantenimiento del hogar en
 
 **Texto promocional (máximo 170 caracteres):**
 
-> Fontanería, parquet, pladur, manitas y reformas en Cataluña. Consulta precios orientativos con IVA y organiza tus solicitudes en un solo lugar.
+> Fontanería, electricidad, parquet, pladur, manitas y reformas en Cataluña. Consulta precios con IVA y organiza tus solicitudes.
 
 **Palabras clave (máximo 100 bytes):**
 
-`fontanería,albañilería,pladur,parquet,manitas,reformas,averías,grifería,hogar,cataluña`
+`fontanería,electricidad,pladur,parquet,manitas,reformas,averías,grifería,hogar,cataluña`
 
 **Descripción completa (máximo 4.000 caracteres):** usar **exactamente el texto completo** que figura en el apartado de Google Play. Está preparado en texto plano (sin HTML), válido para ambas tiendas.
 
