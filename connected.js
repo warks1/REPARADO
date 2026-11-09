@@ -1352,6 +1352,9 @@ export function mountConnected({app, services, supabase, authLinkIntent=null}) {
       counts.new=newQueue.count;
       counts.unassigned=unassignedQueue.count;
     }
+    const tabCounts={...counts};
+    if(!admin||!['new','unassigned'].includes(filter))
+      tabCounts[filter]=filteredPage.count;
     const chosen=filterJobs(all,filter);
     const statuses=validStatus.map(x=>({id:x,label:statusLabels[x]}));
     main.innerHTML=`<section class="card">${backButton}<h2>Panel interno · Reparado</h2><p class="notice">${admin && filter==='new'?'Solicitudes nuevas consultadas directamente en Supabase, de 50 en 50.':admin && filter==='unassigned'?'Trabajos sin operario consultados directamente en Supabase, de 50 en 50.':(admin?'Panel de administración':'Solicitudes asignadas a tu cuenta')+'. Historial completo por páginas de 50; los contadores de pestañas (excepto Nuevas y Sin operario) resumen los 150 trabajos recientes.'}</p>
@@ -1362,7 +1365,7 @@ export function mountConnected({app, services, supabase, authLinkIntent=null}) {
       <div><strong>${counts.agenda}</strong><small>Programados / en curso</small></div>
       <div><strong>${counts.unassigned}</strong><small>Sin operario${admin?' (total)':''}</small></div>
     </div>
-    <div class="staff-filters" role="group" aria-label="Filtrar trabajos">${jobFilters.filter(f=>admin||f.id!=='unassigned').map(f=>`<button type="button" data-admin-filter="${f.id}" aria-pressed="${filter===f.id}">${esc(f.label)} (${counts[f.id]})</button>`).join('')}</div>
+    <div class="staff-filters" role="group" aria-label="Filtrar trabajos">${jobFilters.filter(f=>admin||f.id!=='unassigned').map(f=>`<button type="button" data-admin-filter="${f.id}" aria-pressed="${filter===f.id}">${esc(f.label)} (${tabCounts[f.id]})</button>`).join('')}</div>
     ${admin?'<button type="button" class="review-moderation-entry" data-view="review-moderation">⭐ Revisar reseñas de clientes</button>':''}
     <p class="notice">Los precios indicados incluyen el 21 % de IVA. Este panel no emite facturas fiscales.</p>
     ${admin?'<p class="notice">Agenda: se aplica un margen preventivo de '+staffVisitGapMinutes+' minutos entre comienzos de visita para cada operario. Confirma la duración real del servicio y el desplazamiento antes de programar.</p>':''}
