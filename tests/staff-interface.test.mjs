@@ -5,7 +5,7 @@ import {readFileSync} from 'node:fs';
 test('el panel de personal solo se presenta a usuarios de administración u operario',()=>{
  const code=readFileSync(new URL('../connected.js',import.meta.url),'utf8');
  assert.ok(code.includes("if(!userIsStaff()){renderHome();return}"));
- assert.ok(code.includes("baseJobs.eq('operator_id',staffUserId)"));
+ assert.ok(code.includes("fetchStaffWorkCounts(supabase,{operatorId:admin?null:staffUserId})"));
  assert.ok(code.includes('!isCurrentUser(staffUserId)'));
  assert.ok(code.includes('operatorMaySetStatus(original.status,status)'));
 });

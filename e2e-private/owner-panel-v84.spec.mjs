@@ -44,7 +44,26 @@ async function setup(page,role='admin',inboxRpc=false,history=false){
    if(path==='/auth/v1/user')return output(user,false,1,true);
    if(method==='HEAD'){
      counts.push(path+'?'+url.searchParams.toString());
-     return output(null,true,path.includes('service_requests')?1:0);
+     let count=path.includes('service_requests')?1:0;
+     if(history&&path==='/rest/v1/service_requests'){
+       const status=url.searchParams.get('status')||'';
+       const unassigned=url.searchParams.get('operator_id')==='is.null';
+       const operatorScoped=url.searchParams.get('operator_id')?.startsWith('eq.');
+       const operatorCounts={all:24,new:0,pending:3,agenda:8,active:3,finished:13};
+       const totals=operatorScoped?operatorCounts:
+         {all:315,new:12,pending:62,agenda:37,active:19,finished:153};
+       if(unassigned)count=9;
+       else if(status==='eq.new')count=totals.new;
+       else if(status==='eq.in_progress')count=totals.active;
+       else if(status.includes('quoted')&&status.includes('accepted'))count=totals.pending;
+       else if(status.includes('scheduled')&&status.includes('in_progress'))
+         count=totals.agenda;
+       else if(status.includes('completed')&&status.includes('cancelled'))
+         count=totals.finished;
+       else if(!status)count=totals.all;
+       else count=0;
+     }
+     return output(null,true,count);
    }
    if(path==='/rest/v1/profiles'){
      peopleQueries.push(url.searchParams.toString());
@@ -338,4 +357,29 @@ test('V92: historial completo del titular muestra más de 150 mediante páginas 
  await expect(page.locator('.job-card')).toHaveCount(3);
  await nav.locator('[data-staff-work-page="prev"]').click();
  await expect(page.locator('.job-card')).toHaveCount(50);
+});
+
+test('V94: propietario ve indicadores completos y filtros exactos con más de 150 trabajos',async({page})=>{
+ const calls=await setup(page,'admin',false,true);
+ await page.goto('/');
+ await page.locator('[data-owner-target="admin"][data-owner-filter="finished"]').click();
+ const summary=page.locator('.staff-summary');
+ await expect(summary).toContainText('Trabajos totales');
+ await expect(summary).toContainText('315');
+ await expect(summary).toContainText('62');
+ await expect(summary).toContainText('37');
+ await expect(summary).toContainText('9');
+ const filters=page.locator('.staff-filters');
+ await expect(filters.locator('[data-admin-filter="all"]')).toContainText('315');
+ await expect(filters.locator('[data-admin-filter="new"]')).toContainText('12');
+ await expect(filters.locator('[data-admin-filter="pending"]')).toContainText('62');
+ await expect(filters.locator('[data-admin-filter="agenda"]')).toContainText('37');
+ await expect(filters.locator('[data-admin-filter="active"]')).toContainText('19');
+ await expect(filters.locator('[data-admin-filter="finished"]')).toContainText('153');
+ await expect(filters.locator('[data-admin-filter="unassigned"]')).toContainText('9');
+ await expect(page.locator('.job-card')).toHaveCount(50);
+ const history=page.locator('[aria-label="Páginas del historial de trabajos"]');
+ await expect(history).toContainText('153 trabajos en este filtro');
+ expect(calls.counts.filter(s=>s.includes('/service_requests?')).length).toBeGreaterThanOrEqual(6);
+ expect(calls.counts.some(s=>s.includes('select=id'))).toBe(true);
 });

@@ -36,7 +36,8 @@ test('V67: administración ofrece botón para revisar y recargar solicitudes del
 
 test('V67: la bandeja está limitada a administrador, sin mostrar datos a clientes u operarios',()=>{
  assert.ok(code.includes("if(!userIsStaff()){renderHome();return}"));
- assert.ok(code.includes('admin ? baseJobs : baseJobs.eq(\'operator_id\',staffUserId)'));
+ assert.ok(code.includes('fetchStaffWorkCounts(supabase,{operatorId:admin?null:staffUserId})'));
+ assert.ok(code.includes('if(!userIsStaff()){renderHome();return}'));
  assert.ok(code.includes('${admin?`<div class="staff-new-queue"'));
  assert.ok(theme.includes('.staff-new-queue{'));
  assert.ok(theme.includes('.staff-queue-actions button:focus-visible'));

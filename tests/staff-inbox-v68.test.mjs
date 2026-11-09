@@ -83,7 +83,7 @@ test('V68: fallos de recuento no se interpretan como cero trabajos',async()=>{
 test('V68: administración usa datos privados de consulta paginada y vuelve a comprobar permisos',()=>{
   const code=readFileSync(new URL('../connected.js',import.meta.url),'utf8');
   assert.ok(code.includes("if(!userIsStaff()){renderHome();return}"));
-  assert.ok(code.includes("baseJobs.eq('operator_id',staffUserId)"));
+  assert.ok(code.includes("fetchStaffWorkCounts(supabase,{operatorId:admin?null:staffUserId})"));
   assert.ok(code.includes("filter==='new'\n             ? fetchNewRequestsPage"));
   assert.ok(code.includes("fetchNewRequestsCount(supabase)"));
   assert.ok(code.includes("const all=admin && filter==='new' ? newQueue.data : admin && filter==='unassigned' ? unassignedQueue.data : filteredPage.data"));
