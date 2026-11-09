@@ -788,6 +788,15 @@ body,.shell,.customer-header,.customer-nav {background:#fff}
 @media(max-width:365px){.owner-week-grid{grid-template-columns:1fr}.owner-header-launch{font-size:10px;padding:7px 8px}}
 @media(prefers-reduced-motion:reduce){.owner-workspace *,.owner-calendar *{transition:none!important;scroll-behavior:auto!important}}
 
+/* Cabecera del titular: dos filas en móvil sin ocultar ubicación ni accesos. */
+@media(max-width:680px){
+ .customer-header.owner-active .header-main{flex-wrap:wrap;row-gap:7px}
+ .customer-header.owner-active .header-actions{
+   width:100%;max-width:100%;justify-content:space-between;flex-wrap:wrap
+ }
+ .customer-header.owner-active .header-actions .owner-header-launch{margin-left:auto}
+ .customer-header.owner-active .brand{width:100%}
+}
 /* V84 · Directorio privado: tarjetas accesibles de clientes y operarios. */
 .owner-directory{max-width:100%;min-width:0}
 .owner-person{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:14px;
