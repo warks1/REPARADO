@@ -8,7 +8,7 @@ const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({
 
 export function ownerPeopleSearchTerm(value){
   return String(value??'').normalize('NFKC').trim()
-    .replace(/[%_\\\\]/g,'').replace(/\\s+/g,' ').slice(0,64).trim();
+    .replace(/[%_\\]/g,'').replace(/\s+/g,' ').slice(0,64).trim();
 }
 
 export function ownerPeoplePageCount(count){
