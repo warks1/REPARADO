@@ -34,7 +34,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with: {node-version: '22'}
-      - run: npm ci --no-audit --no-fund
+      - run: npm install --no-audit --no-fund
       - name: Pruebas de seguridad del operario y galerías
         run: node --test tests/operator-work-v100.test.mjs
       - name: Compilación completa
@@ -46,7 +46,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with: {node-version: '22'}
-      - run: npm ci --no-audit --no-fund
+      - run: npm install --no-audit --no-fund
       - run: npx playwright install --with-deps chromium webkit
       - name: Prueba de parte en iPhone y Android simulados
         run: npx playwright test --config playwright.invite.config.mjs e2e-private/operator-work-v100.spec.mjs --project=iphone --project=android
