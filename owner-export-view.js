@@ -38,11 +38,12 @@ export async function mountOwnerWorkExport({main,supabase,ownerId,isActive,onBac
   const feedback=root.querySelector('[data-owner-export-status]');
   const prepare=root.querySelector('[data-owner-export-prepare]');
   const download=root.querySelector('[data-owner-export-download]');
+  const filterSelect=form.elements.namedItem('status');
   let prepared=null,working=false;
   const clear=()=>{
     prepared=null;download.disabled=true;
   };
-  form.querySelector('[name="status"]').addEventListener('change',()=>{
+  filterSelect.addEventListener('change',()=>{
     if(!active()||working)return;
     clear();
     feedback.textContent='El filtro ha cambiado. Prepara un nuevo CSV.';
@@ -52,7 +53,7 @@ export async function mountOwnerWorkExport({main,supabase,ownerId,isActive,onBac
     if(!active()||working)return;
     const selected=form.elements.namedItem('status')?.value;
     if(!ownerExportStatuses.includes(selected))return;
-    working=true;prepare.disabled=true;
+    working=true;prepare.disabled=true;filterSelect.disabled=true;
     clear();feedback.textContent='Comprobando sesión y leyendo trabajos…';
     try{
       const file=await buildOwnerWorkCsv({
@@ -72,13 +73,13 @@ export async function mountOwnerWorkExport({main,supabase,ownerId,isActive,onBac
       }
     }finally{
       working=false;
-      if(active())prepare.disabled=false;
+      if(active()){prepare.disabled=false;filterSelect.disabled=false;}
     }
   });
   download.addEventListener('click',async()=>{
     if(!active()||working||!prepared)return;
     const current=prepared;
-    working=true;download.disabled=true;
+    working=true;download.disabled=true;filterSelect.disabled=true;
     try{
       const result=await shareOwnerWorkCsv(current,{
         ownerId,isActive:active
@@ -91,7 +92,10 @@ export async function mountOwnerWorkExport({main,supabase,ownerId,isActive,onBac
         'No se pudo guardar o compartir el archivo.';
     }finally{
       working=false;
-      if(active())download.disabled=!prepared;
+      if(active()){
+        download.disabled=!prepared;
+        filterSelect.disabled=false;
+      }
     }
   });
   root.querySelector('[data-owner-export-back]').addEventListener('click',()=>{
