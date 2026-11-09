@@ -6,6 +6,7 @@ import {ownerWeekStart,ownerWeekDays,moveOwnerWeek,ownerTodayMadrid,
  fetchOwnerCalendar,saveOwnerVisit} from '../owner-calendar.js';
 import {fetchOwnerMessagesPage,ownerMessagesPageSize,ownerMessagePageCount,
  ownerMailMarkup} from '../owner-messages.js';
+import {fetchOwnerPeoplePage,ownerPeoplePageCount,ownerPeoplePageSize} from '../owner-people.js';
 
 const owner='a0000000-0000-4000-8000-000000000001';
 const operator='b0000000-0000-4000-8000-000000000002';
@@ -18,17 +19,18 @@ test('V84: centro propietario ofrece todas las áreas sin confundir correos exte
  const html=ownerDashboardMarkup(Object.fromEntries(ownerMetrics.map((m,i)=>[m.id,i])));
  for(const name of ['Panel del propietario','Solicitudes nuevas','Presupuestos',
   'Calendario y operarios','Mensajes de clientes','Trabajos sin asignar',
-  'Facturación y trabajos terminados','Incidencias','Reseñas','Correo externo']){
+  'Facturación y trabajos terminados','Incidencias','Reseñas','Correo externo',
+  'Directorio de clientes','Equipo de operarios']){
    assert.ok(html.includes(name),name);
  }
- assert.equal(ownerSections.length,10);
+ assert.equal(ownerSections.length,12);
  assert.ok(html.includes('Acceso exclusivo del rol administrador'));
  assert.ok(!html.includes('admin@reparado.com'));
  assert.ok(ownerMailMarkup().includes('outlook.live.com/mail/'));
  assert.ok(ownerMailMarkup().includes('no están conectados a la app'));
 });
 
-test('V84: 8 indicadores se consultan por separado mediante contadores exactos',async()=>{
+test('V84: 10 indicadores se consultan por separado mediante contadores exactos',async()=>{
  const calls=[];
  const db={from(table){return {select(columns,options){
     calls.push({table,columns,options});
@@ -39,11 +41,14 @@ test('V84: 8 indicadores se consultan por separado mediante contadores exactos',
  }}}};
  const result=await fetchOwnerMetrics(db);
  assert.equal(result.error,false);
- assert.equal(calls.length,8);
+ assert.equal(calls.length,10);
  assert.ok(calls.every(c=>c.columns==='id'&&c.options.count==='exact'&&c.options.head===true));
- assert.ok(calls.every(c=>c.field==='status'));
+ assert.ok(calls.slice(0,8).every(c=>c.field==='status'));
+ assert.ok(calls.slice(8).every(c=>c.field==='role'));
  assert.equal(result.counts.new,1);
  assert.equal(result.counts.reviews,8);
+ assert.equal(result.counts.customers,9);
+ assert.equal(result.counts.operators,10);
 });
 
 test('V84: un recuento fallido no inventa cifras del negocio',async()=>{
@@ -206,4 +211,45 @@ test('V84: el propietario es exclusivamente admin; ni clientes ni operarios tien
  assert.ok(src.includes("data-view=\"owner\""));
  assert.ok(!nav.includes("data-view=\"owner\""));
  assert.ok(src.includes("onConversation:customerId=>loadStaffChat"));
+ assert.ok(src.includes("onChat:id=>loadStaffChat(id,'Cliente',0,view)"));
+ assert.ok(src.includes("if(view==='owner-customers')return showOwnerPeople('customer')"));
+});
+
+test('V84: directorio de clientes 30 por página sin leer emails de Auth',async()=>{
+ const calls=[];
+ const db={from(table){
+   assert.equal(table,'profiles');
+   return {
+     select(fields,options){calls.push(['select',fields,options]);return this},
+     eq(field,value){calls.push(['eq',field,value]);return this},
+     order(field,options){calls.push(['order',field,options]);return this},
+     async range(start,end){
+       calls.push(['range',start,end]);
+       return {data:[{id:owner,full_name:'Cliente de prueba',phone:'600000000',role:'customer'}],
+         count:31,error:null};
+     }
+   };
+ }};
+ const result=await fetchOwnerPeoplePage(db,'customer',1);
+ assert.equal(result.error,false);
+ assert.equal(result.count,31);
+ assert.equal(result.data[0].role,'customer');
+ assert.equal(ownerPeoplePageSize,30);
+ assert.equal(ownerPeoplePageCount(31),2);
+ assert.ok(calls.some(c=>c[0]==='range'&&c[1]===30&&c[2]===59));
+ assert.ok(calls.some(c=>c[0]==='eq'&&c[1]==='role'&&c[2]==='customer'));
+ assert.ok(!calls.some(c=>JSON.stringify(c).includes('email')));
+});
+
+test('V84: clientes no pueden forzar rol admin ni consultar directorio inválido',async()=>{
+ const db={from(){throw Error('No debe leer tablas privadas')}};
+ for(const role of ['admin','billing','owner','']){
+   const result=await fetchOwnerPeoplePage(db,role,0);
+   assert.equal(result.error,true);
+ }
+ for(const page of [-1,1.5,100001]){
+   const result=await fetchOwnerPeoplePage(db,'operator',page);
+   assert.equal(result.error,true);
+ }
+ assert.deepEqual(await fetchOwnerPeoplePage(null,'operator',0),{data:null,count:null,error:true});
 });
