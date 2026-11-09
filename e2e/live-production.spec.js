@@ -27,6 +27,7 @@ test('las imágenes del repositorio publicado no devuelven error',async({page})=
  const photos=page.locator('.category-tile img.category-photo');
  await expect(photos).toHaveCount(6);
  for(const photo of await photos.all()){
+   await expect(photo).toHaveAttribute('alt',/^Ilustración de /);
    await photo.scrollIntoViewIfNeeded();
    await expect.poll(()=>photo.evaluate(img=>img.complete && img.naturalWidth>0),{timeout:12000}).toBeTruthy();
  }
