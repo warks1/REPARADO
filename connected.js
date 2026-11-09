@@ -1006,6 +1006,33 @@ export function mountConnected({app, services, supabase, authLinkIntent=null}) {
     }
     if(!history.childNodes.length)history.textContent='No hay mensajes todavía.';
     history.scrollTop=history.scrollHeight;
+    // V91: solo marcar leída la última página REALMENTE cargada,
+    // nunca toda la bandeja ni una conversación que haya fallado.
+    if(returnView==='owner-messages'&&ownerOnly()&&requestedPage===0&&
+      Array.isArray(result.data)&&result.data.length){
+      const newest=result.data[result.data.length-1];
+      if(newest?.id){
+        const readFeedback=document.createElement('p');
+        readFeedback.className='owner-read-feedback';
+        readFeedback.setAttribute('role','status');
+        readFeedback.setAttribute('aria-live','polite');
+        box.append(readFeedback);
+        void Promise.resolve().then(()=>supabase.rpc('reparado_mark_owner_chat_read',{
+          p_customer_id:customerId,p_last_message_id:newest.id
+        })).then(({data,error})=>{
+          if(!box.isConnected||currentView!=='staff-chat'||
+            !isCurrentUser(staffUserId)||authEpoch!==chatEpoch)return;
+          if(error&&!['PGRST202','42883'].includes(error.code))
+            readFeedback.textContent='El chat se ha mostrado, pero no se pudo guardar el estado de lectura.';
+          else if(!error&&data!==true)
+            readFeedback.textContent='No se pudo confirmar la lectura de la conversación.';
+        }).catch(()=>{
+          if(box.isConnected&&currentView==='staff-chat'&&
+            isCurrentUser(staffUserId)&&authEpoch===chatEpoch)
+            readFeedback.textContent='No se pudo actualizar el estado de lectura.';
+        });
+      }
+    }
     if(result.count>customerChatPageSize){
       const nav=document.createElement('nav');
       nav.className='staff-new-pagination';
