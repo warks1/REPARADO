@@ -10,6 +10,7 @@ on:
       - 'owner-people.js'
       - 'vivid-theme.css'
       - 'tests/owner-panel-v84.test.mjs'
+      - 'tests/owner-calendar-pagination-v87.test.mjs'
       - 'e2e-private/owner-panel-v84.spec.mjs'
       - '.github/workflows/qa-owner-panel-v84.yml'
   push:
@@ -22,6 +23,7 @@ on:
       - 'owner-people.js'
       - 'vivid-theme.css'
       - 'tests/owner-panel-v84.test.mjs'
+      - 'tests/owner-calendar-pagination-v87.test.mjs'
       - 'e2e-private/owner-panel-v84.spec.mjs'
       - '.github/workflows/qa-owner-panel-v84.yml'
 permissions:
