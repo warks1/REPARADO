@@ -1,4 +1,5 @@
-// REPARADO V84 · Panel del propietario. El cliente nunca monta este módulo.
+import {fetchOwnerOperationalCounts,ownerPriorityMarkup} from './owner-priorities.js';
+// REPARADO V96 · Panel del propietario. El cliente nunca monta este módulo.
 // Protección real: permisos y RLS en Supabase; role admin es la cuenta titular.
 // Los recuentos se solicitan al servidor, no se infieren de una lista limitada.
 export const ownerSections=Object.freeze([
@@ -48,7 +49,7 @@ const escape=value=>String(value??'').replace(/[&<>"']/g,c=>({
   '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
 })[c]);
 
-export function ownerDashboardMarkup(counts=null){
+export function ownerDashboardMarkup(counts=null,operational=null){
   const metric=ownerMetrics.map(item=>
     '<div class="owner-metric"><small>'+escape(item.title)+'</small>'+
     '<strong>'+escape(counts?.[item.id]??'—')+'</strong></div>').join('');
@@ -66,6 +67,7 @@ export function ownerDashboardMarkup(counts=null){
     '<p class="owner-info" role="status" aria-live="polite" data-owner-status>'+
     (counts?'Cifras actuales del servidor.':'Consultando el estado de REPARADO…')+'</p>'+
     '<div class="owner-metrics">'+metric+'</div>'+
+    '<div data-owner-priorities>'+ownerPriorityMarkup(counts,operational)+'</div>'+
     '<h2>Centro de gestión</h2><div class="owner-modules">'+cards+'</div>'+
     '<p class="owner-security">Acceso exclusivo del rol administrador. Los clientes y operarios no ven este panel. Los cambios están sujetos a las políticas de seguridad de Supabase.</p>'+
     '</section>';
@@ -81,15 +83,25 @@ export async function mountOwnerDashboard({main,supabase,isActive,onNavigate}){
     if(!isActive()||!root.isConnected)return;
     const id=++refreshId;
     status.textContent='Consultando solicitudes e incidencias…';
-    const result=await fetchOwnerMetrics(supabase);
+    const [result,priority]=await Promise.all([
+      fetchOwnerMetrics(supabase),
+      fetchOwnerOperationalCounts(supabase)
+    ]);
     if(!root.isConnected||!isActive()||id!==refreshId)return;
     const fresh=document.createElement('div');
-    fresh.innerHTML=ownerDashboardMarkup(result.error?null:result.counts);
-    const metrics=fresh.querySelector('.owner-metrics');
-    root.querySelector('.owner-metrics').replaceWith(metrics);
+    fresh.innerHTML=ownerDashboardMarkup(
+      result.error?null:result.counts,
+      priority.error?null:priority.counts
+    );
+    root.querySelector('.owner-metrics').replaceWith(fresh.querySelector('.owner-metrics'));
+    root.querySelector('[data-owner-priorities]').replaceWith(
+      fresh.querySelector('[data-owner-priorities]')
+    );
     status.textContent=result.error?
       'No se han podido comprobar los recuentos. No se mostrarán cifras estimadas.':
-      'Datos actualizados desde el servidor; no incluyen emails de Outlook.';
+      priority.error?
+        'Datos actualizados desde el servidor; algunas prioridades no se pudieron comprobar. No incluyen emails de Outlook.':
+        'Datos actualizados desde el servidor; no incluyen emails de Outlook.';
   };
   root.addEventListener('click',event=>{
     const btn=event.target.closest('[data-owner-target]');
