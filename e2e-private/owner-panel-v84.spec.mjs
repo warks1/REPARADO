@@ -511,6 +511,39 @@ test('V97: titular genera el CSV completo, sin contactos ni direcciones',async({
  await expect(page.locator('#reparado-owner-dashboard')).toBeVisible();
 });
 
+test('V99: titular filtra CSV por fechas locales y al cambiarlas invalida la descarga',async({page})=>{
+ await setup(page,'admin');
+ const queries=[];
+ page.on('request',request=>{
+   if(request.method()==='GET'&&request.url().includes('/rest/v1/service_requests')&&
+      request.url().includes('created_at='))queries.push(new URL(request.url()).searchParams);
+ });
+ await page.goto('/');
+ await page.locator('.owner-module[data-owner-target="owner-export"]').click();
+ const root=page.locator('#reparado-owner-work-export');
+ const from=root.locator('[name="from_date"]');
+ const to=root.locator('[name="to_date"]');
+ await expect(from).toBeVisible();
+ await expect(to).toBeVisible();
+ await from.fill('2026-10-29');
+ await to.fill('2026-10-29');
+ await root.locator('[data-owner-export-prepare]').click();
+ await expect(root.locator('[data-owner-export-status]'))
+   .toContainText('451 trabajo(s) preparados');
+ expect(queries.length).toBeGreaterThan(0);
+ expect(queries.some(q=>q.getAll('created_at').some(v=>v.includes('gte.2026-10-28T23:00:00'))))
+   .toBeTruthy();
+ expect(queries.some(q=>q.getAll('created_at').some(v=>v.includes('lt.2026-10-29T23:00:00'))))
+   .toBeTruthy();
+ const downloadEvent=page.waitForEvent('download');
+ await root.locator('[data-owner-export-download]').click();
+ const downloaded=await downloadEvent;
+ expect(downloaded.suggestedFilename())
+   .toContain('-desde-2026-10-29-hasta-2026-10-29-');
+ await to.fill('2026-10-30');
+ await expect(root.locator('[data-owner-export-download]')).toBeDisabled();
+});
+
 test('V97: cliente y operario no tienen botón para exportar el negocio',async({page})=>{
  await setup(page,'operator');
  await page.goto('/');
