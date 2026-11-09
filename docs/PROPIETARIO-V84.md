@@ -1,4 +1,4 @@
-# REPARADO V87 · Panel del propietario
+# REPARADO V88 · Panel del propietario
 
 ## Cómo entrar
 Iniciar sesión con la única cuenta que tenga el rol **admin** en Supabase.
@@ -19,7 +19,12 @@ panel debe ser exclusivo del titular.
 - **Presupuestos**: consulta, cálculo e importes con IVA incluido; la
   aceptación corresponde al cliente. Los trabajos no se programan
   hasta aceptar el presupuesto.
-- **Calendario semanal**: vista de lunes a domingo, Cataluña; listar
+- **Calendario semanal V88**: selección de operario, acceso desde el directorio
+  de técnicos a su agenda, navegación a cualquier semana mediante fecha y
+  botón para volver a la semana actual. El filtro solo afecta a las citas
+  visibles y al operario sugerido al programar un trabajo aceptado; **no**
+  cambia permisos ni oculta trabajos del servidor. Vista de lunes a domingo,
+  Cataluña; listar
   visitas programadas y en curso, seleccionar un trabajo aceptado,
   asignar operario y día/hora, cambiar asignación o fecha. Se usan
   comprobaciones previas de intervalo y el disparador transaccional V7
