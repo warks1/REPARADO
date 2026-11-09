@@ -4,6 +4,8 @@ on:
     branches: [main]
     paths:
       - 'reviews.js'
+      - 'public-reviews-page.js'
+      - 'tests/public-reviews-v82.test.mjs'
       - 'review-moderation.js'
       - 'review-moderation-page.js'
       - 'tests/review-moderation-v81.test.mjs'
@@ -22,6 +24,8 @@ on:
     branches: [main]
     paths:
       - 'reviews.js'
+      - 'public-reviews-page.js'
+      - 'tests/public-reviews-v82.test.mjs'
       - 'review-moderation.js'
       - 'review-moderation-page.js'
       - 'tests/review-moderation-v81.test.mjs'

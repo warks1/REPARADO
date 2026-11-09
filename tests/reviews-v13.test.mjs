@@ -55,7 +55,8 @@ test('en modo conectado solo se valoran trabajos finalizados; modo local no fing
  assert.ok(local.includes('mountReviews(main)'));
  const reviewable=readFileSync(new URL('../reviewable-requests.js',import.meta.url),'utf8');
  assert.ok(reviewable.includes(".eq('status','completed')"));
- assert.ok(reviews.includes(".eq('status','approved')"));
+ const publicPage=readFileSync(new URL('../public-reviews-page.js',import.meta.url),'utf8');
+ assert.ok(publicPage.includes(".eq('status','approved')"));
  assert.ok(reviews.includes("feedback.textContent='Valoración recibida."));
  assert.ok(reviews.includes('La valoración no se ha enviado a REPARADO.'));
  assert.ok(sql.includes('enable row level security'));
