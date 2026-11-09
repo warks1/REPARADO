@@ -1,4 +1,4 @@
-// REPARADO V84 · Calendario privado del propietario, horario de Cataluña.
+// REPARADO V87 · Calendario privado del propietario, horario de Cataluña.
 // Estado accepted significa presupuesto aceptado por el cliente. No programar
 // solicitudes new/quoted; las comprobaciones SQL/RLS y V7 son autoritativas.
 import {madridDateTimeInput,madridDateTimeText,madridLocalDateTimeToIso,
@@ -53,10 +53,11 @@ export async function fetchOwnerCalendar(supabase,start){
         .select('id,service_name,status,operator_id,operator_name,scheduled_at,city,price')
         .in('status',['scheduled','in_progress'])
         .gte('scheduled_at',after.iso).lt('scheduled_at',before.iso)
-        .order('scheduled_at',{ascending:true}).limit(200),
+        .order('scheduled_at',{ascending:true}).order('id',{ascending:true}).limit(200),
       supabase.from('service_requests')
         .select('id,service_name,status,operator_id,operator_name,scheduled_at,city,price')
-        .eq('status','accepted').order('created_at',{ascending:false}).limit(50),
+        .eq('status','accepted').order('created_at',{ascending:false})
+        .order('id',{ascending:false}).limit(50),
       supabase.from('profiles').select('id,full_name,role')
         .eq('role','operator').order('full_name',{ascending:true})
     ]);
@@ -66,6 +67,37 @@ export async function fetchOwnerCalendar(supabase,start){
     return {error:false,scheduled:scheduled.data,accepted:accepted.data,
       operators:operators.data,start:monday,partialWeek:scheduled.data.length>=200,
       partialQueue:accepted.data.length>=50};
+  }catch{return {error:true}}
+}
+
+
+/** Lee páginas adicionales sin perder trabajos por los límites iniciales.
+ * Se usa orden compuesto estable y se consulta count exacto cuando está disponible.
+ * No se cachean datos entre semanas ni se cambian permisos de Supabase. */
+export async function fetchOwnerCalendarMore(supabase,start,kind,offset){
+  const pageSize=kind==='scheduled'?200:kind==='accepted'?50:0;
+  if(!supabase||!pageSize||!Number.isSafeInteger(offset)||offset<0||offset>1000000)
+    return {error:true};
+  try{
+    const monday=ownerWeekStart(start);
+    const fields='id,service_name,status,operator_id,operator_name,scheduled_at,city,price';
+    let query=supabase.from('service_requests').select(fields,{count:'exact'});
+    if(kind==='scheduled'){
+      const after=madridLocalDateTimeToIso(monday+'T00:00');
+      const before=madridLocalDateTimeToIso(plusDays(monday,7)+'T00:00');
+      if(after.error||before.error||!after.iso||!before.iso)throw Error('Fecha inválida');
+      query=query.in('status',['scheduled','in_progress'])
+        .gte('scheduled_at',after.iso).lt('scheduled_at',before.iso)
+        .order('scheduled_at',{ascending:true}).order('id',{ascending:true});
+    }else{
+      query=query.eq('status','accepted').order('created_at',{ascending:false})
+        .order('id',{ascending:false});
+    }
+    const {data,count,error}=await query.range(offset,offset+pageSize-1);
+    if(error||!Array.isArray(data))throw Error('No se pudieron leer registros');
+    const hasCount=Number.isSafeInteger(count)&&count>=0;
+    return {error:false,data,
+      hasMore:hasCount?offset+data.length<count:data.length===pageSize};
   }catch{return {error:true}}
 }
 
@@ -142,17 +174,19 @@ export async function mountOwnerCalendar({main,supabase,isActive,onBack,onNaviga
     '<strong data-owner-week-label></strong>'+
     '<button type="button" data-owner-week="next">Semana siguiente →</button></div>'+
     '<p role="status" aria-live="polite" data-owner-calendar-feedback>Cargando agenda…</p>'+
-    '<div class="owner-week-grid" data-owner-days></div>'+
+    '<div class="owner-week-grid" data-owner-days></div>'+ 
+    '<button type="button" data-owner-more="scheduled" hidden>Mostrar más visitas de esta semana</button>'+
     '<section class="owner-pending-visits"><h2>Aceptados por programar</h2>'+
     '<p>Solo se programa un presupuesto después de que el cliente lo acepte.</p>'+
-    '<div data-owner-accepted></div></section>'+
+    '<div data-owner-accepted></div>'+ 
+    '<button type="button" data-owner-more="accepted" hidden>Mostrar más presupuestos aceptados</button></section>'+
     '<section class="owner-visit-editor" data-owner-editor hidden><h2>Asignar o cambiar visita</h2>'+
     '<form data-owner-visit-form><p data-owner-selected></p>'+
     '<label>Operario<select name="operator" required></select></label>'+
     '<label>Fecha y hora (Cataluña)<input type="datetime-local" name="when" required></label>'+
     '<div class="owner-calendar-actions"><button type="submit">Guardar cita y operario</button>'+
     '<button type="button" data-owner-cancel>Cancelar</button></div></form></section>'+
-    '<p class="owner-security">Las reservas concurrentes se verifican también en la base de datos. Este calendario muestra hasta 200 visitas por semana y 50 presupuestos aceptados recientes.</p>'+
+    '<p class="owner-security">Las reservas concurrentes se verifican también en la base de datos. La agenda carga 200 visitas y 50 presupuestos aceptados por bloque, con opción de mostrar más.</p>'+
     '<button type="button" data-owner-all>Ver todos los trabajos →</button></section>';
   const root=main.querySelector('#reparado-owner-calendar');
   const feedback=root.querySelector('[data-owner-calendar-feedback]');
@@ -160,11 +194,42 @@ export async function mountOwnerCalendar({main,supabase,isActive,onBack,onNaviga
   const queue=root.querySelector('[data-owner-accepted]');
   const editor=root.querySelector('[data-owner-editor]');
   const form=root.querySelector('[data-owner-visit-form]');
-  let selected=null;
+  let selected=null,loadingMore=false;
+  const moreVisits=root.querySelector('[data-owner-more="scheduled"]');
+  const moreAccepted=root.querySelector('[data-owner-more="accepted"]');
   const active=()=>root.isConnected&&isActive();
+  const render=()=>{
+    if(!activeData)return;
+    feedback.textContent=activeData.scheduled.length+' visitas cargadas esta semana · '+
+      activeData.accepted.length+' trabajos aceptados cargados para programar'+
+      (activeData.partialWeek||activeData.partialQueue?' · Puedes cargar los restantes.':'');
+    moreVisits.hidden=!activeData.partialWeek;
+    moreAccepted.hidden=!activeData.partialQueue;
+    moreVisits.disabled=loadingMore;
+    moreAccepted.disabled=loadingMore;
+    const days=ownerWeekDays(monday);
+    grid.innerHTML=days.map(day=>{
+      const entries=activeData.scheduled.filter(item=>
+        madridDateTimeInput(item.scheduled_at).slice(0,10)===day);
+      return '<div class="owner-day"><h3>'+esc(dayLabel(day))+'</h3>'+
+        (entries.length?entries.map(item=>
+          '<button type="button" class="owner-appointment" data-owner-edit="'+esc(item.id)+'">'+
+          '<b>'+esc(madridDateTimeInput(item.scheduled_at).slice(11))+'</b>'+
+          '<span>'+esc(item.service_name)+'</span>'+
+          '<small>'+esc(item.operator_name||'Sin operario')+' · '+esc(item.city||'')+'</small>'+
+          '</button>').join(''):'<p class="owner-day-empty">Sin visitas</p>')+'</div>';
+    }).join('');
+    queue.innerHTML=activeData.accepted.length?activeData.accepted.map(item=>
+      '<div class="owner-accepted-job"><div><strong>'+esc(item.service_name)+'</strong>'+
+      '<small>'+esc(item.city||'')+' · Presupuesto aceptado</small></div>'+
+      '<button type="button" data-owner-edit="'+esc(item.id)+'">Asignar fecha →</button></div>'
+    ).join(''):'<p>Sin presupuestos aceptados pendientes de programación.</p>';
+  };
   const show=async()=>{
     if(!active())return;
     const request=++sequence;
+    loadingMore=false;
+    moreVisits.disabled=true;moreAccepted.disabled=true;
     selected=null;editor.hidden=true;
     feedback.textContent='Consultando la agenda…';
     root.querySelector('[data-owner-week-label]').textContent=
@@ -177,26 +242,31 @@ export async function mountOwnerCalendar({main,supabase,isActive,onBack,onNaviga
       return;
     }
     activeData=result;
-    feedback.textContent=result.scheduled.length+' visitas esta semana · '+
-      result.accepted.length+' trabajos aceptados sin programar'+
-      (result.partialWeek||result.partialQueue?' · Hay más registros: revisa Todos los servicios.':'');
-    const days=ownerWeekDays(monday);
-    grid.innerHTML=days.map(day=>{
-      const entries=result.scheduled.filter(item=>
-        madridDateTimeInput(item.scheduled_at).slice(0,10)===day);
-      return '<div class="owner-day"><h3>'+esc(dayLabel(day))+'</h3>'+
-        (entries.length?entries.map(item=>
-          '<button type="button" class="owner-appointment" data-owner-edit="'+esc(item.id)+'">'+
-          '<b>'+esc(madridDateTimeInput(item.scheduled_at).slice(11))+'</b>'+
-          '<span>'+esc(item.service_name)+'</span>'+
-          '<small>'+esc(item.operator_name||'Sin operario')+' · '+esc(item.city||'')+'</small>'+
-          '</button>').join(''):'<p class="owner-day-empty">Sin visitas</p>')+'</div>';
-    }).join('');
-    queue.innerHTML=result.accepted.length?result.accepted.map(item=>
-      '<div class="owner-accepted-job"><div><strong>'+esc(item.service_name)+'</strong>'+
-      '<small>'+esc(item.city||'')+' · Presupuesto aceptado</small></div>'+
-      '<button type="button" data-owner-edit="'+esc(item.id)+'">Asignar fecha →</button></div>'
-    ).join(''):'<p>Sin presupuestos aceptados pendientes de programación.</p>';
+    render();
+  };
+  const loadMore=async kind=>{
+    if(!active()||!activeData||loadingMore||saving)return;
+    if(kind!=='scheduled'&&kind!=='accepted')return;
+    const key=kind==='scheduled'?'scheduled':'accepted';
+    const partialKey=kind==='scheduled'?'partialWeek':'partialQueue';
+    if(!activeData[partialKey])return;
+    loadingMore=true;
+    const request=sequence,week=monday,offset=activeData[key].length;
+    const target=kind==='scheduled'?moreVisits:moreAccepted;
+    target.disabled=true;
+    feedback.textContent='Cargando más trabajos del calendario…';
+    const result=await fetchOwnerCalendarMore(supabase,week,kind,offset);
+    if(!active()||request!==sequence||week!==monday)return;
+    loadingMore=false;
+    if(result.error){
+      render();
+      feedback.textContent='No se pudieron cargar más registros. Reintenta sin perder los anteriores.';
+      return;
+    }
+    const known=new Set(activeData[key].map(row=>row.id));
+    activeData[key].push(...result.data.filter(row=>!known.has(row.id)));
+    activeData[partialKey]=result.hasMore;
+    render();
   };
   const edit=id=>{
     if(!active()||!activeData||saving)return;
@@ -216,6 +286,8 @@ export async function mountOwnerCalendar({main,supabase,isActive,onBack,onNaviga
     if(!active())return;
     const editButton=event.target.closest('[data-owner-edit]');
     if(editButton){edit(editButton.dataset.ownerEdit);return}
+    const moreButton=event.target.closest('[data-owner-more]');
+    if(moreButton){void loadMore(moreButton.dataset.ownerMore);return}
     const weekButton=event.target.closest('[data-owner-week]');
     if(weekButton&&!saving){
       monday=moveOwnerWeek(monday,weekButton.dataset.ownerWeek==='prev'?-1:1);
