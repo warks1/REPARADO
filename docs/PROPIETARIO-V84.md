@@ -1,4 +1,4 @@
-# REPARADO V92 · Panel del propietario
+# REPARADO V94 · Panel del propietario
 
 ## Cómo entrar
 Iniciar sesión con la única cuenta que tenga el rol **admin** en Supabase.
@@ -131,3 +131,26 @@ operario, que tienen recuentos exactos. El filtro abierto y su navegador de
 páginas muestran el **total real** confirmado por Supabase, no el parcial.
 Las vistas específicas Nuevas y Sin operario conservan su paginación
 anterior. Guardar cambios mantiene la página actual cuando es posible.
+
+## V94 · Indicadores completos en Gestión interna
+
+La pantalla «Gestión interna» ya no utiliza los 150 registros recientes para
+calcular sus cifras ni los totales de las pestañas. Cada contador (Todos,
+Nuevas, Pendientes, Agenda, En curso y Finalizados) ejecuta una consulta
+`HEAD` con `count: 'exact'` y el mismo filtro de estado que el listado. En el
+panel del titular, «Sin operario» mantiene su recuento exacto independiente.
+
+Las cuentas de operarios reciben **únicamente sus recuentos** por
+`operator_id`, sujetos también a RLS de Supabase. La cuarta tarjeta del
+resumen del operario muestra «Terminados» en lugar de un contador
+«Sin operario», que no le corresponde.
+
+Se eliminó la consulta adicional que descargaba hasta 150 fichas completas,
+incluidos teléfonos y direcciones, solo para contar trabajos. Los contadores
+de ahora no transfieren datos de clientes y los listados siguen paginados
+de 50 en 50. Una caída o un error de permisos muestra una incidencia
+y un botón para reintentar, **nunca un cero inventado**.
+
+Los totales son una lectura puntual del servidor, no cifras de tiempo real:
+actualizar el panel después de cambios realizados por otro usuario.
+No se alteran precios, roles, políticas RLS, ni se emiten facturas fiscales.
