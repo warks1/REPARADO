@@ -20,7 +20,8 @@ const displayTime=value=>{
 function viewMarkup(job,report,photos,{userId,role,preserve=''}) {
   const canEdit=role==='operator'&&job.operator_id===userId;
   const start=canEdit&&mayStartWork(job,userId);
-  const finish=canEdit&&mayFinishWork(job,userId);
+  const finish=canEdit&&mayFinishWork(job,userId)&&Boolean(report);
+  const needsOpen=start&&(job.status==='scheduled'||!report);
   const ended=job.status==='completed';
   const description=preserve||report?.description||'';
   return '<section class="card operator-work-view" id="reparado-operator-work">'+
@@ -35,9 +36,13 @@ function viewMarkup(job,report,photos,{userId,role,preserve=''}) {
     }[job.status]||job.status)+'</span>'+
     '<span><strong>Inicio:</strong> '+esc(displayTime(job.work_started_at||report?.created_at))+'</span>'+
     '<span><strong>Finalización:</strong> '+esc(displayTime(job.work_finished_at))+'</span></div>'+
-    (start&&job.status==='scheduled'
-      ?'<div class="operator-work-actions"><button type="button" data-work-start>▶ Iniciar trabajo</button>'+
-       '<p>Al iniciar quedará registrado en curso. Después podrás escribir el parte y subir fotos.</p></div>'
+    (needsOpen
+      ?'<div class="operator-work-actions"><button type="button" data-work-start>'+
+        (job.status==='scheduled'?'▶ Iniciar trabajo':'🧾 Preparar parte de trabajo')+'</button>'+
+       '<p>'+(job.status==='scheduled'
+         ?'Al iniciar quedará registrado en curso. Después podrás escribir el parte y subir fotos.'
+         :'Este servicio ya estaba en curso. Prepara su parte sin cambiar de nuevo el estado; después añade notas y fotos.')+
+       '</p></div>'
       :'')+
     (finish?'<label class="operator-work-notes">Descripción del trabajo realizado'+
       '<textarea name="work_description" rows="5" maxlength="'+WORK_DESCRIPTION_MAX+
