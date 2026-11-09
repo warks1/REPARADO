@@ -47,6 +47,9 @@ async function setup(page,role='admin'){
      return output(null,true,path.includes('service_requests')?1:0);
    }
    if(path==='/rest/v1/profiles'){
+     if(url.searchParams.get('role')==='eq.customer')return output([{
+       id:clientId,full_name:'Cliente de pruebas',phone:'600000000',role:'customer'
+     }],false,1);
      if(url.searchParams.has('role'))return output([{
        id:operatorId,full_name:'Operario de pruebas',role:'operator'
      }],false,1);
@@ -93,8 +96,8 @@ test('V84: administrador entra al centro privado y abre las diez secciones',asyn
  const owner=page.locator('#reparado-owner-dashboard');
  await expect(owner).toBeVisible();
  await expect(page.locator('.owner-header-launch')).toBeVisible();
- await expect(owner.locator('.owner-module')).toHaveCount(10);
- await expect(owner.locator('.owner-metric')).toHaveCount(8);
+ await expect(owner.locator('.owner-module')).toHaveCount(12);
+ await expect(owner.locator('.owner-metric')).toHaveCount(10);
  await expect(owner.locator('[data-owner-status]')).toContainText('Datos actualizados desde el servidor');
  expect(called.counts.length).toBeGreaterThanOrEqual(8);
  await owner.locator('[data-owner-target="owner-mail"]').click();
@@ -163,4 +166,26 @@ test('V84: inbox privado permite abrir conversaciones de la app, no emails exter
  await page.getByRole('button',{name:'← Mensajes del propietario'}).click();
  await expect(messages).toBeVisible();
  expect(called.reads.length).toBeGreaterThanOrEqual(2);
+});
+
+test('V84: propietario ve directorios de clientes y operarios, sin correos Auth',async({page})=>{
+ await setup(page,'admin');
+ await page.goto('/');
+ const owner=page.locator('#reparado-owner-dashboard');
+ await owner.locator('[data-owner-target="owner-customers"]').click();
+ const people=page.locator('#reparado-owner-people');
+ await expect(people).toContainText('Clientes');
+ await expect(people.locator('.owner-person')).toHaveCount(1);
+ await expect(people).toContainText('600000000');
+ await expect(people).not.toContainText('example.invalid');
+ await people.locator('[data-owner-contact]').click();
+ await expect(page.locator('h2')).toContainText('Chat: Cliente');
+ await page.getByRole('button',{name:'← Clientes'}).click();
+ await expect(people).toBeVisible();
+ await people.locator('[data-owner-people-back]').click();
+ await owner.locator('[data-owner-target="owner-operators"]').click();
+ await expect(people.locator('.owner-person')).toHaveCount(1);
+ await expect(people).toContainText('Operario de pruebas');
+ await people.locator('[data-owner-contact]').click();
+ await expect(page.locator('#reparado-owner-calendar')).toBeVisible();
 });
