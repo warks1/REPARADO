@@ -6,6 +6,8 @@ export const ownerSections=Object.freeze([
   {view:'admin',filter:'pending',icon:'🧾',title:'Presupuestos',detail:'Preparar importes y consultar aceptaciones'},
   {view:'owner-calendar',icon:'📅',title:'Calendario y operarios',detail:'Asignar, cambiar y reprogramar visitas'},
   {view:'owner-messages',icon:'💬',title:'Mensajes de clientes',detail:'Responder conversaciones dentro de REPARADO'},
+  {view:'owner-customers',icon:'👥',title:'Directorio de clientes',detail:'Consultar contactos y abrir conversaciones'},
+  {view:'owner-operators',icon:'👷',title:'Equipo de operarios',detail:'Consultar personal y gestionar su agenda'},
   {view:'admin',filter:'unassigned',icon:'🛠️',title:'Trabajos sin asignar',detail:'Distribuir el trabajo entre operarios'},
   {view:'admin',filter:'all',icon:'📋',title:'Todos los servicios',detail:'Consultar historial y estado de trabajos'},
   {view:'admin',filter:'finished',icon:'💶',title:'Facturación y trabajos terminados',detail:'Borradores privados, sin emisión fiscal automática'},
@@ -22,7 +24,9 @@ export const ownerMetrics=Object.freeze([
   {id:'in_progress',title:'En curso',table:'service_requests',status:'in_progress'},
   {id:'completed',title:'Terminadas',table:'service_requests',status:'completed'},
   {id:'support',title:'Incidencias abiertas',table:'support_reports',status:'open'},
-  {id:'reviews',title:'Reseñas pendientes',table:'customer_reviews',status:'pending'}
+  {id:'reviews',title:'Reseñas pendientes',table:'customer_reviews',status:'pending'},
+  {id:'customers',title:'Clientes',table:'profiles',role:'customer'},
+  {id:'operators',title:'Operarios',table:'profiles',role:'operator'}
 ]);
 
 export async function fetchOwnerMetrics(supabase){
@@ -31,7 +35,7 @@ export async function fetchOwnerMetrics(supabase){
   try{
     const results=await Promise.all(ownerMetrics.map(async metric=>{
       const {count,error}=await supabase.from(metric.table)
-        .select('id',{count:'exact',head:true}).eq('status',metric.status);
+        .select('id',{count:'exact',head:true}).eq(metric.role?'role':'status',metric.role||metric.status);
       if(error||!Number.isSafeInteger(count)||count<0)throw Error('Sin recuento');
       return [metric.id,count];
     }));
