@@ -1,4 +1,4 @@
-# REPARADO V89 · Panel del propietario
+# REPARADO V90 · Panel del propietario
 
 ## Cómo entrar
 Iniciar sesión con la única cuenta que tenga el rol **admin** en Supabase.
@@ -30,8 +30,14 @@ panel debe ser exclusivo del titular.
   comprobaciones previas de intervalo y el disparador transaccional V7
   para rechazar solapamientos con menos de 60 minutos entre inicios.
   La hora se convierte con zona `Europe/Madrid` y detecta cambios DST.
-- **Mensajes de clientes**: bandeja de conversaciones en la app, 30
-  mensajes por página, abrir un chat, leer historial y responder.
+- **Mensajes de clientes (V90)**: bandeja de conversaciones privadas con
+  una fila por cliente, ordenada por el último mensaje; paginación de hasta
+  30 conversaciones por bloque y acceso al chat para responder.
+  Usa la RPC `reparado_owner_conversations`, de tipo SECURITY INVOKER,
+  con comprobación explícita de administrador y políticas RLS.
+  Si la función aún no está instalada, conserva temporalmente la bandeja
+  anterior por mensajes individuales; **los errores de autorización nunca
+  habilitan este modo alternativo**. No se inventan cifras de no leídos.
 - **Directorio de clientes y operarios V89**: 30 perfiles por página,
   búsqueda por **nombre o teléfono** con resultados paginados desde
   Supabase, limpieza para volver a listar todos los perfiles; abrir
@@ -73,3 +79,17 @@ se muestran guiones y error de conexión, no ceros inventados.
 - Si se requiere una cuenta propietaria diferente de otras futuras
   cuentas admin, implantar una autorización de propietario separada
   en base de datos, no ocultar únicamente un botón.
+
+## Instalar la bandeja de conversaciones V90
+
+Ejecutar `supabase/migration-v90-owner-inbox.sql` en un entorno de pruebas
+**después de las migraciones de mensajes y roles**. Es aditiva: crea una RPC,
+no cambia los textos, perfiles ni permisos existentes. Verificar los grants
+(`anon` sin EXECUTE; `authenticated` con EXECUTE, pero acceso solo cuando
+`is_reparado_admin()` devuelve verdadero) y probar con cliente, operario y
+administrador.
+
+En producción, usar una migración revisada y aplicada explícitamente; si aún
+no se ha ejecutado, el panel continúa mostrando mensajes individuales y lo
+indica como modo compatible. Esta RPC **no integra Microsoft Outlook** ni
+identifica mensajes no leídos. No registrar en logs las conversaciones.
