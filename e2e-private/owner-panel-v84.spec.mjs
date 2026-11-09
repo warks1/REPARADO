@@ -196,7 +196,7 @@ for(const role of ['customer','operator']){
 test('V84: calendario asigna un trabajo aceptado, fecha y operario y permite consultar semanas',async({page})=>{
  const called=await setup(page,'admin');
  await page.goto('/');
- await page.locator('[data-owner-target="owner-calendar"]').click();
+ await page.locator('.owner-module[data-owner-target="owner-calendar"]').click();
  const cal=page.locator('#reparado-owner-calendar');
  await expect(cal).toBeVisible();
  await expect(cal.locator('.owner-day')).toHaveCount(7);
