@@ -4,6 +4,8 @@ on:
     branches: [main]
     paths:
       - 'scripts/store-auth-signup-check.mjs'
+      - 'scripts/store-private-api-check.mjs'
+      - 'tests/store-private-api-v83.test.mjs'
       - 'tests/store-auth-signup-v43.test.mjs'
       - '.github/workflows/store-release.yml'
       - '.github/workflows/qa-auth-signup-v43.yml'
@@ -13,6 +15,8 @@ on:
     branches: [main]
     paths:
       - 'scripts/store-auth-signup-check.mjs'
+      - 'scripts/store-private-api-check.mjs'
+      - 'tests/store-private-api-v83.test.mjs'
       - 'tests/store-auth-signup-v43.test.mjs'
       - '.github/workflows/store-release.yml'
       - '.github/workflows/qa-auth-signup-v43.yml'
@@ -35,5 +39,11 @@ jobs:
         run: |
           if node scripts/store-auth-signup-check.mjs; then
             echo 'Fallo: permitió publicar sin configuración Auth'
+            exit 1
+          fi
+      - name: Las tiendas rechazan un backend no configurado o no privado
+        run: |
+          if node scripts/store-private-api-check.mjs; then
+            echo 'Fallo: permitió firmar sin un backend privado real'
             exit 1
           fi
