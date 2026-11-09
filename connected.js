@@ -1191,13 +1191,13 @@ export function mountConnected({app, services, supabase, authLinkIntent=null}) {
       onNavigate:ownerRoute
     });
   }
-  async function showOwnerCalendar(){
+  async function showOwnerCalendar(initialOperatorId=null){
     if(!ownerOnly()){if(!session)showLogin();else renderHome();return}
     setActiveNav(app,'profile');
     currentView='owner-calendar';
     const ownerId=session.user.id,epoch=authEpoch;
     await mountOwnerCalendar({
-      main,supabase,
+      main,supabase,initialOperatorId,
       isActive:()=>currentView==='owner-calendar'&&isCurrentUser(ownerId)&&
         authEpoch===epoch&&ownerOnly(),
       onBack:()=>showOwnerDashboard(),
@@ -1229,7 +1229,7 @@ export function mountConnected({app, services, supabase, authLinkIntent=null}) {
         authEpoch===epoch&&ownerOnly(),
       onBack:()=>showOwnerDashboard(),
       onChat:id=>loadStaffChat(id,'Cliente',0,view),
-      onCalendar:()=>showOwnerCalendar()
+      onCalendar:id=>showOwnerCalendar(id)
     });
   }
   function showOwnerMail(){
