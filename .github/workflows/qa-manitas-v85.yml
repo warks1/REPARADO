@@ -1,0 +1,53 @@
+name: REPARADO V85 · Manitas sin material
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'catalog-data.js'
+      - 'customer-ui.js'
+      - 'connected.js'
+      - 'local-preview.js'
+      - 'customer-theme.css'
+      - 'tests/manitas-no-material-v85.test.mjs'
+      - 'tests/catalog-prices-v61.test.mjs'
+      - 'e2e/manitas-sin-material-v85.spec.mjs'
+      - '.github/workflows/qa-manitas-v85.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'catalog-data.js'
+      - 'customer-ui.js'
+      - 'connected.js'
+      - 'local-preview.js'
+      - 'customer-theme.css'
+      - 'tests/manitas-no-material-v85.test.mjs'
+      - 'tests/catalog-prices-v61.test.mjs'
+      - 'e2e/manitas-sin-material-v85.spec.mjs'
+      - '.github/workflows/qa-manitas-v85.yml'
+permissions:
+  contents: read
+jobs:
+  validate-prices:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: {node-version: '22'}
+      - run: npm install --no-audit --no-fund
+      - name: Verificar importes, IVA, materiales y casos anteriores
+        run: npm test
+      - name: Compilar catálogo y formularios
+        run: npm run build
+
+  mobile-catalog:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: {node-version: '22'}
+      - run: npm install --no-audit --no-fund
+      - run: npx playwright install --with-deps chromium webkit
+      - name: Revisar Manitas sin material en iOS, Android y tablet
+        run: npx playwright test --config playwright.config.mjs e2e/manitas-sin-material-v85.spec.mjs

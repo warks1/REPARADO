@@ -1,4 +1,5 @@
 import {contactLinksMarkup} from './contact-emails.js';
+import {manitasPricingNotice,manitasMaterialQuestionMarkup,manitasMaterialRequestNote} from './catalog-data.js';
 import { mountReviews } from './reviews.js';
 import {requestStorageKey,profileStorageKey,messageDraftStorageKey,safeReadJSON,localRequests,localProfile,localWrite,localAgenda,localSummary,localDateLabel,validLocalDate} from './local-data.js';
 import {localReceipt,localRequestBackup,localBackupName,historicalEvents,readableTimestamp,localPriceLabel} from './local-document.js';
@@ -51,10 +52,11 @@ export function mountLocal({app,services}){
       '<div class="row"><label>Código postal<input name="postal_code" value="'+esc(p.postal_code||'')+'" inputmode="numeric" pattern="[0-9]{5}" maxlength="5" required></label><label>Municipio<input name="city" value="'+esc(p.city||'')+'" placeholder="Ej. Barcelona, Girona..." required maxlength="90"></label></div>'+serviceAreaNoticeMarkup()+
       '<label>Teléfono de contacto<input name="phone" type="tel" value="'+esc(p.phone||'')+'" required maxlength="25"></label>'+
       '<label>Descripción del problema<textarea name="description" placeholder="Cuéntanos qué necesitas reparar..." maxlength="1800" required></textarea></label>'+unitQuantityMarkup(s)+
+      (s[0]==='Manitas'?manitasMaterialQuestionMarkup:'')+
       '<label>Fotos (opcional)<input name="photos" type="file" accept="image/*" multiple></label>'+
       preferredDateField()+formPeriodPicker()+
       '<button type="submit">Guardar solicitud '+ '→</button></form>'+
-      '<p class="notice">Tarifa «desde» con material estándar, mano de obra e IVA del 21 % incluidos. El precio final se confirma antes del trabajo. Sin Supabase, las solicitudes se guardan solo en este dispositivo y no se envían al equipo.</p>'+
+      '<p class="notice">'+(s[0]==='Manitas'?esc(manitasPricingNotice):'Tarifa «desde» con material estándar, mano de obra e IVA del 21 % incluidos. El precio final se confirma antes del trabajo.')+' Sin Supabase, las solicitudes se guardan solo en este dispositivo y no se envían al equipo.</p>'+
       '<p data-feedback role="status"></p></section></div>';
     const readUnitQuote=bindUnitQuantity(main.querySelector('#local-request'),s);
     main.querySelector('#local-request').addEventListener('submit',e=>{
@@ -78,7 +80,7 @@ export function mountLocal({app,services}){
       requests.unshift({id:globalThis.crypto?.randomUUID?.()||String(Date.now()),category:s[0],service:s[1],
         street:String(data.get('street')||''),address:String(data.get('address_number')||''),
         postal_code:String(data.get('postal_code')||'').trim(),city:String(data.get('city')||'').trim(),
-        phone:String(data.get('phone')||''),description:String(data.get('description')||''),
+        phone:String(data.get('phone')||''),description:String(data.get('description')||'')+manitasMaterialRequestNote(s,data.get('manitas_material')),
         period:String(data.get('preferred_period')||''),date:String(data.get('preferred_date')||''),
         price:s[3]?0:s[2],
         ...(s[3]?{unit_name:s[3],unit_rate:s[2],unit_quantity:areaQuote?.quantity??null}:{}),

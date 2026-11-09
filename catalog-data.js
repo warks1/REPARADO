@@ -25,21 +25,42 @@ export const services=[
  ['Reformas integrales','Reforma integral de cocina',0],
  ['Reformas integrales','Reforma de vivienda',0],
  // Tarifas orientativas para Cataluña, IVA del 21 % incluido.
- // Los materiales especiales, trabajos complejos y desplazamientos fuera de zona
- // se confirman siempre mediante presupuesto antes de aceptar la solicitud.
- ['Manitas','Montaje de mueble en kit (mediano)',109],
- ['Manitas','Colocación de estantería',89],
- ['Manitas','Colgar cuadros o espejos (hasta 3)',79],
- ['Manitas','Instalación de barras de cortina o estores',119],
- ['Manitas','Instalación de soporte de TV en pared',145],
- ['Manitas','Ajuste de puertas y bisagras',85],
- ['Manitas','Cambio de cinta de persiana',95],
- ['Manitas','Renovación de silicona de bañera o ducha',105],
- ['Manitas','Instalación de lámpara sencilla',119],
- ['Manitas','Colocación de accesorios de baño',105],
- ['Manitas','Reparación menor de muebles',109],
- ['Manitas','Cambio de manilla de puerta',99]
+ // En Manitas el material lo aporta el cliente; los extras se presupuestan aparte.
+ // Trabajos complejos y desplazamientos fuera de zona requieren valoración.
+ ['Manitas','Montaje de mueble en kit (mediano)',99],
+ ['Manitas','Colocación de estantería',75],
+ ['Manitas','Colgar cuadros o espejos (hasta 3)',69],
+ ['Manitas','Instalación de barras de cortina o estores',89],
+ ['Manitas','Instalación de soporte de TV en pared',109],
+ ['Manitas','Ajuste de puertas y bisagras',79],
+ ['Manitas','Cambio de cinta de persiana',79],
+ ['Manitas','Renovación de silicona de bañera o ducha',79],
+ ['Manitas','Instalación de lámpara sencilla',89],
+ ['Manitas','Colocación de accesorios de baño',79],
+ ['Manitas','Reparación menor de muebles',89],
+ ['Manitas','Cambio de manilla de puerta',69]
 ];
+
+// V85 · Manitas: tarifas SOLO de servicio, material aportado por el cliente.
+// Referencia orientativa Cataluña 2026: mano de obra, desplazamiento ordinario
+// en zona y 21 % IVA incluidos. No se modifican presupuestos ya aceptados.
+export const manitasPricingNotice = "Manitas · Precios orientativos «desde» en Cataluña, con mano de obra, herramientas, desplazamiento ordinario en zona e IVA del 21 % incluidos. MATERIAL NO INCLUIDO: muebles, accesorios, fijaciones, recambios, tornillería y consumibles los aporta el cliente. Si necesitas que REPARADO suministre algún material, solicita un presupuesto adicional antes del trabajo. Los casos especiales y desplazamientos fuera de zona se valoran aparte.";
+export const servicePriceTerms = service => service?.[2]<=0
+  ? 'Sujeto a presupuesto'
+  : service?.[0]==='Manitas'
+    ? 'Mano de obra, desplazamiento ordinario e IVA del 21 % incluidos · material NO incluido (lo aporta el cliente)'
+    : 'Material estándar, mano de obra e IVA incluidos';
+export const manitasMaterialQuestionMarkup = `<fieldset class="manitas-material-choice">
+  <legend>Material para el trabajo de Manitas (no incluido en el precio)</legend>
+  <label><input type="radio" name="manitas_material" value="client" checked> Ya tengo y aportaré el material necesario</label>
+  <label><input type="radio" name="manitas_material" value="quote"> Necesito presupuesto aparte para el material</label>
+</fieldset>`;
+export function manitasMaterialRequestNote(service,choice){
+  if(service?.[0]!=='Manitas')return '';
+  return choice==='quote'
+    ? '\nMaterial (Manitas): solicitar presupuesto adicional de materiales; no incluido en tarifa.'
+    : '\nMaterial (Manitas): el cliente lo aporta. Precio orientativo sin materiales.';
+}
 
 // V61 · Revisión 03-11-2026. Tarifa final con IVA 21 %, materiales y mano de obra estándar.
 export const catalogPricingNotice = "Precios orientativos «desde» para Cataluña. Incluyen mano de obra, desplazamiento ordinario en zona, materiales estándar descritos e IVA del 21 %. Los artículos aportados por el cliente se especifican en cada servicio. Los mínimos de superficie, los extras y los trabajos no estándar requieren valoración; el presupuesto final se confirma antes de ejecutar el trabajo.";
@@ -69,16 +90,16 @@ export const serviceInclusions = Object.freeze({
   "Reforma integral de baño": "Los materiales, calidades y mano de obra se detallan en un presupuesto personalizado tras medir.",
   "Reforma integral de cocina": "Los materiales, mobiliario, instalaciones y mano de obra se detallan en presupuesto personalizado.",
   "Reforma de vivienda": "Los materiales, calidades, alcance y mano de obra se detallan en presupuesto personalizado.",
-  "Montaje de mueble en kit (mediano)": "Montaje, ajustes, tornillería auxiliar y anclajes estándar; el mueble en kit lo aporta el cliente.",
-  "Colocación de estantería": "Balda básica de hasta 80 cm, escuadras, fijaciones y colocación en pared adecuada.",
-  "Colgar cuadros o espejos (hasta 3)": "Anclajes, nivelación y colocación de hasta tres piezas aportadas por el cliente.",
-  "Instalación de barras de cortina o estores": "Barra estándar de hasta 2 m, soportes y montaje; estores a medida por presupuesto.",
-  "Instalación de soporte de TV en pared": "Soporte fijo universal básico, anclajes y montaje en pared apta; televisor no incluido.",
-  "Ajuste de puertas y bisagras": "Reglaje de puerta y bisagras, tornillería y pequeño herraje estándar si procede.",
-  "Cambio de cinta de persiana": "Cinta, recogedor estándar, sustitución y ajuste de persiana accesible.",
-  "Renovación de silicona de bañera o ducha": "Retirada de junta antigua, silicona sanitaria antimoho y sellado de hasta 4 metros.",
-  "Instalación de lámpara sencilla": "Luminaria LED sencilla, conectores e instalación en punto existente; sin nuevo cableado.",
-  "Colocación de accesorios de baño": "Hasta dos accesorios básicos de baño, fijaciones y colocación en pared estándar.",
-  "Reparación menor de muebles": "Ajuste, cola, tornillería y herrajes sencillos; sin sustitución de paneles completos.",
-  "Cambio de manilla de puerta": "Juego de manillas estándar compatible, tornillería y sustitución sobre cerradura existente."
+  "Montaje de mueble en kit (mediano)": "Montaje y ajustes de un mueble mediano en kit aportado por el cliente. No incluye muebles, herrajes, fijaciones ni tornillería: los aporta el cliente.",
+  "Colocación de estantería": "Colocación y nivelación de una estantería de tamaño estándar; estantería, escuadras, tacos y tornillos aportados por el cliente.",
+  "Colgar cuadros o espejos (hasta 3)": "Nivelación y colocación de hasta tres cuadros o espejos del cliente; anclajes, tacos y demás fijaciones aportados por el cliente.",
+  "Instalación de barras de cortina o estores": "Montaje de barra, riel o estor estándar aportado por el cliente, con soportes, tacos y tornillos también del cliente; sin trabajos a medida.",
+  "Instalación de soporte de TV en pared": "Instalación y nivelación de soporte de TV en pared apta; soporte, tornillería, tacos especiales y televisor aportados por el cliente.",
+  "Ajuste de puertas y bisagras": "Ajuste y reglaje de puertas interiores y bisagras existentes; los herrajes, bisagras o tornillos nuevos los aporta el cliente.",
+  "Cambio de cinta de persiana": "Sustitución y ajuste de cinta en persiana accesible; la cinta, recogedor y demás recambios los aporta el cliente.",
+  "Renovación de silicona de bañera o ducha": "Retirada de sellado antiguo y aplicación de nueva junta hasta 4 metros; silicona sanitaria y consumibles aportados por el cliente.",
+  "Instalación de lámpara sencilla": "Montaje de luminaria sencilla en punto eléctrico existente; lámpara, bombillas y conectores compatibles aportados por el cliente. Sin nuevo cableado.",
+  "Colocación de accesorios de baño": "Nivelación e instalación de hasta dos accesorios de baño; accesorios, soportes, tacos y tornillos aportados por el cliente.",
+  "Reparación menor de muebles": "Ajuste, encolado o pequeñas reparaciones en un mueble; cola, piezas, tornillería y herrajes aportados por el cliente.",
+  "Cambio de manilla de puerta": "Desmontaje y montaje de manilla compatible en puerta existente; juego de manillas, tornillería y piezas aportados por el cliente."
 });
