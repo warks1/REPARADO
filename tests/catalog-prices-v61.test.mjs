@@ -3,8 +3,8 @@ import assert from 'node:assert/strict';
 import {services,serviceInclusions,catalogPricingNotice} from '../catalog-data.js';
 import {renderCategory,serviceFormHeader,priceFor} from '../customer-ui.js';
 
-test('V61: las cinco categorías suman 37 servicios con alcance definido',()=>{
- assert.equal(services.length,37);
+test('V86: las seis categorías suman 47 servicios con alcance definido',()=>{
+ assert.equal(services.length,47);
  assert.equal(new Set(services.map(s=>s[1])).size,37);
  for(const s of services){
   assert.ok(Number.isFinite(s[2])&&s[2]>=0,'Precio inválido '+s[1]);
@@ -26,9 +26,9 @@ test('V61: unidades m² y metro lineal correctamente diferenciadas',()=>{
 });
 test('V61: importes finales estándar y piezas aportadas claramente identificadas',()=>{
  const one=n=>services.find(s=>s[1]===n);
- assert.equal(priceFor(one('Sustitución de grifo')),'175,00 €');
- assert.equal(priceFor(one('Instalación de termo eléctrico')),'495,00 €');
- assert.equal(priceFor(one('Instalación de parquet/laminado')),'49,00 € / m²');
+ assert.equal(priceFor(one('Sustitución de grifo')),'189,00 €');
+ assert.equal(priceFor(one('Instalación de termo eléctrico')),'539,00 €');
+ assert.equal(priceFor(one('Instalación de parquet/laminado')),'54,00 € / m²');
  assert.equal(priceFor(one('Instalación de soporte de TV en pared')),'109,00 €');
  assert.match(serviceInclusions['Montaje de mueble en kit (mediano)'],/lo aporta el cliente/);
  assert.match(serviceInclusions['Instalación de termo eléctrico'],/80 l/);
@@ -48,8 +48,8 @@ test('V61: categoría y formulario muestran condiciones, materiales e IVA',()=>{
 
 test('V71: detalle de solicitud indica tarifa desde sin presentar presupuesto cerrado',()=>{
  const form=name=>serviceFormHeader(services.find(s=>s[1]===name));
- assert.ok(form('Sustitución de grifo').includes('<em>Desde 175,00 € · Material estándar'));
- assert.ok(form('Instalación de parquet/laminado').includes('<em>Desde 49,00 € / m² · Material estándar'));
+ assert.ok(form('Sustitución de grifo').includes('<em>Desde 189,00 € · Material estándar'));
+ assert.ok(form('Instalación de parquet/laminado').includes('<em>Desde 54,00 € / m² · Material estándar'));
  assert.ok(form('Reforma integral de baño').includes('<em>Por presupuesto · Sujeto a presupuesto'));
  assert.ok(!form('Reforma integral de baño').includes('Desde Por presupuesto'));
 });
