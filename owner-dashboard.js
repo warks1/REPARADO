@@ -11,6 +11,7 @@ export const ownerSections=Object.freeze([
   {view:'owner-operators',icon:'👷',title:'Equipo de operarios',detail:'Consultar personal y gestionar su agenda'},
   {view:'admin',filter:'unassigned',icon:'🛠️',title:'Trabajos sin asignar',detail:'Distribuir el trabajo entre operarios'},
   {view:'admin',filter:'all',icon:'📋',title:'Todos los servicios',detail:'Consultar historial y estado de trabajos'},
+  {view:'owner-export',icon:'📊',title:'Exportar historial CSV',detail:'Guardar trabajos en Excel sin datos de contacto ni facturas fiscales'},
   {view:'admin',filter:'finished',icon:'💶',title:'Facturación y trabajos terminados',detail:'Borradores privados, sin emisión fiscal automática'},
   {view:'support-admin',icon:'🛟',title:'Incidencias',detail:'Resolver problemas reportados por clientes'},
   {view:'review-moderation',icon:'⭐',title:'Reseñas',detail:'Aprobar o rechazar opiniones auténticas'},
