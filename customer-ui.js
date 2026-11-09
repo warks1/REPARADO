@@ -1,5 +1,5 @@
 import { additionalServicePhoto } from './service-photos.js';
-import { catalogPricingNotice, serviceInclusions } from './catalog-data.js';
+import { catalogPricingNotice, manitasPricingNotice, servicePriceTerms, serviceInclusions } from './catalog-data.js';
 import { renderReviewsSection } from './reviews.js';
 
 // Diseño compartido entre la web, Android (Capacitor) y iOS (Capacitor).
@@ -283,7 +283,7 @@ export function renderCategory(services,id) {
   return '<div class="customer-page category-view theme-'+c.slug+'">'+
      '<button class="screen-back" type="button" data-back aria-label="Volver">'+ico('back')+'</button>'+
      '<section class="category-hero"><div class="category-hero-copy"><h1>'+esc(c.title)+'</h1><p>'+esc(c.description)+'</p></div>'+categoryHeroArt(c.slug)+'</section>'+
-     '<p class="notice catalog-price-policy">'+esc(catalogPricingNotice)+'</p>'+
+     '<p class="notice catalog-price-policy">'+esc(id==='Manitas'?manitasPricingNotice:catalogPricingNotice)+'</p>'+
      '<div class="trust-badges"><span>'+ico('shield')+' Solicitud segura</span><span>'+ico('star')+' Atención personalizada</span><span>'+ico('wallet')+' Precios orientativos</span></div>'+
      '<div class="section-heading"><h2>Servicios más solicitados</h2></div>'+
      '<div class="category-services">'+ranked.map((x,i)=>i<4?serviceRow(x.s,x.i):serviceRow(x.s,x.i).replace('class="catalog-service"','class="catalog-service service-extra" hidden')).join('')+'</div>'+
@@ -296,7 +296,7 @@ export function renderCategory(services,id) {
 }
 export function serviceFormHeader(s) {
   const c=catFor(s[0]);
-  return '<div class="form-service-summary"><span class="summary-art">'+categoryArt(c.slug)+'</span><span><small>'+esc(c.title)+'</small><strong>'+esc(s[1])+'</strong><em>'+(s[2]?'Desde ':'')+esc(priceFor(s))+' · '+(s[2]?'Material estándar, mano de obra e IVA incluidos':'Sujeto a presupuesto')+'</em></span></div>'+(serviceInclusions[s[1]]?'<p class="notice service-includes">'+esc(serviceInclusions[s[1]])+'</p>':'');
+  return '<div class="form-service-summary"><span class="summary-art">'+categoryArt(c.slug)+'</span><span><small>'+esc(c.title)+'</small><strong>'+esc(s[1])+'</strong><em>'+(s[2]?'Desde ':'')+esc(priceFor(s))+' · '+servicePriceTerms(s)+'</em></span></div>'+(serviceInclusions[s[1]]?'<p class="notice service-includes">'+esc(serviceInclusions[s[1]])+'</p>':'');
 }
 export function formPeriodPicker() {
   return '<fieldset class="time-picker"><legend>Horario preferido</legend><label><input type="radio" name="preferred_period" value="Mañana (9:00–13:00)" checked><span>Mañana<small>9:00 – 13:00</small></span></label>'+
