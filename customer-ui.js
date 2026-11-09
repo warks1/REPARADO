@@ -79,19 +79,14 @@ function atlasSprite(name,description=''){
 export function categoryArt(slug) {
   const category=categories.find(c=>c.slug===slug);
   const safe=category?.slug || 'plumbing';
-  // Restauramos las ilustraciones 3D del boceto aprobado. Sus nuevas versiones
-  // PNG conservan cada dibujo original y tienen transparencia real donde los
-  // recortes WebP originales incluían blancos, por lo que pueden animarse.
-  if(safe==='electricity')return '<div class="category-art art-electricity"><span class="category-motion">'+art.electricity+'</span></div>';
-  if(safe!=='handyman'){
-    const src=imageBase()+'categories/'+safe+'-transparent.png';
-    return '<div class="category-art art-'+esc(safe)+'"><span class="category-motion">'+
-      '<img class="category-photo category-restored" src="'+esc(src)+'" width="215" height="87" loading="lazy" decoding="async" alt="Ilustración de '+esc(category?.title || 'reparación')+'">'+
-      '</span></div>';
-  }
-  // Manitas permanece idéntica a la versión aprobada.
-  const src=imageBase()+'categories/handyman.svg';
-  return '<div class="category-art art-handyman"><img class="category-photo" src="'+esc(src)+'" width="215" height="87" loading="lazy" decoding="async" alt="Ilustración de '+esc(category?.title || 'reparación')+'"></div>';
+  // V93: las seis categorías tienen exactamente la misma estructura.
+  // Las primeras cuatro mantienen sus PNG aprobados, sin retocarlos.
+  // Manitas y Electricidad usan SVG transparentes sin bloque rectangular.
+  const isVector=safe==='handyman'||safe==='electricity';
+  const src=imageBase()+'categories/'+safe+'-transparent.'+(isVector?'svg':'png');
+  return '<div class="category-art art-'+esc(safe)+'"><span class="category-motion">'+
+    '<img class="category-photo category-restored" src="'+esc(src)+'" width="215" height="87" loading="lazy" decoding="async" alt="Ilustración de '+esc(category?.title || 'reparación')+'">'+
+    '</span></div>';
 }
 // En la cabecera grande, la imagen de baja resolución del atlas producía
 // artefactos. El vector original permite un grifo definido a cualquier tamaño.
