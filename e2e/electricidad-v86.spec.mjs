@@ -5,6 +5,7 @@ const first=services.findIndex(s=>s[1]==='Sustitución de enchufe estándar');
 const breaker=services.findIndex(s=>s[1]==='Sustitución de diferencial estándar');
 
 test('V86: seis categorías visibles y acceso a Electricidad con fotos y precios',async({page})=>{
+ await page.route('https://images.pexels.com/**',route=>route.fulfill({status:200,contentType:'image/png',body:Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO/yhX0AAAAASUVORK5CYII=','base64')}));
  await page.goto('/');
  await expect(page.locator('.category-tile')).toHaveCount(6);
  await expect(page.locator('[data-category-open="Electricidad"].category-tile')).toBeVisible();
@@ -36,6 +37,7 @@ test('V86: precios actualizados y Manitas sin material se mantienen diferentes',
  await page.locator('[data-category-open="Fontanería"].category-tile').click();
  await page.locator('[data-service="3"]').click();
  await expect(page.locator('.form-service-summary')).toContainText('189,00 €');
+ await page.locator('[data-back]').first().click();
  await page.locator('[data-back]').first().click();
  await page.locator('[data-category-open="Manitas"].category-tile').click();
  await expect(page.locator('.catalog-price-policy')).toContainText('MATERIAL NO INCLUIDO');
