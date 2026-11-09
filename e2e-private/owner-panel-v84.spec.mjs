@@ -421,3 +421,40 @@ test('V95: titular localiza la solicitud 151 sin recorrer 150 y conserva cifras 
  await expect(page.locator('.job-card')).toHaveCount(50);
  await expect(page.locator('[data-staff-search-status]')).toContainText('153 resultado(s)');
 });
+
+
+test('V96: propietario ve prioridades auténticas, actualiza y abre la agenda',async({page})=>{
+ const calls=await setup(page,'admin');
+ await page.goto('/');
+ const dashboard=page.locator('#reparado-owner-dashboard');
+ await expect(dashboard).toBeVisible();
+ const priorities=dashboard.locator('.owner-priorities');
+ await expect(priorities.locator('.owner-priority-card')).toHaveCount(4);
+ await expect(priorities.locator('[data-owner-target="owner-calendar"] .owner-priority-count'))
+   .toHaveText('1');
+ await expect(priorities.locator('[data-owner-target="admin"][data-owner-filter="agenda"] .owner-priority-count'))
+   .toHaveText('1');
+ await expect(priorities.locator('[data-owner-target="support-admin"] .owner-priority-count'))
+   .toHaveText('0');
+ await expect(priorities.locator('[data-owner-target="review-moderation"] .owner-priority-count'))
+   .toHaveText('0');
+ await expect(dashboard.locator('.owner-metric')).toHaveCount(10);
+ const initial=calls.counts.length;
+ await dashboard.locator('[data-owner-refresh]').click();
+ await expect.poll(()=>calls.counts.length).toBeGreaterThan(initial);
+ await priorities.locator('[data-owner-target="owner-calendar"]').click();
+ await expect(page.locator('#reparado-owner-calendar')).toBeVisible();
+ await expect(page.locator('#reparado-owner-calendar .owner-accepted-job')).toHaveCount(1);
+ await page.locator('#reparado-owner-calendar [data-owner-back]').click();
+ await expect(dashboard).toBeVisible();
+ await dashboard.locator('.owner-priority-card[data-owner-target="admin"][data-owner-filter="agenda"]').click();
+ await expect(page.locator('.staff-filters [data-admin-filter="agenda"]')).toHaveAttribute('aria-pressed','true');
+});
+
+test('V96: clientes y operarios no reciben prioridades privadas',async({page})=>{
+ const calls=await setup(page,'operator');
+ await page.goto('/');
+ await expect(page.locator('#reparado-owner-dashboard')).toHaveCount(0);
+ await expect(page.locator('.owner-priorities')).toHaveCount(0);
+ expect(calls.counts).toHaveLength(0);
+});
