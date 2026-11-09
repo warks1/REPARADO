@@ -1,4 +1,4 @@
-# REPARADO V95 · Panel del propietario
+# REPARADO V96 · Panel del propietario
 
 ## Cómo entrar
 Iniciar sesión con la única cuenta que tenga el rol **admin** en Supabase.
@@ -177,3 +177,27 @@ sin recorrer todas las páginas.
   específico e independiente. No se modifican datos al buscar.
 
 No se integra Outlook ni facturación fiscal ni se modifica el backend.
+
+## V96 · Prioridades operativas del propietario
+
+El inicio del panel exclusivo de administrador muestra cuatro accesos con
+recuentos exactos del servidor:
+
+- **Aceptados sin operario**: presupuestos aceptados que todavía no tienen
+  `operator_id`; conduce al calendario para asignarlos.
+- **Visitas anteriores sin cerrar**: citas cuya hora ya pasó y que siguen
+  programadas o en curso; conduce a Gestión interna → Agenda. **La fecha
+  anterior no prueba por sí sola una incidencia**, requiere revisión.
+- **Incidencias abiertas**: reutiliza el indicador existente de soporte.
+- **Reseñas por moderar**: reutiliza la cifra de opiniones pendientes.
+
+Los dos primeros recuentos nuevos consultan Supabase con `HEAD` y
+`count: exact` sin descargar fichas ni datos de contacto. Los otros dos
+reutilizan las estadísticas ya obtenidas del backend. Los resultados son
+lecturas puntuales; **Actualizar** vuelve a consultarlos. Si una consulta
+falla se muestra **—**, nunca una cifra inventada ni un cero engañoso.
+
+Este panel no se monta para clientes u operarios y no sustituye las políticas
+RLS. El proyecto de pruebas usa cuentas y datos ficticios en los navegadores
+automáticos. La aprobación de producción y la publicación comercial siguen
+pendientes de los requisitos de `docs/ESTADO-ENTREGA-V88-2026-11-09.md`.

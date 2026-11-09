@@ -1002,3 +1002,33 @@ body,.shell,.customer-header,.customer-nav {background:#fff}
   .staff-work-search{gap:8px}
   .staff-work-search button{padding:9px 6px;font-size:12px}
 }
+
+
+/* V96 · Prioridades operativas del titular (datos reales y acceso privado). */
+.owner-priorities{margin:18px 0 24px}
+.owner-priorities h2{color:#19385b;font-size:19px;margin:0 0 7px}
+.owner-priority-help{color:#62758b;font-size:12px;line-height:1.5;margin:0 0 12px}
+.owner-priority-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:11px}
+.owner-priority-card{
+  display:flex;align-items:center;gap:11px;min-width:0;min-height:90px;
+  text-align:left;padding:14px 13px;background:#f9fcff;color:#163658;
+  border:1px solid #d5e4f1;border-radius:15px;cursor:pointer;
+  box-shadow:0 2px 9px rgba(25,64,108,.05)
+}
+.owner-priority-card:hover{background:#fff9f4;border-color:#f3a274}
+.owner-priority-card:focus-visible{outline:3px solid #f38446;outline-offset:2px}
+.owner-priority-icon{font-size:22px;flex:none;width:38px;height:38px;
+  display:grid;place-items:center;background:#eaf2fb;border-radius:11px}
+.owner-priority-content{display:flex;flex:1;flex-direction:column;gap:4px;min-width:0}
+.owner-priority-content strong{font-size:13px;line-height:1.3;color:#193656}
+.owner-priority-content small{font-size:11px;line-height:1.4;color:#63768a}
+.owner-priority-count{
+  display:grid;place-items:center;min-width:36px;min-height:36px;padding:4px 7px;
+  border-radius:12px;background:#e8f2ff;color:#1d5483;font-size:21px;
+  line-height:1;font-weight:800;font-variant-numeric:tabular-nums;flex:none
+}
+@media(max-width:620px){
+  .owner-priority-grid{grid-template-columns:1fr}
+  .owner-priority-card{min-height:78px;padding:11px}
+  .owner-priority-content strong{font-size:13px}
+}

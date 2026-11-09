@@ -5,6 +5,8 @@ on:
     paths:
       - 'connected.js'
       - 'owner-dashboard.js'
+      - 'owner-priorities.js'
+      - 'tests/owner-priorities-v96.test.mjs'
       - 'owner-calendar.js'
       - 'owner-messages.js'
       - 'owner-people.js'
@@ -28,6 +30,8 @@ on:
     paths:
       - 'connected.js'
       - 'owner-dashboard.js'
+      - 'owner-priorities.js'
+      - 'tests/owner-priorities-v96.test.mjs'
       - 'owner-calendar.js'
       - 'owner-messages.js'
       - 'owner-people.js'
