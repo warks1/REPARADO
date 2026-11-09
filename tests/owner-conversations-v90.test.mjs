@@ -102,5 +102,5 @@ test('V90: contratos SQL de mínima autorización y sin crear datos de ejemplo',
  assert.match(sql,/grant execute on function public\.reparado_owner_conversations/);
  assert.doesNotMatch(sql,/insert into public\.messages|update public\.messages/i);
  assert.ok(js.includes('if(!grouped.unavailable)return {error:true}'));
- assert.ok(js.includes("Los correos de Outlook y el estado no leído no se incluyen."));
+ assert.ok(js.includes("La lectura de Outlook y el estado no leído aún no están integrados."));
 });
