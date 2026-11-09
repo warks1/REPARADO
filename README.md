@@ -1,3 +1,17 @@
+# REPARADO · Reparaciones y servicios para Cataluña
+
+## Estado actual (9 de noviembre de 2026)
+
+- **Código integrado en `main`:** 47 servicios en seis categorías (Fontanería, Albañilería/Pladur, Parquet, Reformas integrales, Manitas y Electricidad), con fotografías y precios orientativos de gama media-alta que incluyen IVA del 21 %.
+- **Manitas:** 12 tarifas **sin material incluido**, que aporta el cliente o puede solicitar por presupuesto separado. Las demás categorías contemplan los materiales estándar especificados y las reformas integrales requieren presupuesto.
+- **Propietario:** panel privado V84 al iniciar sesión con el rol `admin`, con solicitudes, presupuestos, calendario para asignar/cambiar operarios, bandeja de mensajes de la app, directorios, incidencias, reseñas y borradores de factura. Los clientes **no ven** esa zona.
+- **Seguridad:** políticas RLS y tests automatizados; las revisiones antes de integrar V84 y V86 superaron 32 y 34 workflows, respectivamente. No sustituye pruebas reales de producción.
+- **Estado de publicación:** **aún no se puede abrir a clientes reales ni afirmar que esté en App Store/Google Play**. Solo está conectado un Supabase de pruebas; faltan producción, pruebas con cuentas reales, datos legales/fiscales, firmas de distribución y validaciones de tiendas. Los correos Outlook no se sincronizan en el panel.
+
+Consulta el **[informe de estado real V87](docs/ESTADO-REAL-V87-2026-11-09.md)** y la **[guía de lanzamiento](docs/PUBLICAR-EN-TIENDAS.md)** antes de preparar una distribución comercial.
+
+---
+
 # Reparado — recuperación funcional desde GitHub (20-10-2026)
 
 Esta versión recupera **los archivos originales existentes en el historial** del repositorio (commit `f06acd2`, 9-10-2026), corrige el arranque de Vite y prepara el despliegue. **No equivale al paquete posterior `Reparado-Integracion-v3.zip`**; ese archivo no se ha podido recuperar aquí.
