@@ -35,6 +35,7 @@ import { renderNotifications } from './notifications.js'
 import {mountOwnerDashboard} from './owner-dashboard.js'
 import {mountOwnerCalendar} from './owner-calendar.js'
 import {mountOwnerMessages,ownerMailMarkup} from './owner-messages.js'
+import {mountOwnerPeople} from './owner-people.js'
 import {publicRegistrationEnabled} from './auth-mode.js'
 import {validateNewPassword} from './password-policy.js'
 import { Capacitor } from '@capacitor/core'
@@ -122,6 +123,8 @@ export function mountConnected({app, services, supabase, authLinkIntent=null}) {
       else if(view==='owner')showOwnerDashboard();
       else if(view==='owner-calendar')showOwnerCalendar();
       else if(view==='owner-messages')showOwnerMessages();
+      else if(view==='owner-customers')showOwnerPeople('customer');
+      else if(view==='owner-operators')showOwnerPeople('operator');
       else if(view==='owner-mail')showOwnerMail();
       else if(view==='review-moderation')openReviewModeration();
       else if(view==='support-admin')loadSupportReports();
@@ -964,8 +967,10 @@ export function mountConnected({app, services, supabase, authLinkIntent=null}) {
     const box=document.createElement('section');
     box.className='card';
     const back=document.createElement('button');
-    back.className='back';back.type='button';back.textContent=returnView==='owner-messages'?'← Mensajes del propietario':'← Panel interno';
-    back.addEventListener('click',()=>returnView==='owner-messages'?showOwnerMessages():renderAdmin());
+    back.className='back';back.type='button';back.textContent=returnView==='owner-messages'?'← Mensajes del propietario':
+      returnView==='owner-customers'?'← Clientes':'← Panel interno';
+    back.addEventListener('click',()=>returnView==='owner-messages'?showOwnerMessages():
+      returnView==='owner-customers'?showOwnerPeople('customer'):renderAdmin());
     const heading=document.createElement('h2');
     heading.textContent='Chat: '+serviceName;
     const history=document.createElement('div');
@@ -1162,6 +1167,8 @@ export function mountConnected({app, services, supabase, authLinkIntent=null}) {
     if(view==='admin')return renderAdmin(filter||'all');
     if(view==='owner-calendar')return showOwnerCalendar();
     if(view==='owner-messages')return showOwnerMessages();
+    if(view==='owner-customers')return showOwnerPeople('customer');
+    if(view==='owner-operators')return showOwnerPeople('operator');
     if(view==='owner-mail')return showOwnerMail();
     if(view==='support-admin')return loadSupportReports();
     if(view==='review-moderation')return openReviewModeration();
@@ -1202,6 +1209,21 @@ export function mountConnected({app, services, supabase, authLinkIntent=null}) {
         authEpoch===epoch&&ownerOnly(),
       onBack:()=>showOwnerDashboard(),
       onConversation:customerId=>loadStaffChat(customerId,'Cliente',0,'owner-messages')
+    });
+  }
+  async function showOwnerPeople(role){
+    if(!ownerOnly()){if(!session)showLogin();else renderHome();return}
+    if(!['customer','operator'].includes(role))return showOwnerDashboard();
+    setActiveNav(app,'profile');
+    currentView=role==='customer'?'owner-customers':'owner-operators';
+    const view=currentView,ownerId=session.user.id,epoch=authEpoch;
+    await mountOwnerPeople({
+      main,supabase,role,
+      isActive:()=>currentView===view&&isCurrentUser(ownerId)&&
+        authEpoch===epoch&&ownerOnly(),
+      onBack:()=>showOwnerDashboard(),
+      onChat:id=>loadStaffChat(id,'Cliente',0,view),
+      onCalendar:()=>showOwnerCalendar()
     });
   }
   function showOwnerMail(){
