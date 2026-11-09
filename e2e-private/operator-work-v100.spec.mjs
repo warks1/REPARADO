@@ -11,7 +11,7 @@ function jwt(id){
    exp:Math.floor(Date.now()/1000)+3600
  })+'.fake-signature';
 }
-async function setup(page,initialStatus='scheduled'){
+async function setup(page,initialStatus='scheduled',failedUploadOnAttempt=0){
  const user={id:operatorId,email:'operario@example.invalid',role:'authenticated',
    aud:'authenticated',app_metadata:{provider:'email',providers:['email']},
    user_metadata:{},created_at:'2026-10-01T00:00:00Z'};
@@ -20,7 +20,7 @@ async function setup(page,initialStatus='scheduled'){
  await page.addInitScript(({key,session})=>localStorage.setItem(key,JSON.stringify(session)),{
    key:'sb-reparado-test-placeholder-auth-token',session
  });
- let status=initialStatus,description='',report=false,photoNames=[],uploads=0,finished=0;
+ let status=initialStatus,description='',report=false,photoNames=[],uploads=0,attempts=0,finished=0;
  const requests=[];
  const job=()=>({
    id:requestId,customer_id:'c0000000-0000-4000-8000-000000000003',
@@ -79,8 +79,14 @@ async function setup(page,initialStatus='scheduled'){
    if(path==='/storage/v1/object/list/work-photos'&&method==='POST')
      return respond(route,photoNames.map(name=>({name})),photoNames.length);
    if(path.startsWith('/storage/v1/object/work-photos/')&&method==='POST'){
+     attempts++;
+     if(attempts===failedUploadOnAttempt)return route.fulfill({
+       status:500,contentType:'application/json',
+       body:'{"statusCode":500,"error":"Temporary error","message":"Fallo de red simulado"}'
+     });
      const name=path.split('/').at(-1);
-     photoNames.push(name);uploads++;
+     if(!photoNames.includes(name))photoNames.push(name);
+     uploads++;
      return respond(route,{Key:path},1,true);
    }
    if(path.startsWith('/storage/v1/object/sign/work-photos/')&&method==='POST')
@@ -91,7 +97,7 @@ async function setup(page,initialStatus='scheduled'){
    return route.fulfill({status:404,contentType:'application/json',
      body:'{"message":"No existe en mock"}'});
  });
- return {requests,get:()=>({status,description,uploads,finished,report})};
+ return {requests,get:()=>({status,description,uploads,attempts,finished,report})};
 }
 
 test('V100: el operario abre su servicio, inicia, sube foto, describe y cierra',async({page})=>{
@@ -154,4 +160,41 @@ test('V100: servicio antiguo ya en curso permite preparar parte sin reiniciar su
  await expect(work.locator('[name="work_description"]')).toBeVisible();
  await expect(work.locator('[data-work-finish]')).toBeVisible();
  expect(state.get().status).toBe('in_progress');
+});
+
+
+test('V101: subida parcial muestra fotos realmente guardadas y reintenta sin duplicados',async({page})=>{
+  const state=await setup(page,'scheduled',2);
+  await page.goto('/');
+  await page.locator('.customer-nav [data-view="profile"]').click();
+  await page.locator('[data-view="admin"]').click();
+  await page.locator('[data-work-detail]').first().click();
+  const work=page.locator('#reparado-operator-work');
+  await work.locator('[data-work-start]').click();
+  await work.locator('[name="work_description"]')
+    .fill('Se ha sustituido la pieza y comprobado el funcionamiento de la instalación.');
+  const images=[
+    {name:'antes.png',mimeType:'image/png',buffer:Buffer.from([137,80,78,71,13,10,26,10,1,0,0,0])},
+    {name:'despues.png',mimeType:'image/png',buffer:Buffer.from([137,80,78,71,13,10,26,10,2,0,0,0])}
+  ];
+  await work.locator('[data-work-files]').setInputFiles(images);
+  await work.locator('[data-work-upload]').click();
+  await expect(work.locator('[data-work-photo-count]')).toContainText('1 de 8');
+  await expect(work.locator('[data-work-feedback]')).toContainText('1 fallida(s)');
+  await expect(work.locator('[name="work_description"]')).toHaveValue(/Se ha sustituido/);
+  expect(state.get().uploads).toBe(1);
+
+  await work.locator('[data-work-files]').setInputFiles(images);
+  await work.locator('[data-work-upload]').click();
+  await expect(work.locator('[data-work-photo-count]')).toContainText('2 de 8');
+  await expect(work.locator('[data-work-feedback]')).toContainText('ya existentes: 1');
+  expect(state.get().uploads).toBe(2);
+  expect(state.get().attempts).toBe(3);
+
+  await work.locator('[data-work-refresh]').click();
+  await expect(work.locator('[data-work-photo-count]')).toContainText('2 de 8');
+  await expect(work.locator('[name="work_description"]')).toHaveValue(/Se ha sustituido/);
+  await work.locator('[data-work-finish]').click();
+  await expect(work.locator('[data-work-feedback]')).toContainText('Servicio cerrado correctamente');
+  expect(state.get().finished).toBe(1);
 });
