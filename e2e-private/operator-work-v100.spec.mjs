@@ -195,6 +195,6 @@ test('V101: subida parcial muestra fotos realmente guardadas y reintenta sin dup
   await expect(work.locator('[data-work-photo-count]')).toContainText('2 de 8');
   await expect(work.locator('[name="work_description"]')).toHaveValue(/Se ha sustituido/);
   await work.locator('[data-work-finish]').click();
-  await expect(work.locator('[data-work-feedback]')).toContainText('Servicio cerrado correctamente');
+  await expect(work.locator('[data-work-feedback]')).toContainText('Servicio finalizado y cerrado correctamente');
   expect(state.get().finished).toBe(1);
 });
