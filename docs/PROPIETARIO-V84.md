@@ -1,4 +1,4 @@
-# REPARADO V84 · Panel del propietario
+# REPARADO V87 · Panel del propietario
 
 ## Cómo entrar
 Iniciar sesión con la única cuenta que tenga el rol **admin** en Supabase.
@@ -44,10 +44,17 @@ se muestran guiones y error de conexión, no ceros inventados.
 
 ## Límites y pasos siguientes
 
-- Las vistas del calendario se limitan explícitamente a **200 visitas
-  por semana** y **50 servicios aceptados recientes**. Para ver más,
-  acudir a la bandeja «Todos los servicios»; completar la paginación
-  histórica sigue siendo pendiente.
+- **Agenda V87: carga progresiva de todos los registros disponibles.**
+  Se muestran inicialmente hasta 200 visitas de la semana y 50 presupuestos
+  aceptados, y aparecen botones **Mostrar más visitas** y
+  **Mostrar más presupuestos aceptados** cuando puede haber más registros.
+  Cada pulsación consulta el siguiente bloque manteniendo los anteriores,
+  con orden estable y detección de fin de lista. Los fallos de conexión
+  no borran lo ya cargado. En una semana con muchos registros, cargar
+  bloques adicionales manualmente evita saturar móviles y tablets.
+  La paginación no sustituye la base de datos ni convierte los listados
+  en información en tiempo real: usa **Actualizar** si otros usuarios
+  han modificado o reordenado solicitudes mientras se consultaban.
 - El panel usa **solo la cuenta con rol admin**; la protección efectiva
   de consultas y escrituras depende de **RLS de Supabase**. Los
   tests móviles usan sesiones y respuestas **ficticias**, no clientes
