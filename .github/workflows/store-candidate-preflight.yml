@@ -4,6 +4,8 @@ on:
     branches: [main]
     paths:
       - 'scripts/store-preflight.mjs'
+      - 'scripts/store-private-api-check.mjs'
+      - 'tests/store-private-api-v83.test.mjs'
       - 'scripts/configure-android-release.mjs'
       - '.github/workflows/store-release.yml'
       - '.github/workflows/store-candidate-preflight.yml'
@@ -24,6 +26,8 @@ on:
     branches: [main]
     paths:
       - 'scripts/store-preflight.mjs'
+      - 'scripts/store-private-api-check.mjs'
+      - 'tests/store-private-api-v83.test.mjs'
       - 'scripts/configure-android-release.mjs'
       - '.github/workflows/store-release.yml'
       - '.github/workflows/store-candidate-preflight.yml'
