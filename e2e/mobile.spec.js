@@ -6,7 +6,7 @@ test('portada real por categorías, imágenes y navegación sin desbordamiento',
   await page.goto('/');
   await expect(page.locator('.customer-header .brand-word')).toHaveText('Reparado');
   await expect(page.getByRole('heading',{name:/Tu hogar/})).toBeVisible();
-  await expect(page.locator('.category-tile')).toHaveCount(5);
+  await expect(page.locator('.category-tile')).toHaveCount(6);
   await expect(page.locator('.customer-nav button')).toHaveCount(5);
   await expect(page.locator('.promo-banner')).toBeVisible();
   // La portada conserva los cinco dibujos 3D; cuatro PNG transparentes
@@ -327,11 +327,11 @@ test('las cuatro ilustraciones tienen exactamente la oscilación suave de Manita
   await page.screenshot({path:join(dir,'mismo-movimiento-manitas-'+testInfo.project.name+'.png'),fullPage:true});
 });
 
-test('Ver todos restaura cinco categorías después de una búsqueda vacía o con filtros',async({page})=>{
+test('Ver todos restaura seis categorías después de una búsqueda vacía o con filtros',async({page})=>{
  await page.goto('/');
  const search=page.locator('#category-search');
  const all=page.locator('.category-tile:visible');
- await expect(all).toHaveCount(5);
+ await expect(all).toHaveCount(6);
  await search.fill('albanileria');
  await expect(all).toHaveCount(1);
  await expect(page.locator('.category-tile.theme-masonry')).toBeVisible();
@@ -343,9 +343,9 @@ test('Ver todos restaura cinco categorías después de una búsqueda vacía o co
  await expect(page.locator('.no-results')).toBeVisible();
  await page.locator('[data-show-all]').click();
  await expect(search).toHaveValue('');
- await expect(all).toHaveCount(5);
+ await expect(all).toHaveCount(6);
  await expect(page.locator('.no-results')).toBeHidden();
- await expect(page.locator('.popular-list .catalog-service')).toHaveCount(5);
+ await expect(page.locator('.popular-list .catalog-service')).toHaveCount(6);
  await expect.poll(()=>page.evaluate(()=>document.documentElement.scrollWidth-window.innerWidth)).toBeLessThanOrEqual(2);
 });
 
