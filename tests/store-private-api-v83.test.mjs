@@ -1,60 +1,69 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-import {checkStorePrivateApi,storePrivateTables} from '../scripts/store-private-api-check.mjs';
+import {checkStorePrivateApi,storePrivateTables,
+  storePrivateColumns} from '../scripts/store-private-api-check.mjs';
 
 const url='https://reparado-production-example.supabase.co/';
 const key='sb_publishable_TEST_PUBLIC_KEY';
-const privateResponse={status:401,json:async()=>({code:'42501',message:'permission denied'})};
-const publicResponse={status:200,json:async()=>[]};
+const forbidden={status:401,json:async()=>({code:'42501',message:'permission denied'})};
 
-function fixture({publicStatus=200,override={},throwOn=null}={}){
+function fixture({publicStatus=200,exposed=null,override={},throwOn=null}={}){
   const calls=[];
   const fetchImpl=async(target,options)=>{
     const parsed=new URL(target),table=parsed.pathname.split('/').at(-1);
-    calls.push({target,options,table});
-    if(throwOn===table)throw Error('No propagar detalles del servidor');
-    return override[table]??(table==='customer_reviews'?
-      {status:publicStatus,json:async()=>[]} : privateResponse);
+    const column=parsed.searchParams.get('select');
+    const field=table+'.'+column;
+    calls.push({target,options,table,column,field});
+    if(throwOn===field)throw Error('No imprimir respuesta privada del servidor');
+    if(table==='customer_reviews')return {status:publicStatus,json:async()=>[]};
+    if(override[field])return override[field];
+    if(exposed===field)return {status:200,json:async()=>[]};
+    return forbidden;
   };
   return {fetchImpl,calls};
 }
 
-test('V83: seis tablas privadas sin SELECT anónimo, reseñas públicas disponibles',async()=>{
+test('V83: todas las columnas conocidas denegadas al anónimo; las reseñas públicas disponibles',async()=>{
   assert.deepEqual(storePrivateTables,[
     'profiles','service_requests','messages','notifications','device_tokens','invoices'
   ]);
+  assert.equal(Object.values(storePrivateColumns).flat().length,51);
   const {fetchImpl,calls}=fixture();
   const result=await checkStorePrivateApi({url,key,fetchImpl});
   assert.equal(result.ok,true);
-  assert.equal(calls.length,7);
-  assert.equal(calls[0].table,'customer_reviews');
-  assert.deepEqual(calls.slice(1).map(c=>c.table),storePrivateTables);
-  for(const {target,options} of calls){
+  assert.equal(calls.length,52);
+  assert.equal(calls[0].field,'customer_reviews.id');
+  const expected=storePrivateTables.flatMap(table=>
+    storePrivateColumns[table].map(column=>table+'.'+column));
+  assert.deepEqual(calls.slice(1).map(c=>c.field),expected);
+  for(const {target,options,column} of calls){
     assert.equal(new URL(target).origin,'https://reparado-production-example.supabase.co');
-    assert.equal(new URL(target).search,'?select=id&limit=0');
+    assert.equal(new URL(target).searchParams.get('select'),column);
+    assert.equal(new URL(target).searchParams.get('limit'),'0');
     assert.equal(options.method,'GET');
     assert.equal(options.redirect,'error');
     assert.equal(options.headers.apikey,key);
     assert.equal(options.headers.accept,'application/json');
-    assert.ok(!Object.prototype.hasOwnProperty.call(options.headers,'Authorization'));
+    assert.equal(Object.hasOwn(options.headers,'Authorization'),false);
     assert.ok(options.signal instanceof AbortSignal);
   }
 });
 
-test('V83: una tabla legible anónimamente bloquea firma aunque no haya filas',async()=>{
+test('V83: un GRANT SELECT aislado en cualquier columna privada también bloquea tienda',async()=>{
   for(const table of storePrivateTables){
-    const {fetchImpl,calls}=fixture({
-      override:{[table]:{status:200,json:async()=>[]}}
-    });
-    const result=await checkStorePrivateApi({url,key,fetchImpl});
-    assert.equal(result.ok,false,table);
-    assert.match(result.reason,/bloqueo de lectura anónima/);
-    assert.ok(calls.some(c=>c.table===table));
+    for(const column of storePrivateColumns[table]){
+      const field=table+'.'+column;
+      const {fetchImpl,calls}=fixture({exposed:field});
+      const result=await checkStorePrivateApi({url,key,fetchImpl});
+      assert.equal(result.ok,false,field);
+      assert.ok(calls.some(c=>c.field===field));
+      assert.ok(result.reason.includes(field));
+    }
   }
 });
 
-test('V83: rechazo aparente por clave incorrecta, tabla inexistente o error no acredita RLS',async()=>{
+test('V83: 401 de clave inválida, tabla no encontrada y error 500 no acreditan privacidad',async()=>{
   for(const response of [
     {status:404,json:async()=>({code:'PGRST205'})},
     {status:401,json:async()=>({code:'PGRST301'})},
@@ -62,7 +71,8 @@ test('V83: rechazo aparente por clave incorrecta, tabla inexistente o error no a
     {status:500,json:async()=>({code:'XX000'})}
   ]){
     const result=await checkStorePrivateApi({
-      url,key,fetchImpl:fixture({override:{invoices:response}}).fetchImpl
+      url,key,
+      fetchImpl:fixture({override:{'invoices.created_at':response}}).fetchImpl
     });
     assert.equal(result.ok,false,JSON.stringify(response.status));
   }
@@ -71,20 +81,21 @@ test('V83: rechazo aparente por clave incorrecta, tabla inexistente o error no a
   })).ok,false);
 });
 
-test('V83: fallos de red o JSON malformado bloquean sin filtrar claves o URL',async()=>{
-  for(const options of [
-    {throwOn:'customer_reviews'},{throwOn:'service_requests'},
-    {override:{profiles:{status:403,json:async()=>{throw Error('SECRET_SERVER_REPLY')}}}}
+test('V83: fallos de red o JSON malformado bloquean sin revelar claves ni URL',async()=>{
+  for(const opts of [
+    {throwOn:'customer_reviews.id'},{throwOn:'service_requests.phone'},
+    {override:{'profiles.role':{status:403,
+      json:async()=>{throw Error('PRIVATE_RESPONSE_TOKEN')}}}}
   ]){
-    const result=await checkStorePrivateApi({url,key,fetchImpl:fixture(options).fetchImpl});
+    const result=await checkStorePrivateApi({url,key,fetchImpl:fixture(opts).fetchImpl});
     assert.equal(result.ok,false);
     assert.ok(!result.reason.includes(key));
     assert.ok(!result.reason.includes(url));
-    assert.ok(!result.reason.includes('SECRET_SERVER_REPLY'));
+    assert.ok(!result.reason.includes('PRIVATE_RESPONSE_TOKEN'));
   }
 });
 
-test('V83: ninguna petición con REPARADO Test, clave privada o servidor ajeno',async()=>{
+test('V83: nunca consultar servidor ajeno, Test ni clave privada',async()=>{
   let calls=0;
   const noNetwork=async()=>{calls++;throw Error('No debe acceder a red')};
   const invalid=[
@@ -103,15 +114,12 @@ test('V83: ninguna petición con REPARADO Test, clave privada o servidor ajeno',
   assert.equal(calls,0);
 });
 
-test('V83: Apple y Google bloquean la firma si falla esta verificación',()=>{
+test('V83: Android y Apple comprueban la API privada antes de firmar',()=>{
   const release=readFileSync(new URL('../.github/workflows/store-release.yml',import.meta.url),'utf8');
   const cmd='node scripts/store-private-api-check.mjs';
   assert.equal(release.split(cmd).length-1,2);
-  for(const section of release.split('jobs:')[1].split('      - name: Instalar')){
-    // Cada paso que compila tiene primero la verificación privada.
-    if(section.includes('node scripts/store-preflight.mjs'))
-      assert.ok(section.includes(cmd));
-  }
   assert.ok(release.indexOf(cmd)<release.indexOf('bundleRelease'));
   assert.ok(release.indexOf(cmd)<release.indexOf('xcodebuild archive'));
+  for(const job of ['google-play:','app-store:'])
+    assert.ok(release.includes(job));
 });
