@@ -123,7 +123,16 @@ async function setup(page,role='admin',inboxRpc=false,history=false){
          status:'completed',scheduled_at:null,operator_id:null,
          operator_name:null,price:180
        }));
-       return output(rows.slice(start,end+1),false,153);
+       let filtered=rows;
+       for(const field of ['service_name','city','phone']){
+         const raw=url.searchParams.get(field);
+         if(raw?.startsWith('ilike.')){
+           const pattern=raw.slice(6).replace(/^%|%$/g,'').toLocaleLowerCase('es');
+           filtered=filtered.filter(row=>String(row[field]||'')
+             .toLocaleLowerCase('es').includes(pattern));
+         }
+       }
+       return output(filtered.slice(start,end+1),false,filtered.length);
      }
      if(url.searchParams.has('operator_id'))return output([],false,0);
      if(url.searchParams.get('status')==='eq.accepted')
@@ -382,4 +391,33 @@ test('V94: propietario ve indicadores completos y filtros exactos con más de 15
  await expect(history).toContainText('153 trabajos en este filtro');
  expect(calls.counts.filter(s=>s.includes('/service_requests?')).length).toBeGreaterThanOrEqual(6);
  expect(calls.counts.some(s=>s.includes('select=id'))).toBe(true);
+});
+
+test('V95: titular localiza la solicitud 151 sin recorrer 150 y conserva cifras globales',async({page})=>{
+ await setup(page,'admin',false,true);
+ await page.goto('/');
+ await page.locator('[data-owner-target="admin"][data-owner-filter="finished"]').click();
+ const search=page.locator('[data-staff-work-search]');
+ await expect(search).toBeVisible();
+ await search.locator('[name="term"]').fill('  Trabajo terminado 151  ');
+ await search.getByRole('button',{name:'Buscar'}).click();
+ await expect(page.locator('.job-card')).toHaveCount(1);
+ await expect(page.locator('.job-card')).toContainText('Trabajo terminado 151');
+ await expect(page.locator('[data-staff-search-status]')).toContainText('1 resultado(s)');
+ await expect(page.locator('[data-admin-filter="finished"]')).toContainText('153');
+ await expect(page.locator('[data-admin-filter="all"]')).toContainText('315');
+ await search.locator('[name="field"]').selectOption('city');
+ await search.locator('[name="term"]').fill('Barcelona');
+ await search.getByRole('button',{name:'Buscar'}).click();
+ await expect(page.locator('.job-card')).toHaveCount(50);
+ await expect(page.locator('[data-staff-search-status]')).toContainText('153 resultado(s)');
+ await search.locator('[data-staff-search-clear]').click();
+ await expect(search.locator('[name="term"]')).toHaveValue('');
+ await expect(page.locator('.job-card')).toHaveCount(50);
+ await expect(page.locator('[data-staff-search-status]')).toContainText('Busca en todo el historial');
+ await search.locator('[name="field"]').selectOption('phone');
+ await search.locator('[name="term"]').fill('600000000');
+ await search.getByRole('button',{name:'Buscar'}).click();
+ await expect(page.locator('.job-card')).toHaveCount(50);
+ await expect(page.locator('[data-staff-search-status]')).toContainText('153 resultado(s)');
 });
