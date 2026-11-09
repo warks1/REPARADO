@@ -38,7 +38,8 @@ panel debe ser exclusivo del titular.
   buzones. **REPARADO todavía no tiene integración de lectura de email**.
   Los correos no se almacenan ni sincronizan en el panel.
 
-Los indicadores consultan recuentos exactos; si la base no responde,
+Los diez indicadores (solicitudes, presupuestos, servicios, incidencias,
+reseñas y perfiles de clientes/operarios) consultan recuentos exactos; si la base no responde,
 se muestran guiones y error de conexión, no ceros inventados.
 
 ## Límites y pasos siguientes
