@@ -35,6 +35,7 @@ import {savePrivateBillingDraft,readPrivateBillingDraft} from './billing-draft-s
 import { renderInvoices } from './invoices.js'
 import { renderNotifications } from './notifications.js'
 import {mountOwnerDashboard} from './owner-dashboard.js'
+import {mountOwnerWorkExport} from './owner-export-view.js'
 import {mountOwnerCalendar} from './owner-calendar.js'
 import {mountOwnerMessages,ownerMailMarkup} from './owner-messages.js'
 import {mountOwnerPeople} from './owner-people.js'
@@ -132,6 +133,7 @@ export function mountConnected({app, services, supabase, authLinkIntent=null}) {
       else if(view==='owner-customers')showOwnerPeople('customer');
       else if(view==='owner-operators')showOwnerPeople('operator');
       else if(view==='owner-mail')showOwnerMail();
+      else if(view==='owner-export')showOwnerWorkExport();
       else if(view==='review-moderation')openReviewModeration();
       else if(view==='support-admin')loadSupportReports();
       else renderHome();
@@ -1204,6 +1206,7 @@ export function mountConnected({app, services, supabase, authLinkIntent=null}) {
     if(view==='owner-customers')return showOwnerPeople('customer');
     if(view==='owner-operators')return showOwnerPeople('operator');
     if(view==='owner-mail')return showOwnerMail();
+    if(view==='owner-export')return showOwnerWorkExport();
     if(view==='support-admin')return loadSupportReports();
     if(view==='review-moderation')return openReviewModeration();
   };
@@ -1260,6 +1263,19 @@ export function mountConnected({app, services, supabase, authLinkIntent=null}) {
       onCalendar:id=>showOwnerCalendar(id)
     });
   }
+  async function showOwnerWorkExport(){
+    if(!ownerOnly()){if(!session)showLogin();else renderHome();return}
+    setActiveNav(app,'profile');
+    currentView='owner-export';
+    const ownerId=session.user.id,epoch=authEpoch;
+    await mountOwnerWorkExport({
+      main,supabase,ownerId,
+      isActive:()=>currentView==='owner-export'&&isCurrentUser(ownerId)&&
+        authEpoch===epoch&&ownerOnly(),
+      onBack:()=>showOwnerDashboard()
+    });
+  }
+
   function showOwnerMail(){
     if(!ownerOnly()){if(!session)showLogin();else renderHome();return}
     setActiveNav(app,'profile');
