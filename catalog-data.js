@@ -1,26 +1,26 @@
 export const services=[
- ['Fontanería','Desatasco de lavabo o fregadero',115],
- ['Fontanería','Cambio de sifón',105],
- ['Fontanería','Reparación de fuga',165],
- ['Fontanería','Sustitución de grifo',175],
- ['Fontanería','Mecanismo de cisterna',145],
- ['Fontanería','Cambio de llave de paso',145],
- ['Fontanería','Instalación de termo eléctrico',495],
- ['Fontanería','Revisión de instalación de agua',125],
- ['Albañilería','Reposición de azulejos',165],
- ['Albañilería','Alicatado',69,'m²'],
- ['Albañilería','Solado de gres',75,'m²'],
- ['Albañilería','Rejuntado',39,'m²'],
- ['Albañilería','Tabique de Pladur',65,'m²'],
- ['Albañilería','Trasdosado de Pladur',55,'m²'],
- ['Albañilería','Techo de Pladur',72,'m²'],
- ['Albañilería','Reparación de enlucidos',155],
- ['Parquet','Instalación de parquet/laminado',49,'m²'],
- ['Parquet','Reparación de tablas',165],
- ['Parquet','Acuchillado/lijado',19,'m²'],
- ['Parquet','Barnizado',16,'m²'],
- ['Parquet','Retirada de pavimento',23,'m²'],
- ['Parquet','Colocación de rodapié',22,'m'],
+ ['Fontanería','Desatasco de lavabo o fregadero',125],
+ ['Fontanería','Cambio de sifón',115],
+ ['Fontanería','Reparación de fuga',179],
+ ['Fontanería','Sustitución de grifo',189],
+ ['Fontanería','Mecanismo de cisterna',159],
+ ['Fontanería','Cambio de llave de paso',159],
+ ['Fontanería','Instalación de termo eléctrico',539],
+ ['Fontanería','Revisión de instalación de agua',135],
+ ['Albañilería','Reposición de azulejos',179],
+ ['Albañilería','Alicatado',75,'m²'],
+ ['Albañilería','Solado de gres',82,'m²'],
+ ['Albañilería','Rejuntado',43,'m²'],
+ ['Albañilería','Tabique de Pladur',72,'m²'],
+ ['Albañilería','Trasdosado de Pladur',61,'m²'],
+ ['Albañilería','Techo de Pladur',79,'m²'],
+ ['Albañilería','Reparación de enlucidos',169],
+ ['Parquet','Instalación de parquet/laminado',54,'m²'],
+ ['Parquet','Reparación de tablas',179],
+ ['Parquet','Acuchillado/lijado',21,'m²'],
+ ['Parquet','Barnizado',18,'m²'],
+ ['Parquet','Retirada de pavimento',25,'m²'],
+ ['Parquet','Colocación de rodapié',24,'m'],
  ['Reformas integrales','Reforma integral de baño',0],
  ['Reformas integrales','Reforma integral de cocina',0],
  ['Reformas integrales','Reforma de vivienda',0],
@@ -38,7 +38,20 @@ export const services=[
  ['Manitas','Instalación de lámpara sencilla',89],
  ['Manitas','Colocación de accesorios de baño',79],
  ['Manitas','Reparación menor de muebles',89],
- ['Manitas','Cambio de manilla de puerta',69]
+ ['Manitas','Cambio de manilla de puerta',69],
+ // V86 · Electricidad: visitas ordinarias de personal cualificado, IVA 21 % incluido.
+ // Suministro de materiales estándar contemplados en cada alcance; instalaciones
+ // empotradas, cableados complejos y certificaciones requieren presupuesto específico.
+ ['Electricidad','Sustitución de enchufe estándar',89],
+ ['Electricidad','Sustitución de interruptor o conmutador',89],
+ ['Electricidad','Instalación de base de enchufe doble',125],
+ ['Electricidad','Nuevo punto de enchufe superficial',185],
+ ['Electricidad','Nuevo punto de luz con canalización vista',195],
+ ['Electricidad','Sustitución de diferencial estándar',159],
+ ['Electricidad','Sustitución de magnetotérmico estándar',129],
+ ['Electricidad','Diagnóstico de avería eléctrica doméstica',125],
+ ['Electricidad','Instalación de detector de movimiento para luz',155],
+ ['Electricidad','Instalación de timbre eléctrico sencillo',149]
 ];
 
 // V85 · Manitas: tarifas SOLO de servicio, material aportado por el cliente.
@@ -62,8 +75,13 @@ export function manitasMaterialRequestNote(service,choice){
     : '\nMaterial (Manitas): el cliente lo aporta. Precio orientativo sin materiales.';
 }
 
+// V86 · Tarificación media-alta orientativa para Cataluña con IVA del 21 %.
+// Se actualizan precios de Fontanería, Albañilería y Parquet; Manitas mantiene
+// el material aportado por el cliente (V85) y Reformas integrales por presupuesto.
+// Los importes de catálogo no reescriben solicitudes, presupuestos ni facturas anteriores.
+export const electricidadPricingNotice = "Electricidad · Precios orientativos «desde» para Cataluña, con visita de profesional cualificado, mano de obra, desplazamiento ordinario, materiales estándar indicados e IVA del 21 % incluidos. Reparaciones ocultas, rozas, líneas nuevas complejas, certificados, urgencias y trabajos fuera de zona requieren presupuesto antes de ejecutarse.";
 // V61 · Revisión 03-11-2026. Tarifa final con IVA 21 %, materiales y mano de obra estándar.
-export const catalogPricingNotice = "Precios orientativos «desde» para Cataluña. Incluyen mano de obra, desplazamiento ordinario en zona, materiales estándar descritos e IVA del 21 %. Los artículos aportados por el cliente se especifican en cada servicio. Los mínimos de superficie, los extras y los trabajos no estándar requieren valoración; el presupuesto final se confirma antes de ejecutar el trabajo.";
+export const catalogPricingNotice = "Precios orientativos de gama media-alta «desde» para Cataluña. Incluyen mano de obra, desplazamiento ordinario en zona, materiales estándar descritos e IVA del 21 %. Los artículos aportados por el cliente se especifican en cada servicio. Los mínimos de superficie, los extras y los trabajos no estándar requieren valoración; el presupuesto final se confirma antes de ejecutar el trabajo.";
 export const serviceInclusions = Object.freeze({
   "Desatasco de lavabo o fregadero": "Desatasco sencillo accesible: mano de obra, herramientas y consumibles incluidos; sin obras ni camión cuba.",
   "Cambio de sifón": "Sifón PVC estándar, juntas, conexiones y sustitución; sin modificación de desagües empotrados.",
@@ -101,5 +119,15 @@ export const serviceInclusions = Object.freeze({
   "Instalación de lámpara sencilla": "Montaje de luminaria sencilla en punto eléctrico existente; lámpara, bombillas y conectores compatibles aportados por el cliente. Sin nuevo cableado.",
   "Colocación de accesorios de baño": "Nivelación e instalación de hasta dos accesorios de baño; accesorios, soportes, tacos y tornillos aportados por el cliente.",
   "Reparación menor de muebles": "Ajuste, encolado o pequeñas reparaciones en un mueble; cola, piezas, tornillería y herrajes aportados por el cliente.",
-  "Cambio de manilla de puerta": "Desmontaje y montaje de manilla compatible en puerta existente; juego de manillas, tornillería y piezas aportados por el cliente."
+  "Cambio de manilla de puerta": "Desmontaje y montaje de manilla compatible en puerta existente; juego de manillas, tornillería y piezas aportados por el cliente.",
+  "Sustitución de enchufe estándar": "Retirada de una base deteriorada y montaje de enchufe tipo Schuko estándar compatible, con comprobación de funcionamiento sobre cableado existente y seguro. Sin rozas ni línea nueva.",
+  "Sustitución de interruptor o conmutador": "Cambio de un interruptor o conmutador estándar compatible, con mecanismo, marco básico y comprobación. Sin reforma del circuito ni reparaciones de cableado oculto.",
+  "Instalación de base de enchufe doble": "Sustitución en caja existente por una base doble estándar apta, mecanismo y conexiones compatibles. Requiere caja y circuito con capacidad adecuada; no incluye tendido nuevo.",
+  "Nuevo punto de enchufe superficial": "Punto adicional en superficie hasta 2 metros desde derivación accesible autorizada, canaleta, cable y mecanismo estándar. Sin rozas, albañilería ni aumento de potencia.",
+  "Nuevo punto de luz con canalización vista": "Punto de iluminación nuevo en superficie hasta 2 metros desde circuito apto, cableado y canaleta estándar; sin luminaria decorativa ni rozas ni trabajos en altura.",
+  "Sustitución de diferencial estándar": "Retirada e instalación de un interruptor diferencial doméstico estándar compatible, pruebas básicas. Si dispara por fuga real, el diagnóstico y la reparación son adicionales.",
+  "Sustitución de magnetotérmico estándar": "Sustitución de un interruptor magnetotérmico doméstico estándar compatible, con verificación básica del circuito; no incluye reforma ni ampliación de cuadro.",
+  "Diagnóstico de avería eléctrica doméstica": "Visita y comprobación inicial de una avería doméstica accesible, con instrumentación y pruebas básicas. Incluye diagnóstico, no sustituye equipos ni cubre reparación posterior.",
+  "Instalación de detector de movimiento para luz": "Suministro y colocación de un sensor sencillo estándar compatible en circuito de iluminación existente, ajuste y prueba. Sin nueva línea ni reforma de automatización.",
+  "Instalación de timbre eléctrico sencillo": "Suministro e instalación de kit básico de timbre convencional, pulsador y conexión aprovechando canalización accesible y apta. Sin rozas ni videoportero."
 });
