@@ -5,6 +5,9 @@ on:
     paths:
       - 'connected.js'
       - 'owner-dashboard.js'
+      - 'owner-export-view.js'
+      - 'owner-work-export.js'
+      - 'tests/owner-work-export-v97.test.mjs'
       - 'owner-priorities.js'
       - 'tests/owner-priorities-v96.test.mjs'
       - 'owner-calendar.js'
@@ -30,6 +33,9 @@ on:
     paths:
       - 'connected.js'
       - 'owner-dashboard.js'
+      - 'owner-export-view.js'
+      - 'owner-work-export.js'
+      - 'tests/owner-work-export-v97.test.mjs'
       - 'owner-priorities.js'
       - 'tests/owner-priorities-v96.test.mjs'
       - 'owner-calendar.js'
