@@ -20,7 +20,7 @@ test('V85: Manitas muestra tarifas sin material, IVA incluido y accesorios del c
  await expect(form.locator('input[name=manitas_material][value=client]')).toBeChecked();
  await form.locator('input[name=manitas_material][value=quote]').check();
  await expect(form.locator('input[name=manitas_material][value=quote]')).toBeChecked();
- await expect(page.locator('.request-screen .notice')).toContainText(['MATERIAL NO INCLUIDO']);
+ await expect(page.locator('.request-screen .notice').last()).toContainText('MATERIAL NO INCLUIDO');
 });
 
 test('V85: Fontanería sigue indicando materiales incluidos',async({page})=>{
