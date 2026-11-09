@@ -38,7 +38,7 @@ test('V75: solo personal autorizado consulta mensajes y se descarta una sesión 
 test('V75: error de red no se presenta como chat vacío ni bloquea recuperación',()=>{
  assert.ok(staff.includes("if(result.error){"));
  assert.ok(staff.includes("No se pudieron cargar los mensajes. Comprueba la conexión."));
- assert.ok(staff.includes("retry.addEventListener('click',()=>loadStaffChat(customerId,serviceName,requestedPage))"));
+ assert.ok(staff.includes("retry.addEventListener('click',()=>loadStaffChat(customerId,serviceName,requestedPage,returnView))"));
  assert.ok(staff.includes("result.count>0&&requestedPage>=customerChatPageCount(result.count)"));
  assert.ok(staff.includes("return loadStaffChat(customerId,serviceName,0)"));
 });
