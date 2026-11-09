@@ -95,7 +95,7 @@ export async function mountReviews(main,{supabase=null,session=null,selectedRequ
     else {
       const stats=verifiedReviewSummary(real);
       if(!stats.count){
-        summary.textContent=total===0?'Todavía no hay valoraciones reales publicadas.':
+        summary.textContent=(!supabase||total===0)?'Todavía no hay valoraciones reales publicadas.':
           'No se han podido mostrar valoraciones válidas.';
       }else if(total===stats.count){
         summary.textContent=stats.count+' valoraciones reales · '+
