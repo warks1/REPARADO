@@ -76,7 +76,7 @@ test('V92: entradas inválidas no generan consultas y errores no falsifican recu
 
 test('V92: panel conecta navegación por páginas para administrador y operario',()=>{
  const src=readFileSync(new URL('../connected.js',import.meta.url),'utf8');
- assert.ok(src.includes("import {fetchStaffWorkPage,fetchStaffWorkCounts,staffWorkPageCount,staffWorkCanAdvance}"));
+ assert.ok(src.includes("import {fetchStaffWorkPage,fetchStaffWorkCounts,staffWorkPageCount,staffWorkCanAdvance,staffWorkSearchTerm,staffWorkSearchFields}"));
  assert.ok(src.includes('fetchStaffWorkPage(supabase,{'));
  assert.ok(src.includes('operatorId:admin?null:staffUserId'));
  assert.ok(src.includes('data-staff-work-page="prev"'));

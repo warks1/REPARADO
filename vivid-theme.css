@@ -968,3 +968,37 @@ body,.shell,.customer-header,.customer-nav {background:#fff}
   color:#29556d;background:#e8f2f9;border:1px solid #accbdc
 }
 .owner-read-feedback{font-size:13px;color:#975122}
+
+
+/* V95 · Búsqueda real de trabajos: controles cómodos en PC y móviles. */
+.staff-work-search{
+  display:grid;grid-template-columns:minmax(130px,1fr) minmax(220px,2.5fr) auto auto;
+  gap:10px;align-items:end;margin:18px 0 8px
+}
+.staff-work-search label{display:flex;flex-direction:column;min-width:0;gap:6px;
+  color:#244869;font-size:12px;font-weight:800}
+.staff-work-search :is(input,select){
+  width:100%;max-width:100%;min-height:44px;box-sizing:border-box;
+  border:1px solid #afc8e2;border-radius:11px;padding:10px 12px;
+  background:#fff;color:#163c61;font:inherit
+}
+.staff-work-search button{
+  min-height:44px;border-radius:11px;padding:9px 13px;
+  border:1px solid #afc8e2;background:#eaf4fd;color:#1a5987;
+  font-size:13px;font-weight:800;cursor:pointer
+}
+.staff-work-search button[type=submit]{
+  background:linear-gradient(135deg,#f77935,#e85c20);border-color:#e85c20;color:#fff
+}
+.staff-work-search :is(button,input,select):focus-visible{
+  outline:3px solid #ef8d54;outline-offset:2px
+}
+@media(max-width:760px){
+  .staff-work-search{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+  .staff-work-search label{grid-column:1/-1}
+  .staff-work-search button{width:100%}
+}
+@media(max-width:360px){
+  .staff-work-search{gap:8px}
+  .staff-work-search button{padding:9px 6px;font-size:12px}
+}

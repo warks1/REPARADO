@@ -19,7 +19,7 @@ import { operatorMaySetStatus } from './rules.js'
 import {jobFilters,filterJobs,vatIncluded,sameOperatorSlot,staffVisitGapMinutes,validateAdminJobUpdate} from './staff-workflows.js'
 import {fetchNewRequestsCount,fetchNewRequestsPage,newRequestsPageCount,canAdvanceNewRequests} from './staff-inbox.js'
 import {fetchUnassignedRequestsCount,fetchUnassignedRequestsPage} from './staff-unassigned.js'
-import {fetchStaffWorkPage,fetchStaffWorkCounts,staffWorkPageCount,staffWorkCanAdvance} from './staff-work-pages.js'
+import {fetchStaffWorkPage,fetchStaffWorkCounts,staffWorkPageCount,staffWorkCanAdvance,staffWorkSearchTerm,staffWorkSearchFields} from './staff-work-pages.js'
 import {fetchStaffSupportPage,staffSupportPageSize,staffSupportPageCount,staffSupportCanAdvance} from './staff-support-page.js'
 import {fetchCustomerChatPage,customerChatPageSize,customerChatPageCount,customerChatCanReadOlder} from './customer-chat-page.js'
 import {fetchCustomerRequestsPage,customerRequestsPageSize,customerRequestsPageCount,customerRequestsCanAdvance} from './customer-requests-page.js'
@@ -51,7 +51,7 @@ export function mountConnected({app, services, supabase, authLinkIntent=null}) {
   const iconFor = name => ({'Fontanería':'🚰','Albañilería':'🧱','Parquet':'🪵','Reformas integrales':'🏠','Electricidad':'⚡'})[name] || '🛠️';
   const statusLabels = {new:'Nueva', quoted:'Presupuesto',accepted:'Aceptada',scheduled:'Programada',in_progress:'En curso',completed:'Terminada',cancelled:'Cancelada'};
   const validStatus = Object.keys(statusLabels);
-  let session=null, profile=null, currentView='home', adminFilter='all', newRequestsPage=0, unassignedRequestsPage=0, staffWorkPage=0, staffWorkLastUser=null, lastCategory=null, pendingService=null, pendingView=null;
+  let session=null, profile=null, currentView='home', adminFilter='all', newRequestsPage=0, unassignedRequestsPage=0, staffWorkPage=0, staffWorkLastUser=null, staffSearchTerm='', staffSearchField='service_name', lastCategory=null, pendingService=null, pendingView=null;
   let customerRequestsPage=0;
   let customerChatPage=0;
   let passwordSetupPending=authLinkIntent==='invite'||authLinkIntent==='recovery';
@@ -1275,6 +1275,8 @@ export function mountConnected({app, services, supabase, authLinkIntent=null}) {
     if(staffWorkLastUser!==session?.user?.id){
       staffWorkLastUser=session?.user?.id||null;
       staffWorkPage=0;
+      staffSearchTerm='';
+      staffSearchField='service_name';
     }
     main.innerHTML=`<section class="card">${backButton}<h2>Panel interno</h2><p>Cargando solicitudes…</p></section>`;
     const admin=profile?.role==='admin';
@@ -1296,7 +1298,8 @@ export function mountConnected({app, services, supabase, authLinkIntent=null}) {
         admin && ['new','unassigned'].includes(filter)
           ? Promise.resolve({data:[],count:0,error:false})
           : fetchStaffWorkPage(supabase,{
-              filter,page:staffWorkPage,operatorId:admin?null:staffUserId
+              filter,page:staffWorkPage,operatorId:admin?null:staffUserId,
+              searchTerm:staffSearchTerm,searchField:staffSearchField
             }),
         fetchStaffWorkCounts(supabase,{operatorId:admin?null:staffUserId})
       ]);
@@ -1346,7 +1349,8 @@ export function mountConnected({app, services, supabase, authLinkIntent=null}) {
     const all=admin && filter==='new' ? newQueue.data : admin && filter==='unassigned' ? unassignedQueue.data : filteredPage.data;
     const counts={...filterCounts.counts,unassigned:admin?unassignedQueue.count:0};
     if(admin)counts.new=newQueue.count;
-    if(!admin||!['new','unassigned'].includes(filter))counts[filter]=filteredPage.count;
+    if((!admin||!['new','unassigned'].includes(filter))&&!staffSearchTerm)
+      counts[filter]=filteredPage.count;
     const tabCounts={...counts};
     const chosen=filterJobs(all,filter);
     const statuses=validStatus.map(x=>({id:x,label:statusLabels[x]}));
@@ -1360,6 +1364,21 @@ export function mountConnected({app, services, supabase, authLinkIntent=null}) {
       '<div><strong>'+counts.finished+'</strong><small>Terminados</small></div>'}
     </div>
     <div class="staff-filters" role="group" aria-label="Filtrar trabajos">${jobFilters.filter(f=>admin||f.id!=='unassigned').map(f=>`<button type="button" data-admin-filter="${f.id}" aria-pressed="${filter===f.id}">${esc(f.label)} (${tabCounts[f.id]})</button>`).join('')}</div>
+    ${(!admin||!['new','unassigned'].includes(filter))?`<form class="staff-work-search" data-staff-work-search>
+      <label>Buscar por<select name="field" aria-label="Campo de búsqueda de trabajos">
+        <option value="service_name" ${staffSearchField==='service_name'?'selected':''}>Servicio</option>
+        <option value="city" ${staffSearchField==='city'?'selected':''}>Población</option>
+        <option value="phone" ${staffSearchField==='phone'?'selected':''}>Teléfono</option>
+      </select></label>
+      <label>Localizar trabajos<input type="search" name="term" maxlength="64" autocomplete="off"
+        aria-label="Buscar servicios en el historial" placeholder="Introduce servicio, población o teléfono"
+        value="${esc(staffSearchTerm)}"></label>
+      <button type="submit">Buscar</button>
+      <button type="button" data-staff-search-clear>Mostrar todos</button>
+    </form>
+    <p class="notice" data-staff-search-status role="status">${staffSearchTerm?
+      filteredPage.count+' resultado(s) para «'+esc(staffSearchTerm)+'» en este filtro. Los indicadores de arriba muestran los totales generales.':
+      'Busca en todo el historial del filtro abierto; se mantienen los totales generales.'}</p>`:''}
     ${admin?'<button type="button" class="review-moderation-entry" data-view="review-moderation">⭐ Revisar reseñas de clientes</button>':''}
     <p class="notice">Los precios indicados incluyen el 21 % de IVA. Este panel no emite facturas fiscales.</p>
     ${admin?'<p class="notice">Agenda: se aplica un margen preventivo de '+staffVisitGapMinutes+' minutos entre comienzos de visita para cada operario. Confirma la duración real del servicio y el desplazamiento antes de programar.</p>':''}
@@ -1383,11 +1402,28 @@ export function mountConnected({app, services, supabase, authLinkIntent=null}) {
     ${admin && filter==='new'?`<nav class="staff-new-pagination" aria-label="Páginas de solicitudes nuevas"><span>Página ${newRequestsPage+1} de ${Math.max(1,newRequestsPageCount(counts.new))} · ${counts.new} solicitudes nuevas en total</span><div><button type="button" data-new-page="prev" ${newRequestsPage===0?'disabled':''}>← Anterior</button><button type="button" data-new-page="next" ${canAdvanceNewRequests(newRequestsPage,counts.new)?'':'disabled'}>Siguiente →</button></div></nav>`:''}
     ${admin && filter==='unassigned'?`<nav class="staff-new-pagination" aria-label="Páginas de trabajos sin operario"><span>Página ${unassignedRequestsPage+1} de ${Math.max(1,newRequestsPageCount(counts.unassigned))} · ${counts.unassigned} trabajos sin operario en total</span><div><button type="button" data-unassigned-page="prev" ${unassignedRequestsPage===0?'disabled':''}>← Anterior</button><button type="button" data-unassigned-page="next" ${canAdvanceNewRequests(unassignedRequestsPage,counts.unassigned)?'':'disabled'}>Siguiente →</button></div></nav>`:''}
     ${(!admin||!['new','unassigned'].includes(filter))?`<nav class="staff-new-pagination" aria-label="Páginas del historial de trabajos"><span>Página ${staffWorkPage+1} de ${staffWorkPageCount(filteredPage.count)} · ${filteredPage.count} trabajos en este filtro</span><div><button type="button" data-staff-work-page="prev" ${staffWorkPage===0?'disabled':''}>← Anterior</button><button type="button" data-staff-work-page="next" ${staffWorkCanAdvance(staffWorkPage,filteredPage.count)?'':'disabled'}>Siguiente →</button></div></nav>`:''}`;
+    const staffSearchForm=main.querySelector('[data-staff-work-search]');
+    staffSearchForm?.addEventListener('submit',event=>{
+      event.preventDefault();
+      if(!isCurrentUser(staffUserId)||currentView!=='admin')return;
+      const field=staffSearchForm.elements.namedItem('field')?.value;
+      staffSearchField=staffWorkSearchFields.includes(field)?field:'service_name';
+      staffSearchTerm=staffWorkSearchTerm(staffSearchForm.elements.namedItem('term')?.value);
+      staffWorkPage=0;
+      void renderAdmin(filter);
+    });
+    main.querySelector('[data-staff-search-clear]')?.addEventListener('click',()=>{
+      if(!isCurrentUser(staffUserId)||currentView!=='admin')return;
+      staffSearchTerm='';staffSearchField='service_name';staffWorkPage=0;
+      void renderAdmin(filter);
+    });
     main.querySelectorAll('[data-admin-filter]').forEach(btn=>btn.addEventListener('click',()=>{
       if(btn.dataset.adminFilter!==adminFilter){
         newRequestsPage=0;
         unassignedRequestsPage=0;
         staffWorkPage=0;
+        staffSearchTerm='';
+        staffSearchField='service_name';
       }
       renderAdmin(btn.dataset.adminFilter);
     }));

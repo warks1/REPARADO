@@ -1,4 +1,4 @@
-# REPARADO V94 · Panel del propietario
+# REPARADO V95 · Panel del propietario
 
 ## Cómo entrar
 Iniciar sesión con la única cuenta que tenga el rol **admin** en Supabase.
@@ -154,3 +154,26 @@ y un botón para reintentar, **nunca un cero inventado**.
 Los totales son una lectura puntual del servidor, no cifras de tiempo real:
 actualizar el panel después de cambios realizados por otro usuario.
 No se alteran precios, roles, políticas RLS, ni se emiten facturas fiscales.
+
+## V95 · Buscar reparaciones en el historial interno
+
+El propietario y los operarios pueden buscar por **nombre del servicio,
+población o teléfono** dentro de los listados Todos, Pendientes, Agenda,
+En curso y Finalizados. Los resultados se filtran en Supabase
+**antes de paginar**, por lo que se puede localizar un trabajo antiguo
+sin recorrer todas las páginas.
+
+- El filtro tiene longitud máxima de 64 caracteres. No se admiten
+  comodines SQL aportados por el usuario y los campos son una lista cerrada.
+- Cada operario consulta exclusivamente servicios asignados a su
+  `operator_id` más las RLS del servidor, sin acceso a fichas de terceros.
+- El botón **Mostrar todos** limpia la búsqueda y recupera el listado.
+- Al cambiar de pestaña o iniciar sesión otra persona, se reinicia la
+  búsqueda para evitar confusión o reutilizar filtros ajenos.
+- Los números de las pestañas y el resumen superior **siguen siendo los
+  totales generales**, no el subconjunto encontrado. El número real de
+  coincidencias aparece junto al buscador y a la paginación.
+- Las bandejas Nuevas y Sin operario mantienen su funcionamiento
+  específico e independiente. No se modifican datos al buscar.
+
+No se integra Outlook ni facturación fiscal ni se modifica el backend.
