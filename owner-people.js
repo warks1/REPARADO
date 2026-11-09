@@ -1,4 +1,4 @@
-// REPARADO V84 · Directorios privados de clientes y operarios.
+// REPARADO V89 · Directorios privados de clientes y operarios.
 // No expone auth.users ni direcciones de correo; solo perfiles visibles por RLS.
 export const ownerPeoplePageSize=30;
 const UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -6,19 +6,28 @@ const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({
   '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
 })[c]);
 
+export function ownerPeopleSearchTerm(value){
+  return String(value??'').normalize('NFKC').trim()
+    .replace(/[%_\\\\]/g,'').replace(/\\s+/g,' ').slice(0,64).trim();
+}
+
 export function ownerPeoplePageCount(count){
   return Number.isSafeInteger(count)&&count>=0?
     Math.max(1,Math.ceil(count/ownerPeoplePageSize)):0;
 }
 
-export async function fetchOwnerPeoplePage(supabase,role,page=0){
+export async function fetchOwnerPeoplePage(supabase,role,page=0,term='',field='full_name'){
   if(!supabase||!['customer','operator'].includes(role)||
-     !Number.isSafeInteger(page)||page<0||page>100000)
+     !Number.isSafeInteger(page)||page<0||page>100000||
+     !['full_name','phone'].includes(field))
     return {data:null,count:null,error:true};
   try{
-    const {data,count,error}=await supabase.from('profiles')
+    let query=supabase.from('profiles')
       .select('id,full_name,phone,role',{count:'exact'})
-      .eq('role',role)
+      .eq('role',role);
+    const search=ownerPeopleSearchTerm(term);
+    if(search)query=query.ilike(field,'%'+search+'%');
+    const {data,count,error}=await query
       .order('full_name',{ascending:true})
       .order('id',{ascending:true})
       .range(page*ownerPeoplePageSize,(page+1)*ownerPeoplePageSize-1);
@@ -31,7 +40,7 @@ export async function fetchOwnerPeoplePage(supabase,role,page=0){
 
 export async function mountOwnerPeople({main,supabase,role,isActive,onBack,onChat,onCalendar}){
   if(!['customer','operator'].includes(role)||!isActive())return;
-  let page=0,sequence=0,people=[];
+  let page=0,sequence=0,people=[],search='',searchField='full_name';
   const customers=role==='customer';
   const title=customers?'Clientes':'Operarios';
   main.innerHTML='<section class="card owner-directory" id="reparado-owner-people">'+
@@ -39,6 +48,14 @@ export async function mountOwnerPeople({main,supabase,role,isActive,onBack,onCha
     '<div class="owner-heading"><div><p class="owner-eyebrow">DIRECTORIO PRIVADO</p>'+
     '<h1>'+title+'</h1><p>Datos de contacto visibles para la cuenta administradora.</p></div>'+
     '<button type="button" data-owner-people-refresh>Actualizar</button></div>'+
+    '<form class="owner-people-search" data-owner-people-search>'+
+    '<label>Buscar por <select name="field" aria-label="Campo de búsqueda">'+
+    '<option value="full_name">Nombre</option><option value="phone">Teléfono</option>'+
+    '</select></label>'+
+    '<label>Término de búsqueda<input name="term" type="search" maxlength="64"'+
+    ' placeholder="Nombre o teléfono" autocomplete="off"></label>'+
+    '<button type="submit">Buscar</button>'+
+    '<button type="button" data-owner-people-clear>Mostrar todos</button></form>'+
     '<p role="status" aria-live="polite" data-owner-people-status>Consultando perfiles…</p>'+
     '<div data-owner-people-list></div>'+
     '<nav class="staff-new-pagination" aria-label="Páginas del directorio">'+
@@ -51,6 +68,7 @@ export async function mountOwnerPeople({main,supabase,role,isActive,onBack,onCha
   const root=main.querySelector('#reparado-owner-people');
   const list=root.querySelector('[data-owner-people-list]');
   const status=root.querySelector('[data-owner-people-status]');
+  const searchForm=root.querySelector('[data-owner-people-search]');
   const label=root.querySelector('[data-owner-people-page]');
   const prev=root.querySelector('[data-owner-people-prev]');
   const next=root.querySelector('[data-owner-people-next]');
@@ -59,7 +77,7 @@ export async function mountOwnerPeople({main,supabase,role,isActive,onBack,onCha
     const id=++sequence;
     prev.disabled=true;next.disabled=true;
     status.textContent='Consultando '+(customers?'clientes':'operarios')+'…';
-    const result=await fetchOwnerPeoplePage(supabase,role,page);
+    const result=await fetchOwnerPeoplePage(supabase,role,page,search,searchField);
     if(!active()||id!==sequence)return;
     if(result.error){
       people=[];list.innerHTML='';
@@ -72,7 +90,8 @@ export async function mountOwnerPeople({main,supabase,role,isActive,onBack,onCha
       return load();
     }
     people=result.data;
-    status.textContent=result.count+' '+(customers?'clientes':'operarios')+' en total.';
+    status.textContent=result.count+' '+(search?'coincidencias':'perfiles')+
+      ' de '+(customers?'clientes':'operarios')+(search?' para «'+search+'».':'.');
     label.textContent='Página '+(page+1)+' de '+ownerPeoplePageCount(result.count);
     prev.disabled=page===0;next.disabled=page+1>=ownerPeoplePageCount(result.count);
     list.innerHTML=people.length?people.map((p,i)=>
@@ -90,6 +109,20 @@ export async function mountOwnerPeople({main,supabase,role,isActive,onBack,onCha
     if(!person||person.role!==role||typeof person.id!=='string'||!person.id.trim())return;
     if(customers)onChat(person.id);
     else onCalendar(person.id);
+  });
+  searchForm.addEventListener('submit',event=>{
+    event.preventDefault();
+    if(!active())return;
+    searchField=searchForm.elements.namedItem('field').value==='phone'?'phone':'full_name';
+    search=ownerPeopleSearchTerm(searchForm.elements.namedItem('term').value);
+    searchForm.elements.namedItem('term').value=search;
+    page=0;void load();
+  });
+  root.querySelector('[data-owner-people-clear]').addEventListener('click',()=>{
+    if(!active())return;
+    search='';searchField='full_name';page=0;
+    searchForm.reset();
+    void load();
   });
   root.querySelector('[data-owner-people-back]').addEventListener('click',onBack);
   root.querySelector('[data-owner-people-refresh]').addEventListener('click',()=>{page=0;void load()});
