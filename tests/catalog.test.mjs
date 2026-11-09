@@ -120,13 +120,17 @@ test('las cuatro categorías recuperan las imágenes 3D originales con fondo tra
    assert.ok(card.includes('class="category-photo category-restored"'),slug);
    assert.ok(card.includes('class="category-motion"'),slug);
  }
- assert.ok(html.includes('categories/handyman.svg'));
- assert.equal((html.match(/class="category-photo category-restored"/g)||[]).length,4);
+ assert.ok(html.includes('categories/handyman-transparent.svg'));
+ assert.ok(html.includes('categories/electricity-transparent.svg'));
+ assert.equal((html.match(/class="category-photo category-restored"/g)||[]).length,6);
 });
-test('los PNG restaurados existen y mantienen animación independiente de Manitas',async()=>{
+test('las seis ilustraciones transparentes conservan la animación y los PNG originales',async()=>{
  const {existsSync,readFileSync}=await import('node:fs');
  for(const slug of ['plumbing','masonry','parquet','renovation']){
    assert.ok(existsSync(new URL('../public/categories/'+slug+'-transparent.png',import.meta.url)),slug);
+ }
+ for(const slug of ['handyman','electricity']){
+   assert.ok(existsSync(new URL('../public/categories/'+slug+'-transparent.svg',import.meta.url)),slug);
  }
  const css=readFileSync(new URL('../vivid-theme.css',import.meta.url),'utf8');
  const base=readFileSync(new URL('../customer-theme.css',import.meta.url),'utf8');

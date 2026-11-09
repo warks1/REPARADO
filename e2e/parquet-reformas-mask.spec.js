@@ -38,9 +38,10 @@ test('Parquet y Reformas: borde difuminado, PNG existente y oscilación limitada
     expect(visual.clipped).toBe(true);
     expect(visual.withinScreen).toBe(true);
   }
-  // Manitas utiliza su dibujo SVG aprobado, intacto.
-  const handyman=page.locator('.category-tile.theme-handyman img.category-photo');
+  // V93: el dibujo de Manitas conserva su motivo, pero se presenta
+  // recortado sobre transparencia real, sin fondo rectangular ni tarjeta ancha.
+  const handyman=page.locator('.category-tile.theme-handyman img.category-restored');
   await expect(handyman).toBeVisible();
   const src=await handyman.getAttribute('src');
-  expect(src).toContain('handyman.svg');
+  expect(src).toContain('handyman-transparent.svg');
 });

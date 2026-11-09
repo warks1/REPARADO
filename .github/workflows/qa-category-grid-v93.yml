@@ -1,0 +1,62 @@
+name: REPARADO V93 · Seis tarjetas de categorías uniformes
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'customer-ui.js'
+      - 'customer-theme.css'
+      - 'vivid-theme.css'
+      - 'public/categories/**'
+      - 'tests/catalog.test.mjs'
+      - 'tests/category-grid-v93.test.mjs'
+      - 'e2e/category-grid-v93.spec.mjs'
+      - 'e2e/parquet-reformas-mask.spec.js'
+      - '.github/workflows/qa-category-grid-v93.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'customer-ui.js'
+      - 'customer-theme.css'
+      - 'vivid-theme.css'
+      - 'public/categories/**'
+      - 'tests/catalog.test.mjs'
+      - 'tests/category-grid-v93.test.mjs'
+      - 'e2e/category-grid-v93.spec.mjs'
+      - 'e2e/parquet-reformas-mask.spec.js'
+      - '.github/workflows/qa-category-grid-v93.yml'
+permissions:
+  contents: read
+jobs:
+  catalog-and-build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: {node-version: '22'}
+      - run: npm install --no-audit --no-fund
+      - name: Comprobar catálogo, SVG sin fondos y regresión completa
+        run: npm test
+      - name: Compilar web y recursos de móvil
+        run: npm run build
+  six-cards-mobile:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: {node-version: '22'}
+      - run: npm install --no-audit --no-fund
+      - run: npx playwright install --with-deps chromium webkit
+      - name: Comparar seis tarjetas en iPhone, Safari, Android y tablet
+        run: npx playwright test --config playwright.config.mjs e2e/category-grid-v93.spec.mjs e2e/parquet-reformas-mask.spec.js e2e/electricidad-v86.spec.mjs e2e/manitas-sin-material-v85.spec.mjs
+      - name: Guardar capturas y trazas para inspección
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: reparado-v93-tarjetas-moviles
+          path: |
+            test-results
+            playwright-report
+          if-no-files-found: warn
+          retention-days: 14
