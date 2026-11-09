@@ -1,4 +1,4 @@
-// REPARADO V90 · Bandeja de MENSAJES DENTRO DE LA APP, no correo Outlook.
+// REPARADO V91 · Bandeja de MENSAJES DENTRO DE LA APP, no correo Outlook.
 // Consultas restringidas por RLS a la cuenta administradora autenticada.
 export const ownerMessagesPageSize=30;
 const UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -60,7 +60,8 @@ export async function fetchOwnerConversationsPage(supabase,page=0){
       return {error:true,unavailable:false};
     const rows=data.rows.map(r=>({
       id:r.last_message_id,customer_id:r.customer_id,
-      sender_id:r.sender_id,body:r.last_body,created_at:r.last_message_at
+      sender_id:r.sender_id,body:r.last_body,created_at:r.last_message_at,
+      unread:typeof r.has_unread==='boolean'?r.has_unread:null
     }));
     const ids=[...new Set(rows.map(r=>r.customer_id))];
     let names={};
@@ -134,12 +135,17 @@ export async function mountOwnerMessages({main,supabase,isActive,onBack,onConver
     status.textContent=data.mode==='conversations'?
       data.count+' conversaciones de clientes. Una fila por cliente, ordenadas por el último mensaje.':
       data.count+' mensajes internos. Instala la actualización V90 para agruparlos por cliente.';
-    status.textContent+=' Los correos de Outlook y el estado no leído no se incluyen.';
+    status.textContent+=data.mode==='conversations'&&
+      data.data.some(row=>typeof row.unread==='boolean')?
+      ' Los indicadores de lectura se actualizan al consultar correctamente el chat.':
+      ' La lectura de Outlook y el estado no leído aún no están integrados.';
     label.textContent='Página '+(page+1)+' de '+ownerMessagePageCount(data.count);
     prev.disabled=page===0;
     next.disabled=page+1>=ownerMessagePageCount(data.count);
     list.innerHTML=customers.length?customers.map((row,i)=>
       '<button class="owner-message-row" type="button" data-owner-open-chat="'+esc(i)+'">'+
+      (row.unread===true?'<span class="owner-unread-label">● Pendiente de leer</span>':
+       row.unread===false?'<span class="owner-read-label">Leído</span>':'')+
       '<strong>'+esc(data.names[row.customer_id]||'Cliente')+
       ' · '+esc(row.sender_id===row.customer_id?'Cliente':'Equipo')+'</strong>'+
       '<small>'+esc(localTime(row.created_at))+'</small>'+

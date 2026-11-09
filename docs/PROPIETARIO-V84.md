@@ -1,4 +1,4 @@
-# REPARADO V90 · Panel del propietario
+# REPARADO V91 · Panel del propietario
 
 ## Cómo entrar
 Iniciar sesión con la única cuenta que tenga el rol **admin** en Supabase.
@@ -93,3 +93,23 @@ En producción, usar una migración revisada y aplicada explícitamente; si aún
 no se ha ejecutado, el panel continúa mostrando mensajes individuales y lo
 indica como modo compatible. Esta RPC **no integra Microsoft Outlook** ni
 identifica mensajes no leídos. No registrar en logs las conversaciones.
+
+## V91 · Lectura real de conversaciones
+
+La bandeja V91 muestra las conversaciones **pendientes de leer** cuando
+existen mensajes nuevos del cliente posteriores a la última lectura
+confirmada del propietario; distingue **Leído** en caso contrario.
+La marca se registra en Supabase tras cargar correctamente la página más
+reciente del chat. La carga fallida o una página antigua no pueden marcar
+una conversación como leída, y un estado más reciente nunca retrocede.
+
+Migración aditiva: `supabase/migration-v91-owner-read-state.sql`. Crea
+`owner_conversation_reads` con RLS, políticas solo para administradores y una
+RPC `reparado_mark_owner_chat_read` de tipo SECURITY INVOKER, que valida que el
+mensaje pertenece al cliente antes de guardar la marca. Extiende la RPC
+V90 para devolver `has_unread` real. El estado es por administrador y no
+se comparte con clientes ni operarios.
+
+Si la V91 no se instala, la V90 sigue mostrando las conversaciones pero
+sin insignias de lectura; en ningún caso REPARADO inventa estados «leído»
+o «no leído». No es una integración de email externo de Outlook.
