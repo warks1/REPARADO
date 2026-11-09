@@ -381,5 +381,5 @@ test('V94: propietario ve indicadores completos y filtros exactos con más de 15
  const history=page.locator('[aria-label="Páginas del historial de trabajos"]');
  await expect(history).toContainText('153 trabajos en este filtro');
  expect(calls.counts.filter(s=>s.includes('/service_requests?')).length).toBeGreaterThanOrEqual(6);
- expect(calls.counts.some(s=>s.includes('head=true'))).toBe(true);
+ expect(calls.counts.some(s=>s.includes('select=id'))).toBe(true);
 });
