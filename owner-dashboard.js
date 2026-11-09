@@ -1,5 +1,6 @@
+import {fetchOwnerUnreadConversationCount} from './owner-unread-count.js';
 import {fetchOwnerOperationalCounts,ownerPriorityMarkup} from './owner-priorities.js';
-// REPARADO V96 · Panel del propietario. El cliente nunca monta este módulo.
+// REPARADO V98 · Panel del propietario. El cliente nunca monta este módulo.
 // Protección real: permisos y RLS en Supabase; role admin es la cuenta titular.
 // Los recuentos se solicitan al servidor, no se infieren de una lista limitada.
 export const ownerSections=Object.freeze([
@@ -50,7 +51,7 @@ const escape=value=>String(value??'').replace(/[&<>"']/g,c=>({
   '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
 })[c]);
 
-export function ownerDashboardMarkup(counts=null,operational=null){
+export function ownerDashboardMarkup(counts=null,operational=null,unreadCount=null){
   const metric=ownerMetrics.map(item=>
     '<div class="owner-metric"><small>'+escape(item.title)+'</small>'+
     '<strong>'+escape(counts?.[item.id]??'—')+'</strong></div>').join('');
@@ -59,7 +60,10 @@ export function ownerDashboardMarkup(counts=null,operational=null){
     (item.filter?' data-owner-filter="'+escape(item.filter)+'"':'')+'>'+
     '<span class="owner-module-icon" aria-hidden="true">'+item.icon+'</span>'+
     '<span class="owner-module-copy"><strong>'+escape(item.title)+'</strong>'+
-    '<small>'+escape(item.detail)+'</small></span>'+
+    '<small>'+escape(item.detail)+'</small>'+
+    (item.view==='owner-messages'&&Number.isSafeInteger(unreadCount)&&unreadCount>0?
+      '<span class="owner-inbox-pending" aria-label="'+escape(unreadCount)+' conversaciones sin leer">'+
+      escape(unreadCount)+' sin leer</span>':'')+'</span>'+
     '<span class="owner-module-arrow" aria-hidden="true">›</span></button>').join('');
   return '<section class="card owner-workspace" id="reparado-owner-dashboard">'+
     '<div class="owner-heading"><div><p class="owner-eyebrow">GESTIÓN PRIVADA</p>'+
@@ -84,24 +88,29 @@ export async function mountOwnerDashboard({main,supabase,isActive,onNavigate}){
     if(!isActive()||!root.isConnected)return;
     const id=++refreshId;
     status.textContent='Consultando solicitudes e incidencias…';
-    const [result,priority]=await Promise.all([
+    const [result,priority,unread]=await Promise.all([
       fetchOwnerMetrics(supabase),
-      fetchOwnerOperationalCounts(supabase)
+      fetchOwnerOperationalCounts(supabase),
+      fetchOwnerUnreadConversationCount(supabase)
     ]);
     if(!root.isConnected||!isActive()||id!==refreshId)return;
     const fresh=document.createElement('div');
     fresh.innerHTML=ownerDashboardMarkup(
       result.error?null:result.counts,
-      priority.error?null:priority.counts
+      priority.error?null:priority.counts,
+      unread.error?null:unread.count
     );
     root.querySelector('.owner-metrics').replaceWith(fresh.querySelector('.owner-metrics'));
     root.querySelector('[data-owner-priorities]').replaceWith(
       fresh.querySelector('[data-owner-priorities]')
     );
+    root.querySelector('.owner-modules').replaceWith(fresh.querySelector('.owner-modules'));
     status.textContent=result.error?
       'No se han podido comprobar los recuentos. No se mostrarán cifras estimadas.':
       priority.error?
         'Datos actualizados desde el servidor; algunas prioridades no se pudieron comprobar. No incluyen emails de Outlook.':
+      unread.error?
+        'Datos actualizados desde el servidor; no se pudo comprobar el número de conversaciones sin leer. Los emails de Outlook no se incluyen.':
         'Datos actualizados desde el servidor; no incluyen emails de Outlook.';
   };
   root.addEventListener('click',event=>{
