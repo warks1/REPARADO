@@ -40,14 +40,14 @@ test('V85: exactamente 12 tarifas de Manitas reajustadas, IVA 21 % incluido sin 
  assert.match(manitasPricingNotice,/presupuesto adicional/);
 });
 
-test('V85: Fontanería, Albañilería, Parquet y reformas conservan precios y alcance con material',()=>{
+test('V86: otras categorías actualizadas conservan la regla de materiales; Manitas no',()=>{
  const sample={
-  'Sustitución de grifo':175,
-  'Instalación de termo eléctrico':495,
-  'Alicatado':69,
-  'Tabique de Pladur':65,
-  'Instalación de parquet/laminado':49,
-  'Colocación de rodapié':22,
+  'Sustitución de grifo':189,
+  'Instalación de termo eléctrico':539,
+  'Alicatado':75,
+  'Tabique de Pladur':72,
+  'Instalación de parquet/laminado':54,
+  'Colocación de rodapié':24,
   'Reforma integral de baño':0
  };
  for(const [name,price] of Object.entries(sample)){
@@ -57,7 +57,7 @@ test('V85: Fontanería, Albañilería, Parquet y reformas conservan precios y al
    assert.ok(serviceInclusions[name]);
    assert.ok(!servicePriceTerms(s).includes('material NO incluido'));
  }
- assert.equal(services.length,37);
+ assert.equal(services.length,47);
  assert.match(catalogPricingNotice,/materiales estándar descritos/);
 });
 
