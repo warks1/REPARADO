@@ -94,10 +94,12 @@ Con la **clave publicable** y URL de producción aprobadas, el control realiza
 solo peticiones GET con `select=id&limit=0`, que **no devuelven filas**.
 Primero exige que `customer_reviews` esté accesible (la lectura pública
 de reseñas aprobadas forma parte de la aplicación). Después exige un rechazo
-por privilegios SQL `42501` para cada tabla privada:
-`profiles`, `service_requests`, `messages`, `notifications`,
-`device_tokens` e `invoices`. Un `200` con lista vacía **no es suficiente**,
-ni lo son un error genérico, una tabla inexistente o una caída de red.
+por privilegios SQL `42501` para **cada una de las 51 columnas conocidas**
+de las seis tablas privadas: `profiles`, `service_requests`, `messages`,
+`notifications`, `device_tokens` e `invoices`. Se comprueban los campos
+uno por uno: en PostgreSQL es posible conceder `SELECT` sobre una sola columna.
+Un `200` con lista vacía **no es suficiente**, ni lo son un error genérico,
+una tabla inexistente o una caída de red.
 
 **Alcance preciso:** comprueba la ausencia de permisos de lectura para
 visitantes sin sesión según V11, así como disponibilidad de la API. No prueba
@@ -105,7 +107,9 @@ las políticas RLS entre dos clientes autenticados, los roles de personal,
 la subida y lectura de fotos, los RPC privilegiados, la facturación fiscal
 ni la eliminación de cuentas. Esas pruebas siguen siendo obligatorias y la
 autorización `REPARADO_PRODUCTION_APPROVED=true` sigue dependiendo del
-responsable. No utiliza `service_role`, no imprime claves y no modifica datos.
+responsable. No utiliza `service_role`, no imprime claves y no modifica datos. Si se añade una columna en una migración futura, debe
+incorporarse al inventario de `scripts/store-private-api-check.mjs`; este
+control no descubre ni certifica campos desconocidos.
 
 **Estado al añadir V83:** se ha implementado el control en GitHub, pero
 **no se ha ejecutado contra un proyecto de producción real**. Si aún no
