@@ -22,7 +22,12 @@ export async function mountOwnerWorkExport({main,supabase,ownerId,isActive,onBac
     '<form data-owner-export-form class="owner-export-form">'+
     '<label>Seleccionar trabajos<select name="status">'+
     options.map(([value,label])=>'<option value="'+value+'">'+label+'</option>').join('')+
-    '</select></label><button type="submit" data-owner-export-prepare>Preparar CSV</button></form>'+
+    '</select></label>'+
+    '<label>Desde · fecha de solicitud (opcional)<input name="from_date" type="date"></label>'+
+    '<label>Hasta · fecha de solicitud (incluida, opcional)<input name="to_date" type="date"></label>'+
+    '<p>Las fechas se interpretan en Cataluña (Europe/Madrid), '+
+    'incluyendo el último día seleccionado. Deja ambas vacías para todo el historial.</p>'+
+    '<button type="submit" data-owner-export-prepare>Preparar CSV</button></form>'+
     '<p role="status" aria-live="polite" data-owner-export-status>'+
     'Selecciona un estado y prepara el informe privado.</p>'+
     '<button type="button" data-owner-export-download disabled>'+
@@ -39,25 +44,30 @@ export async function mountOwnerWorkExport({main,supabase,ownerId,isActive,onBac
   const prepare=root.querySelector('[data-owner-export-prepare]');
   const download=root.querySelector('[data-owner-export-download]');
   const filterSelect=form.elements.namedItem('status');
+  const fromInput=form.elements.namedItem('from_date');
+  const toInput=form.elements.namedItem('to_date');
+  const filterInputs=[filterSelect,fromInput,toInput];
   let prepared=null,working=false;
   const clear=()=>{
     prepared=null;download.disabled=true;
   };
-  filterSelect.addEventListener('change',()=>{
+  for(const input of filterInputs)input.addEventListener('change',()=>{
     if(!active()||working)return;
     clear();
-    feedback.textContent='El filtro ha cambiado. Prepara un nuevo CSV.';
+    feedback.textContent='Los filtros han cambiado. Prepara un nuevo CSV.';
   });
   form.addEventListener('submit',async event=>{
     event.preventDefault();
     if(!active()||working)return;
     const selected=form.elements.namedItem('status')?.value;
     if(!ownerExportStatuses.includes(selected))return;
-    working=true;prepare.disabled=true;filterSelect.disabled=true;
+    working=true;prepare.disabled=true;
+    for(const input of filterInputs)input.disabled=true;
     clear();feedback.textContent='Comprobando sesión y leyendo trabajos…';
     try{
       const file=await buildOwnerWorkCsv({
         supabase,ownerId,isActive:active,status:selected,
+        fromDate:fromInput.value,toDate:toInput.value,
         onProgress:(amount,total)=>{
           if(active())feedback.textContent='Leyendo '+amount+' de '+total+' trabajos…';
         }
@@ -73,13 +83,17 @@ export async function mountOwnerWorkExport({main,supabase,ownerId,isActive,onBac
       }
     }finally{
       working=false;
-      if(active()){prepare.disabled=false;filterSelect.disabled=false;}
+      if(active()){
+        prepare.disabled=false;
+        for(const input of filterInputs)input.disabled=false;
+      }
     }
   });
   download.addEventListener('click',async()=>{
     if(!active()||working||!prepared)return;
     const current=prepared;
-    working=true;download.disabled=true;filterSelect.disabled=true;
+    working=true;download.disabled=true;
+    for(const input of filterInputs)input.disabled=true;
     try{
       const result=await shareOwnerWorkCsv(current,{
         ownerId,isActive:active
@@ -94,7 +108,7 @@ export async function mountOwnerWorkExport({main,supabase,ownerId,isActive,onBac
       working=false;
       if(active()){
         download.disabled=!prepared;
-        filterSelect.disabled=false;
+        for(const input of filterInputs)input.disabled=false;
       }
     }
   });
