@@ -8,6 +8,7 @@ on:
       - 'owner-dashboard.js'
       - 'connected.js'
       - 'tests/owner-work-export-v97.test.mjs'
+      - 'tests/owner-work-export-v98.test.mjs'
       - 'e2e-private/owner-panel-v84.spec.mjs'
       - '.github/workflows/qa-owner-export-v97.yml'
   push:
@@ -18,6 +19,7 @@ on:
       - 'owner-dashboard.js'
       - 'connected.js'
       - 'tests/owner-work-export-v97.test.mjs'
+      - 'tests/owner-work-export-v98.test.mjs'
       - 'e2e-private/owner-panel-v84.spec.mjs'
       - '.github/workflows/qa-owner-export-v97.yml'
 permissions:
@@ -32,7 +34,7 @@ jobs:
         with: {node-version: '22'}
       - run: npm install --no-audit --no-fund
       - name: Pruebas CSV antifórmulas, privacidad, roles y paginación
-        run: node --test tests/owner-work-export-v97.test.mjs
+        run: node --test tests/owner-work-export-v97.test.mjs tests/owner-work-export-v98.test.mjs
       - name: Compilar app web
         run: npm run build
   csv-iphone-android:
