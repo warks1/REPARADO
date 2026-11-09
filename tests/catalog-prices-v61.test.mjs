@@ -5,7 +5,7 @@ import {renderCategory,serviceFormHeader,priceFor} from '../customer-ui.js';
 
 test('V86: las seis categorías suman 47 servicios con alcance definido',()=>{
  assert.equal(services.length,47);
- assert.equal(new Set(services.map(s=>s[1])).size,37);
+ assert.equal(new Set(services.map(s=>s[1])).size,47);
  for(const s of services){
   assert.ok(Number.isFinite(s[2])&&s[2]>=0,'Precio inválido '+s[1]);
   assert.ok(serviceInclusions[s[1]]?.length>=40,'Falta alcance '+s[1]);
@@ -30,7 +30,7 @@ test('V61: importes finales estándar y piezas aportadas claramente identificada
  assert.equal(priceFor(one('Instalación de termo eléctrico')),'539,00 €');
  assert.equal(priceFor(one('Instalación de parquet/laminado')),'54,00 € / m²');
  assert.equal(priceFor(one('Instalación de soporte de TV en pared')),'109,00 €');
- assert.match(serviceInclusions['Montaje de mueble en kit (mediano)'],/lo aporta el cliente/);
+ assert.match(serviceInclusions['Montaje de mueble en kit (mediano)'],/(?:aportado por el cliente|los aporta el cliente)/);
  assert.match(serviceInclusions['Instalación de termo eléctrico'],/80 l/);
 });
 test('V61: categoría y formulario muestran condiciones, materiales e IVA',()=>{
