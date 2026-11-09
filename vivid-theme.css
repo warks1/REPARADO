@@ -402,28 +402,12 @@ body,.shell,.customer-header,.customer-nav {background:#fff}
 .local-backup-tools .flex-actions button:focus-visible{outline:3px solid #1a96e5;outline-offset:2px}
 .local-backup-tools [data-backup-feedback]{font-size:12px;color:#204e71;line-height:1.5;margin:10px 0 0}
 
-/* Quinta categoría sin alterar las cuatro tarjetas del diseño aprobado.
-   Se expande a todo el ancho de la fila en PC, tablet y móvil. */
+/* V93 · Manitas conserva su paleta cálida y la cabecera de detalle,
+   pero la tarjeta usa la misma cuadrícula 2×3 que las otras cinco. */
 .category-tile.theme-handyman{
-  grid-column:1/-1;
-  aspect-ratio:auto;
-  min-height:143px!important;
-  padding:20px min(4vw,30px)!important;
-  justify-content:center;
-  background:linear-gradient(122deg,#fff0be 0%,#ffd878 45%,#ffb748 100%);
-  box-shadow:inset 0 1px 0 #fff9df,0 5px 13px #a86a1a26;
+  background:linear-gradient(137deg,#ffeebd 0%,#ffdb86 48%,#ffba61 100%);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.55),0 5px 13px rgba(180,109,30,.16);
 }
-.category-tile.theme-handyman .category-art{
-  position:absolute;right:8%;top:10px;
-  width:32%;height:calc(100% - 20px);max-height:none;
-  border-radius:20px;overflow:hidden;
-}
-.category-tile.theme-handyman .category-photo{
-  width:100%;height:100%;object-fit:contain;object-position:center;
-}
-.category-tile.theme-handyman strong{font-size:clamp(19px,2.7vw,25px)}
-.category-tile.theme-handyman>span:not(.tile-arrow){max-width:55%;font-size:clamp(12px,1.5vw,15px)}
-.category-tile.theme-handyman .tile-arrow{bottom:17px;right:15px}
 .category-view.theme-handyman{background:transparent}
 .category-view.theme-handyman .category-hero{
   background:radial-gradient(circle at 85% 25%,#ffc04c 0%,#ffe6aa 40%,transparent 65%),
@@ -431,22 +415,13 @@ body,.shell,.customer-header,.customer-nav {background:#fff}
 }
 .thumb-handyman{background:linear-gradient(135deg,#fff7da,#ffe09a)}
 @media(max-width:540px){
-  .category-tile.theme-handyman{min-height:123px!important;padding:14px 17px!important}
-  .category-tile.theme-handyman .category-art{right:8%;width:37%;top:5px;height:calc(100% - 10px)}
-  .category-tile.theme-handyman strong{font-size:20px}
-  .category-tile.theme-handyman>span:not(.tile-arrow){max-width:55%;font-size:12px}
   .category-view.theme-handyman .category-hero{padding-right:125px;min-height:175px}
 }
 @media(max-width:360px){
-  .category-tile.theme-handyman{min-height:116px!important}
-  .category-tile.theme-handyman .category-art{width:34%;right:9%}
-  .category-tile.theme-handyman>span:not(.tile-arrow){font-size:10px}
   .category-view.theme-handyman .category-hero{padding-right:108px}
 }
-
-/* Cuatro ilustraciones 3D originales: misma oscilación de 6 px y 3,6 s que Manitas.
-   Sin alterar la animación propia de Manitas. */
-.category-tile:is(.theme-plumbing,.theme-masonry,.theme-parquet,.theme-renovation) .category-art{
+/* V93: las seis ilustraciones comparten la oscilación original de 6 px y 3,6 s. */
+.category-tile:is(.theme-plumbing,.theme-masonry,.theme-parquet,.theme-renovation,.theme-handyman,.theme-electricity) .category-art{
   overflow:hidden;
   isolation:isolate;
   border-radius:15px;
@@ -455,7 +430,7 @@ body,.shell,.customer-header,.customer-nav {background:#fff}
 /* El movimiento se aplica a un SPAN HTML, no directamente al elemento
    SVG. Así el desplazamiento se mide y reproduce en píxeles CSS de forma
    idéntica en Chrome, Safari iPhone, Android y tablet. */
-.category-tile:is(.theme-plumbing,.theme-masonry,.theme-parquet,.theme-renovation) .category-motion{
+.category-tile:is(.theme-plumbing,.theme-masonry,.theme-parquet,.theme-renovation,.theme-handyman,.theme-electricity) .category-motion{
   display:flex;
   align-items:center;
   justify-content:center;
@@ -468,7 +443,7 @@ body,.shell,.customer-header,.customer-nav {background:#fff}
   will-change:transform;
 }
 @media(prefers-reduced-motion:reduce){
-  .category-tile:is(.theme-plumbing,.theme-masonry,.theme-parquet,.theme-renovation)
+  .category-tile:is(.theme-plumbing,.theme-masonry,.theme-parquet,.theme-renovation,.theme-handyman,.theme-electricity)
     .category-motion{
     animation:none!important;
     will-change:auto;
@@ -476,8 +451,8 @@ body,.shell,.customer-header,.customer-nav {background:#fff}
   }
 }
 
-/* Restauradas las ilustraciones 3D originales con transparencia auténtica. */
-.category-tile:is(.theme-plumbing,.theme-masonry,.theme-parquet,.theme-renovation) img.category-restored{
+/* Las cuatro ilustraciones originales mantienen sus PNG; Manitas y Electricidad usan SVG transparentes. */
+.category-tile:is(.theme-plumbing,.theme-masonry,.theme-parquet,.theme-renovation,.theme-handyman,.theme-electricity) img.category-restored{
  display:block;width:100%;height:100%;max-width:100%;
  object-fit:cover;object-position:center 40%;border-radius:0;
  animation:none!important;
@@ -486,7 +461,7 @@ body,.shell,.customer-header,.customer-nav {background:#fff}
 
 /* Atenuación de los restos del borde superior del recorte original.
    La imagen mantiene sus colores vivos y no deja ver texto al oscilar. */
-.category-tile:is(.theme-plumbing,.theme-masonry,.theme-parquet,.theme-renovation) img.category-restored{
+.category-tile:is(.theme-plumbing,.theme-masonry,.theme-parquet,.theme-renovation,.theme-handyman,.theme-electricity) img.category-restored{
  -webkit-mask-image:linear-gradient(to bottom,transparent 0%,#000 11%,#000 81%,transparent 100%);
  mask-image:linear-gradient(to bottom,transparent 0%,#000 11%,#000 81%,transparent 100%);
 }
@@ -704,20 +679,11 @@ body,.shell,.customer-header,.customer-nav {background:#fff}
 @media(prefers-reduced-motion:reduce){.staff-new-pagination button{transition:none!important}}
 
 
-/* V86 · Sexta categoría electricidad, coherente con el boceto luminoso original. */
+/* V93 · Electricidad en la misma geometría y brillo de las tarjetas originales. */
 .category-tile.theme-electricity{
-  grid-column:1/-1;aspect-ratio:auto;min-height:143px!important;
-  padding:20px min(4vw,30px)!important;justify-content:center;
-  background:linear-gradient(135deg,#d8f8ff 0%,#8ddfff 48%,#4dbaff 100%);
-  box-shadow:inset 0 1px 0 #f6fdff,0 5px 13px #1874b128;
+  background:linear-gradient(137deg,#c8f7ff 0%,#8fe6ff 48%,#48bfff 100%);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.56),0 5px 13px rgba(12,126,203,.16);
 }
-.category-tile.theme-electricity .category-art{
-  position:absolute;right:8%;top:8px;width:32%;height:calc(100% - 16px);
-  max-height:none;filter:drop-shadow(0 7px 7px #1467ac33);
-}
-.category-tile.theme-electricity strong{font-size:clamp(19px,2.7vw,25px)}
-.category-tile.theme-electricity>span:not(.tile-arrow){max-width:55%;font-size:clamp(12px,1.5vw,15px)}
-.category-tile.theme-electricity .category-art svg{width:100%;height:100%;max-height:138px}
 .category-view.theme-electricity .category-hero{
   background:radial-gradient(circle at 85% 20%,#ffe56b 0%,#d8f5ff 40%,transparent 70%),
     linear-gradient(115deg,#fff 0%,#e9f9ff 90%);
@@ -726,12 +692,102 @@ body,.shell,.customer-header,.customer-nav {background:#fff}
 .category-view.theme-electricity .category-hero svg{width:100%;height:100%;max-height:210px}
 .thumb-electricity{background:linear-gradient(135deg,#f4fcff,#ccefff)}
 @media(max-width:560px){
- .category-tile.theme-electricity{min-height:123px!important;padding:14px 17px!important}
- .category-tile.theme-electricity .category-art{max-width:100%;width:37%;top:5px;height:calc(100% - 10px)}
- .category-view.theme-electricity .category-hero .category-art{width:115px}
+  .category-view.theme-electricity .category-hero .category-art{width:115px}
 }
 @media(prefers-reduced-motion:reduce){
- .theme-electricity .float-slow{animation:none!important}
+  .theme-electricity .float-slow{animation:none!important}
+}
+/* V93 · Misma tarjeta para las seis categorías, sin excepciones de ancho.
+   No afecta a las cabeceras grandes al abrir una categoría. */
+.category-grid>.category-tile:is(.theme-handyman,.theme-electricity){
+  grid-column:auto;
+  aspect-ratio:220/165;
+  min-width:0;
+  min-height:0!important;
+  padding:6px 13px 13px;
+  justify-content:flex-start;
+  border-radius:19px;
+}
+.category-grid>.category-tile:is(.theme-handyman,.theme-electricity) .category-art{
+  position:relative;
+  inset:auto;
+  width:100%;
+  height:60%;
+  max-height:112px;
+  filter:none;
+  border-radius:15px;
+}
+.category-grid>.category-tile:is(.theme-handyman,.theme-electricity) strong{
+  font-size:clamp(15px,1.85vw,21px);
+  max-width:calc(100% - 22px);
+  line-height:1.08;
+}
+.category-grid>.category-tile:is(.theme-handyman,.theme-electricity)>span:not(.tile-arrow){
+  font-size:clamp(10px,1.3vw,13px);
+  max-width:calc(100% - 22px);
+  line-height:1.12;
+}
+.category-grid>.category-tile:is(.theme-handyman,.theme-electricity) .tile-arrow{
+  bottom:16px;
+  right:10px;
+}
+/* Transparencia real en los nuevos SVG; la luz se funde con el gradiente
+   de la tarjeta y evita los rectángulos interiores de la captura previa. */
+.category-grid>.category-tile:is(.theme-handyman,.theme-electricity) .category-art::before{
+  content:"";
+  position:absolute;
+  z-index:0;
+  inset:7% 5% 4%;
+  border-radius:50%;
+  background:radial-gradient(ellipse at center,rgba(255,255,255,.70) 0%,
+    rgba(255,255,255,.28) 48%,transparent 78%);
+  pointer-events:none;
+}
+.category-grid>.category-tile:is(.theme-handyman,.theme-electricity) img.category-restored{
+  position:relative;
+  z-index:1;
+  width:100%;
+  height:100%;
+  object-fit:contain;
+  object-position:center;
+  border-radius:0;
+  -webkit-mask-image:radial-gradient(ellipse 78% 75% at 50% 52%,#000 45%,
+    rgba(0,0,0,.94) 68%,transparent 100%);
+  mask-image:radial-gradient(ellipse 78% 75% at 50% 52%,#000 45%,
+    rgba(0,0,0,.94) 68%,transparent 100%);
+  filter:saturate(1.22) contrast(1.08) brightness(1.04)
+    drop-shadow(0 5px 8px rgba(24,83,141,.18));
+}
+@media(max-width:540px){
+  .category-grid>.category-tile:is(.theme-handyman,.theme-electricity){
+    aspect-ratio:220/165;
+    padding:4px 12px 12px;
+    min-height:0!important;
+  }
+  .category-grid>.category-tile:is(.theme-handyman,.theme-electricity) .category-art{
+    height:60%;max-height:100px;
+  }
+  .category-grid>.category-tile:is(.theme-handyman,.theme-electricity) strong{
+    font-size:15px;
+  }
+  .category-grid>.category-tile:is(.theme-handyman,.theme-electricity)>span:not(.tile-arrow){
+    font-size:11px;
+  }
+}
+@media(max-width:365px){
+  .category-grid>.category-tile:is(.theme-handyman,.theme-electricity){
+    padding:3px 9px 7px;
+  }
+  .category-grid>.category-tile:is(.theme-handyman,.theme-electricity) strong{
+    font-size:13px;
+  }
+  .category-grid>.category-tile:is(.theme-handyman,.theme-electricity)>span:not(.tile-arrow){
+    font-size:9.5px;
+  }
+}
+@media(prefers-reduced-motion:reduce){
+  .category-grid>.category-tile:is(.theme-handyman,.theme-electricity)
+    .category-motion{animation:none!important;will-change:auto;transform:none}
 }
 
 /* V84 · Área privada del propietario. No se muestra a clientes ni operarios. */
