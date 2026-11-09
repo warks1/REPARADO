@@ -116,7 +116,7 @@ export async function saveOwnerVisit(supabase,{job,operatorId,datetime,operators
        updated.data[0].id!==job.id||
        updated.data[0].status!==targetStatus||
        updated.data[0].operator_id!==operator.id||
-       updated.data[0].scheduled_at!==time.iso)
+       Date.parse(updated.data[0].scheduled_at)!==Date.parse(time.iso))
       return {ok:false,message:'La solicitud cambió durante la edición. Actualiza antes de reintentar.'};
     return {ok:true,message:'Visita guardada y operario asignado. Comprueba la confirmación con el cliente.'};
   }catch{return {ok:false,message:'Error de conexión. Revisa el calendario antes de repetir el guardado.'}}
