@@ -58,8 +58,8 @@ export const manitasMaterialQuestionMarkup = `<fieldset class="manitas-material-
 export function manitasMaterialRequestNote(service,choice){
   if(service?.[0]!=='Manitas')return '';
   return choice==='quote'
-    ? '\\nMaterial (Manitas): solicitar presupuesto adicional de materiales; no incluido en tarifa.'
-    : '\\nMaterial (Manitas): el cliente lo aporta. Precio orientativo sin materiales.';
+    ? '\nMaterial (Manitas): solicitar presupuesto adicional de materiales; no incluido en tarifa.'
+    : '\nMaterial (Manitas): el cliente lo aporta. Precio orientativo sin materiales.';
 }
 
 // V61 · Revisión 03-11-2026. Tarifa final con IVA 21 %, materiales y mano de obra estándar.
