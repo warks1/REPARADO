@@ -1,0 +1,60 @@
+name: REPARADO V100 · Parte y cierre seguros del operario
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'operator-work-service.js'
+      - 'operator-work-view.js'
+      - 'connected.js'
+      - 'staff-work-pages.js'
+      - 'supabase/migration-v100-operator-work-reports.sql'
+      - 'vivid-theme.css'
+      - 'tests/operator-work-v100.test.mjs'
+      - 'e2e-private/operator-work-v100.spec.mjs'
+      - '.github/workflows/qa-operator-work-v100.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'operator-work-service.js'
+      - 'operator-work-view.js'
+      - 'connected.js'
+      - 'staff-work-pages.js'
+      - 'supabase/migration-v100-operator-work-reports.sql'
+      - 'vivid-theme.css'
+      - 'tests/operator-work-v100.test.mjs'
+      - 'e2e-private/operator-work-v100.spec.mjs'
+      - '.github/workflows/qa-operator-work-v100.yml'
+permissions:
+  contents: read
+jobs:
+  unit-build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: {node-version: '22'}
+      - run: npm install --no-audit --no-fund
+      - name: Pruebas de seguridad del operario y galerías
+        run: node --test tests/operator-work-v100.test.mjs
+      - name: Compilación completa
+        run: npm run build
+  operator-mobile:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: {node-version: '22'}
+      - run: npm install --no-audit --no-fund
+      - run: npx playwright install --with-deps chromium webkit
+      - name: Prueba de parte en iPhone y Android simulados
+        run: npx playwright test --config playwright.invite.config.mjs e2e-private/operator-work-v100.spec.mjs --project=iphone --project=android
+      - name: Guardar evidencias si falla
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: reparado-v100-work-evidence
+          path: test-results
+          if-no-files-found: ignore
+          retention-days: 7

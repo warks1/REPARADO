@@ -36,6 +36,7 @@ import { renderInvoices } from './invoices.js'
 import { renderNotifications } from './notifications.js'
 import {mountOwnerDashboard} from './owner-dashboard.js'
 import {mountOwnerWorkExport} from './owner-export-view.js'
+import {mountOperatorWork} from './operator-work-view.js'
 import {mountOwnerCalendar} from './owner-calendar.js'
 import {mountOwnerMessages,ownerMailMarkup} from './owner-messages.js'
 import {mountOwnerPeople} from './owner-people.js'
@@ -1284,6 +1285,19 @@ export function mountConnected({app, services, supabase, authLinkIntent=null}) {
     main.querySelector('[data-owner-mail-back]')?.addEventListener('click',()=>showOwnerDashboard());
   }
 
+  async function showOperatorWork(requestId){
+    if(!userIsStaff()||!session?.user?.id)return renderHome();
+    const userId=session.user.id,epoch=authEpoch,role=profile.role;
+    currentView='operator-work';
+    setActiveNav(app,'profile');
+    await mountOperatorWork({
+      main,supabase,requestId,userId,role,
+      isActive:()=>currentView==='operator-work'&&isCurrentUser(userId)&&
+        authEpoch===epoch&&profile?.role===role,
+      onBack:()=>renderAdmin(adminFilter)
+    });
+  }
+
   async function renderAdmin(filter=adminFilter){
     setActiveNav(app,'profile');
     if(!userIsStaff()){renderHome();return}
@@ -1409,6 +1423,9 @@ export function mountConnected({app, services, supabase, authLinkIntent=null}) {
         <label>Fecha y hora (Cataluña)<input type="datetime-local" name="scheduled_at" value="${madridDateTimeInput(job.scheduled_at)}"></label>
         <div class="flex-actions"><button type="submit">Guardar cambios</button><button type="button" data-photos="${esc(job.id)}" data-owner="${esc(job.customer_id)}">Ver fotos</button><button type="button" data-staff-chat="${esc(job.customer_id)}" data-chat-service="${esc(job.service_name)}">💬 Chat</button></div>
       </form><div class="staff-documents-toolbar">
+        ${(admin||['scheduled','in_progress','completed'].includes(job.status))
+          ?'<button type="button" data-work-detail="'+esc(job.id)+'">'+
+            (admin?'📋 Ver parte de trabajo':'🛠️ Abrir servicio y parte')+'</button>':''}
         <button type="button" data-doc-kind="order" data-doc-job="${esc(job.id)}">Orden de trabajo</button>
         ${admin?'<button type="button" data-doc-kind="quote" data-doc-job="'+esc(job.id)+'">Vista de presupuesto</button>':''}
         ${admin && job.status==='completed' && job.price!=null ? '<button type="button" data-billing-start="'+esc(job.id)+'">🧾 Preparar borrador de factura</button>' : ''}
@@ -1468,10 +1485,11 @@ export function mountConnected({app, services, supabase, authLinkIntent=null}) {
       main.querySelectorAll('form[data-job-id]').forEach(form=>{
         const job=all.find(j=>j.id===form.dataset.jobId);
         if(!job)return;
-        for(const field of ['price','operator_id','scheduled_at']){
+        for(const field of ['price','operator_id','scheduled_at','status']){
           form.querySelector('[name="'+field+'"]')?.closest('label')?.remove();
         }
         form.querySelector('[data-vat-preview]')?.remove();
+        form.querySelector('button[type="submit"]')?.remove();
         form.querySelectorAll('select[name="status"] option').forEach(opt=>{
           if(!operatorMaySetStatus(job.status,opt.value))opt.remove();
         });
@@ -1736,6 +1754,10 @@ export function mountConnected({app, services, supabase, authLinkIntent=null}) {
           feedback.textContent=error.message||'No se pudo validar el borrador.';
         }
       });
+    }));
+    main.querySelectorAll('[data-work-detail]').forEach(button=>button.addEventListener('click',()=>{
+      if(currentView==='admin'&&userIsStaff())
+        void showOperatorWork(button.dataset.workDetail);
     }));
     main.querySelectorAll('[data-staff-chat]').forEach(button=>button.addEventListener('click',()=>loadStaffChat(button.dataset.staffChat,button.dataset.chatService)));
     main.querySelectorAll('[data-photos]').forEach(button=>button.addEventListener('click',async()=>{
