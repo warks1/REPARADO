@@ -22,10 +22,10 @@ for (const query of ['', '?reparado_version=' + (process.env.REPARADO_SHA || 'ac
 test('las imágenes del repositorio publicado no devuelven error',async({page})=>{
  await page.goto('./');
  await expect(page.locator('.category-tile')).toHaveCount(6,{timeout:20000});
- // Los iconos originales recuperados cargan como PNG con transparencia.
- await expect(page.locator('.category-tile img.category-restored')).toHaveCount(4);
+ // V97: cuatro PNG aprobados y dos SVG transparentes; validar las seis imágenes.
+ await expect(page.locator('.category-tile img.category-restored')).toHaveCount(6);
  const photos=page.locator('.category-tile img.category-photo');
- await expect(photos).toHaveCount(5);
+ await expect(photos).toHaveCount(6);
  for(const photo of await photos.all()){
    await photo.scrollIntoViewIfNeeded();
    await expect.poll(()=>photo.evaluate(img=>img.complete && img.naturalWidth>0),{timeout:12000}).toBeTruthy();
