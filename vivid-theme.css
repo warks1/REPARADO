@@ -1032,3 +1032,34 @@ body,.shell,.customer-header,.customer-nav {background:#fff}
   .owner-priority-card{min-height:78px;padding:11px}
   .owner-priority-content strong{font-size:13px}
 }
+
+
+/* V97 · Exportación del historial del titular, en CSV privado. */
+.owner-work-export{max-width:800px;margin-inline:auto}
+.owner-work-export>p{font-size:14px;line-height:1.65;color:#415a75}
+.owner-export-form{display:flex;flex-wrap:wrap;align-items:flex-end;gap:12px;
+  margin:22px 0 12px}
+.owner-export-form label{min-width:200px;flex:1;display:flex;flex-direction:column;
+  gap:7px;color:#244669;font-size:13px;font-weight:800}
+.owner-export-form select{min-height:46px;width:100%;max-width:100%;box-sizing:border-box;
+  padding:10px 12px;border-radius:12px;border:1px solid #b6cce3;
+  background:#fff;color:#173957;font:inherit}
+.owner-export-form button,.owner-work-export>[data-owner-export-download]{
+  min-height:46px;padding:11px 16px;border-radius:12px;
+  border:1px solid #e96a28;background:linear-gradient(135deg,#fc8b42,#e86a24);
+  color:#fff;font-weight:800;cursor:pointer
+}
+.owner-work-export>[data-owner-export-download]{width:100%;margin:12px 0}
+.owner-export-form :is(select,button):focus-visible,
+.owner-work-export>[data-owner-export-download]:focus-visible{
+  outline:3px solid #ef8d54;outline-offset:2px
+}
+.owner-export-form button:disabled,.owner-work-export>[data-owner-export-download]:disabled{
+  opacity:.55;cursor:not-allowed
+}
+.owner-work-export [data-owner-export-status]{min-height:25px;color:#1c5075;
+  font-weight:700;font-size:13px}
+@media(max-width:520px){
+  .owner-export-form{display:grid;grid-template-columns:1fr;gap:10px}
+  .owner-export-form label,.owner-export-form button{width:100%}
+}

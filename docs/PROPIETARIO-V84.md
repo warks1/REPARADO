@@ -1,4 +1,4 @@
-# REPARADO V96 · Panel del propietario
+# REPARADO V97 · Panel del propietario
 
 ## Cómo entrar
 Iniciar sesión con la única cuenta que tenga el rol **admin** en Supabase.
@@ -201,3 +201,29 @@ Este panel no se monta para clientes u operarios y no sustituye las políticas
 RLS. El proyecto de pruebas usa cuentas y datos ficticios en los navegadores
 automáticos. La aprobación de producción y la publicación comercial siguen
 pendientes de los requisitos de `docs/ESTADO-ENTREGA-V88-2026-11-09.md`.
+
+## V97 · Exportar historial de trabajos en CSV
+
+El titular puede usar **Exportar historial CSV** desde el panel privado y elegir
+Todos, Nuevas, Presupuestadas, Aceptadas, Programadas, En curso, Terminadas o
+Canceladas. La lectura se pagina de 200 en 200 desde Supabase, con recuento
+exacto y un máximo de **10.000 trabajos** por informe. Para un volumen mayor,
+hay que dividir la exportación por estado o emplear una herramienta especializada.
+
+Se exige una sesión de administrador comprobada con `getUser` y
+`profiles.role = admin` antes y después de la lectura. Si el estado de
+la sesión cambia, la descarga se cancela. Cualquier error, cambio de recuento,
+ID duplicado o respuesta incompleta impide presentar el CSV como íntegro.
+
+Columnas: ID de solicitud, servicio, categoría, estado, población, precio
+con IVA incluido, nombre del operario y fechas UTC. **Se excluyen** el nombre
+del cliente, teléfono, calle, número, código postal, notas privadas, fotos,
+chat y datos fiscales. Excel puede abrir el CSV UTF-8 con separador «;»;
+los campos de texto protegen contra fórmulas introducidas por terceros.
+El fichero sigue siendo un documento **interno y privado**, no es una factura
+fiscal, ni un extracto contable certificado.
+
+Web: descarga local a petición del titular. iOS/Android: uso de la opción
+nativa de compartir, con archivo temporal en caché que se intenta borrar tras
+90 segundos. Guardarlo en un destino externo sigue siendo responsabilidad
+del titular. No hay envío automático a servicios de terceros.

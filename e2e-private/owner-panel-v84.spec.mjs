@@ -106,6 +106,25 @@ async function setup(page,role='admin',inboxRpc=false,history=false){
        created_at:'2026-11-09T10:00:00Z'
      }],false,1);
    }
+   if(path==='/rest/v1/service_requests'&&method==='GET'&&
+     String(url.searchParams.get('select')).includes('id,service_name,category,status,city,price,operator_name,created_at,scheduled_at')){
+     if(role!=='admin')return route.fulfill({
+       status:403,contentType:'application/json',body:'{"code":"42501"}'
+     });
+     const start=Number(url.searchParams.get('offset')||0);
+     const limit=Number(url.searchParams.get('limit')||200);
+     const status=url.searchParams.get('status');
+     const all=Array.from({length:451},(_,i)=>({
+       id:'e0000000-0000-4000-8000-'+String(i+100).padStart(12,'0'),
+       service_name:'Reparación '+String(i+1),category:'Fontanería',
+       status:i%2?'accepted':'completed',city:'Barcelona',
+       price:151.25,operator_name:'Operario ficticio',
+       created_at:'2026-10-29T09:00:00.000Z',scheduled_at:null
+     }));
+     const data=status?.startsWith('eq.')?
+       all.filter(row=>row.status===status.slice(3)):all;
+     return output(data.slice(start,start+limit),false,data.length);
+   }
    if(path==='/rest/v1/service_requests'&&method==='GET'){
      if(history&&String(url.searchParams.get('status')).includes('completed')&&
        String(url.searchParams.get('status')).includes('cancelled')){
@@ -162,7 +181,7 @@ test('V84: administrador entra al centro privado y abre las diez secciones',asyn
  const owner=page.locator('#reparado-owner-dashboard');
  await expect(owner).toBeVisible();
  await expect(page.locator('.owner-header-launch')).toBeVisible();
- await expect(owner.locator('.owner-module')).toHaveCount(12);
+ await expect(owner.locator('.owner-module')).toHaveCount(13);
  await expect(owner.locator('.owner-metric')).toHaveCount(10);
  await expect(owner.locator('[data-owner-status]')).toContainText('Datos actualizados desde el servidor');
  expect(called.counts.length).toBeGreaterThanOrEqual(8);
@@ -457,4 +476,39 @@ test('V96: clientes y operarios no reciben prioridades privadas',async({page})=>
  await expect(page.locator('#reparado-owner-dashboard')).toHaveCount(0);
  await expect(page.locator('.owner-priorities')).toHaveCount(0);
  expect(calls.counts).toHaveLength(0);
+});
+
+
+test('V97: titular genera el CSV completo, sin contactos ni direcciones',async({page})=>{
+ await setup(page,'admin');
+ await page.goto('/');
+ const dash=page.locator('#reparado-owner-dashboard');
+ await dash.locator('.owner-module[data-owner-target="owner-export"]').click();
+ const root=page.locator('#reparado-owner-work-export');
+ await expect(root).toBeVisible();
+ await expect(root).toContainText('no es una factura fiscal');
+ await expect(root.locator('[data-owner-export-download]')).toBeDisabled();
+ await root.locator('[data-owner-export-prepare]').click();
+ await expect(root.locator('[data-owner-export-status]'))
+   .toContainText('451 trabajo(s) preparados');
+ const downloadEvent=page.waitForEvent('download');
+ await root.locator('[data-owner-export-download]').click();
+ const download=await downloadEvent;
+ expect(download.suggestedFilename()).toMatch(/^REPARADO-trabajos-all-/);
+ // El nombre del fichero queda validado por Playwright; las pruebas unitarias
+ // inspeccionan también el contenido y la sanitización de fórmulas.
+ await root.locator('[name="status"]').selectOption('completed');
+ await expect(root.locator('[data-owner-export-download]')).toBeDisabled();
+ await root.locator('[data-owner-export-prepare]').click();
+ await expect(root.locator('[data-owner-export-status]'))
+   .toContainText('226 trabajo(s) preparados');
+ await root.locator('[data-owner-export-back]').click();
+ await expect(page.locator('#reparado-owner-dashboard')).toBeVisible();
+});
+
+test('V97: cliente y operario no tienen botón para exportar el negocio',async({page})=>{
+ await setup(page,'operator');
+ await page.goto('/');
+ await expect(page.locator('[data-owner-target="owner-export"]')).toHaveCount(0);
+ await expect(page.locator('#reparado-owner-work-export')).toHaveCount(0);
 });
