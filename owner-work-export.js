@@ -1,3 +1,4 @@
+import {Capacitor} from '@capacitor/core';
 // REPARADO V97 · Informe de trabajo interno CSV, NO una factura.
 // Solo el titular con sesión admin verificada puede preparar la descarga.
 // La selección y exportación respetan RLS; nunca usa service_role en el cliente.
@@ -130,7 +131,7 @@ export async function buildOwnerWorkCsv({supabase,ownerId,isActive,
 const exportFailure=()=>new OwnerExportError('network');
 export async function shareOwnerWorkCsv(snapshot,{
   ownerId,isActive,
-  isNative=()=>false,
+  isNative=()=>Capacitor.isNativePlatform(),
   webDownload=ownerWorkWebDownload,
   randomId=()=>globalThis.crypto?.randomUUID?.(),
   getNativeApis=async()=>{
