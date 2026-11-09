@@ -72,7 +72,11 @@ export function mountConnected({app, services, supabase, authLinkIntent=null}) {
   app.querySelector('.header-actions')?.insertBefore(
     ownerEntry,app.querySelector('.round-profile')
   );
-  const syncOwnerAccess=()=>{ownerEntry.hidden=!(session&&profile?.role==='admin')};
+  const syncOwnerAccess=()=>{
+    const allowed=Boolean(session&&profile?.role==='admin');
+    ownerEntry.hidden=!allowed;
+    app.querySelector('.customer-header')?.classList.toggle('owner-active',allowed);
+  };
   const main=app.querySelector('#main');
   const message = (text, error=false) => {
     const node=main.querySelector('[data-feedback]');
