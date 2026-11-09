@@ -874,3 +874,26 @@ body,.shell,.customer-header,.customer-nav {background:#fff}
   .owner-calendar-filters{display:grid;grid-template-columns:1fr;gap:10px}
   .owner-calendar-filters label,.owner-calendar-filters button{width:100%}
 }
+
+
+/* V89 · Búsqueda de clientes y operarios del panel privado. */
+.owner-people-search{
+  display:grid;grid-template-columns:minmax(125px,.9fr) minmax(175px,2fr) auto auto;
+  gap:10px;align-items:end;margin:12px 0 16px
+}
+.owner-people-search label{min-width:0;display:flex;flex-direction:column;gap:5px;
+  font-size:12px;font-weight:800;color:#244869}
+.owner-people-search :is(input,select){
+  width:100%;min-height:44px;box-sizing:border-box;padding:10px;border:1px solid #afcee8;
+  border-radius:10px;background:white;color:#173b5b;font:inherit
+}
+.owner-people-search button{min-height:44px;padding:10px 13px;border:1px solid #afcee8;
+  border-radius:10px;background:#eaf4fd;color:#1b5788;font-weight:800}
+.owner-people-search button[type=submit]{background:#ed7334;color:white;border-color:#ed7334}
+.owner-people-search :is(input,select,button):focus-visible{
+  outline:3px solid #ef8d54;outline-offset:2px
+}
+@media(max-width:800px){.owner-people-search{grid-template-columns:1fr 2fr}}
+@media(max-width:460px){.owner-people-search{grid-template-columns:1fr 1fr}
+  .owner-people-search label{grid-column:1/-1}
+  .owner-people-search button{width:100%}}

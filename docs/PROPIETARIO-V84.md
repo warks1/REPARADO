@@ -1,4 +1,4 @@
-# REPARADO V88 · Panel del propietario
+# REPARADO V89 · Panel del propietario
 
 ## Cómo entrar
 Iniciar sesión con la única cuenta que tenga el rol **admin** en Supabase.
@@ -32,9 +32,12 @@ panel debe ser exclusivo del titular.
   La hora se convierte con zona `Europe/Madrid` y detecta cambios DST.
 - **Mensajes de clientes**: bandeja de conversaciones en la app, 30
   mensajes por página, abrir un chat, leer historial y responder.
-- **Directorio de clientes y operarios**: 30 perfiles por página, nombre y
-  teléfono registrados en la app; abrir chat de cliente o el calendario
-  para programar al personal. Sin mostrar contraseñas ni emails de Auth.
+- **Directorio de clientes y operarios V89**: 30 perfiles por página,
+  búsqueda por **nombre o teléfono** con resultados paginados desde
+  Supabase, limpieza para volver a listar todos los perfiles; abrir
+  chat de cliente o el calendario filtrado del técnico.
+  El buscador no lee `auth.users` ni muestra correos o contraseñas,
+  y no modifica RLS, roles ni datos de contactos.
 - **Trabajos terminados y facturación**: documentos y borradores
   de factura privados; **no** se emiten facturas fiscales automáticas.
 - **Incidencias de clientes** y **reseñas**: acceso a los módulos
