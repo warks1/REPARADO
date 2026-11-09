@@ -82,7 +82,7 @@ test('V84: agenda consulta visitas de semana, aprobados sin hora y operarios',as
       if(table!=='profiles')throw Error('Unexpected then');
       return Promise.resolve({data:[assigned],error:null}).then(resolve);
     }
- }}}};
+ }}};
  const result=await fetchOwnerCalendar(db,'2026-11-09');
  assert.equal(result.error,false);
  assert.equal(result.start,'2026-11-09');
