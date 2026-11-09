@@ -31,3 +31,11 @@ Pruebas de código: `tests/operator-work-v100.test.mjs`; prueba de navegador `e2
 ## Trabajos que ya estaban en curso antes de V100
 
 Si el servicio aparece **En curso** pero no tiene parte anterior, el operario asignado verá **Preparar parte de trabajo**. Esa acción crea el parte sin volver a pasar el servicio por Programado y sin cambiar su estado existente. Solo después se habilitan descripción, subida de fotos y cierre. No se inventa una fecha antigua de inicio: el parte puede mostrar cuándo se creó por primera vez.
+
+## V101 · Recuperación de fotografías y confirmaciones visibles
+
+- Después de subir imágenes, el panel **vuelve a consultar Storage** antes de confirmar cuántas fotos hay realmente en el parte. El resultado informa de fotografías nuevas, existentes y fallidas.
+- En una subida parcialmente fallida, las imágenes que sí se guardaron siguen visibles. El operario puede volver a seleccionar las fallidas; la huella SHA-256 evita crear otra copia de una foto que ya existe.
+- **Actualizar parte y fotografías** recarga el estado del servidor sin perder el texto aún escrito en la descripción. Si la lectura falla por conexión, aparece **Reintentar carga**.
+- La confirmación de inicio, guardado, fotos o cierre queda visible **después** de redibujar la pantalla. No se muestra éxito sin confirmar la respuesta del servidor.
+- Pruebas de navegador V101: un intento de subir dos fotos con un fallo de red simulado guarda solo una, informa del error y permite el segundo intento sin duplicados. Ningún paso usa cuentas comerciales.
