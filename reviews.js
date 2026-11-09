@@ -1,5 +1,5 @@
 import {fetchReviewableRequests,recentReviewableLimit} from './reviewable-requests.js';
-import {fetchApprovedReviewsPage,publicReviewsHasMore,publicReviewsPageSize} from './public-reviews-page.js';
+import {fetchApprovedReviewsPage,publicReviewsHasMore} from './public-reviews-page.js';
 // Reseñas publicadas: exclusivamente comentarios reales, aprobados por administración.
 // Nunca se crean opiniones ni puntuaciones de demostración para la portada.
 const escapeText=value=>String(value??'').replace(/[&<>"']/g,c=>({
