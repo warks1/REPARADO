@@ -24,7 +24,7 @@ export async function fetchOwnerPeoplePage(supabase,role,page=0){
       .range(page*ownerPeoplePageSize,(page+1)*ownerPeoplePageSize-1);
     if(error||!Array.isArray(data)||!Number.isSafeInteger(count)||count<0)
       return {data:null,count:null,error:true};
-    return {data:data.filter(p=>p.role===role&&UUID.test(String(p.id))),
+    return {data:data.filter(p=>p?.role===role&&typeof p.id==='string'&&p.id.trim()!==''),
       count,error:false};
   }catch{return {data:null,count:null,error:true}}
 }
