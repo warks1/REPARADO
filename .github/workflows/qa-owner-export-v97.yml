@@ -47,7 +47,7 @@ jobs:
       - run: npm install --no-audit --no-fund
       - run: npx playwright install --with-deps chromium webkit
       - name: Generación y descarga del CSV en iPhone y Android simulados
-        run: npx playwright test --config playwright.invite.config.mjs e2e-private/owner-panel-v84.spec.mjs -g V97 --project=iphone --project=android
+        run: npx playwright test --config playwright.invite.config.mjs e2e-private/owner-panel-v84.spec.mjs -g 'V97|V98' --project=iphone --project=android
       - name: Conservar evidencias
         if: always()
         uses: actions/upload-artifact@v4
