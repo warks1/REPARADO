@@ -32,6 +32,9 @@ import {billingDraftFormMarkup,billingDraftDocument} from './billing-draft.js'
 import {savePrivateBillingDraft,readPrivateBillingDraft} from './billing-draft-storage.js'
 import { renderInvoices } from './invoices.js'
 import { renderNotifications } from './notifications.js'
+import {mountOwnerDashboard} from './owner-dashboard.js'
+import {mountOwnerCalendar} from './owner-calendar.js'
+import {mountOwnerMessages,ownerMailMarkup} from './owner-messages.js'
 import {publicRegistrationEnabled} from './auth-mode.js'
 import {validateNewPassword} from './password-policy.js'
 import { Capacitor } from '@capacitor/core'
@@ -57,6 +60,18 @@ export function mountConnected({app, services, supabase, authLinkIntent=null}) {
     onError:()=>console.warn('REPARADO: registro seguro de notificaciones no disponible')
   });
   app.innerHTML = `<div class="shell">${appHeader()}<main id="main"></main><footer>© Reparado · Servicios para tu hogar ${contactLinksMarkup()} <button type="button" id="logout" class="hidden" hidden>Cerrar sesión</button></footer></div>${bottomNavigation()}`;
+  // El acceso al propietario no se incluye en la navegación del cliente.
+  // Se habilita únicamente después de verificar el perfil en Supabase.
+  const ownerEntry=document.createElement('button');
+  ownerEntry.type='button';
+  ownerEntry.className='owner-header-launch';
+  ownerEntry.dataset.view='owner';
+  ownerEntry.textContent='⚙ Panel propietario';
+  ownerEntry.hidden=true;
+  app.querySelector('.header-actions')?.insertBefore(
+    ownerEntry,app.querySelector('.round-profile')
+  );
+  const syncOwnerAccess=()=>{ownerEntry.hidden=!(session&&profile?.role==='admin')};
   const main=app.querySelector('#main');
   const message = (text, error=false) => {
     const node=main.querySelector('[data-feedback]');
@@ -104,6 +119,10 @@ export function mountConnected({app, services, supabase, authLinkIntent=null}) {
       else if(view==='notifications')loadNotifications();
       else if(view==='invoices')loadInvoices();
       else if(view==='admin')renderAdmin();
+      else if(view==='owner')showOwnerDashboard();
+      else if(view==='owner-calendar')showOwnerCalendar();
+      else if(view==='owner-messages')showOwnerMessages();
+      else if(view==='owner-mail')showOwnerMail();
       else if(view==='review-moderation')openReviewModeration();
       else if(view==='support-admin')loadSupportReports();
       else renderHome();
@@ -124,7 +143,7 @@ export function mountConnected({app, services, supabase, authLinkIntent=null}) {
       const {error}=await supabase.auth.signOut({scope:'local'});
       if(error)throw error;
       session=null;profile=null;pendingService=null;pendingView=null;customerRequestsPage=0;customerChatPage=0;
-      renderHome();
+      syncOwnerAccess();renderHome();
       return true;
     }catch{
       // Si Auth falla, recuperar el registro push del usuario original.
@@ -137,7 +156,7 @@ export function mountConnected({app, services, supabase, authLinkIntent=null}) {
   }
   app.querySelector('#logout').addEventListener('click',safeSignOut);
   function showLogin(){
-    currentView='login';setActiveNav(app,'profile');session=null;profile=null;
+    currentView='login';setActiveNav(app,'profile');session=null;profile=null;syncOwnerAccess();
     app.querySelector('#logout').classList.add('hidden');
     const pendingNotice=pendingService?`<p class="auth-pending">Continuar con: <strong>${esc(pendingService[1])}</strong></p>`:'';
     const registerMarkup=openRegistration?`<button id="register" class="link" type="button">Crear una cuenta</button><form id="register-form" class="hidden"><label>Nombre y apellidos<input name="full_name" autocomplete="name" maxlength="100" required></label><label>Correo electrónico<input name="email" type="email" autocomplete="email" required></label><label>Contraseña<input name="password" type="password" autocomplete="new-password" minlength="15" maxlength="128" required></label><label>Repetir contraseña<input name="password_confirm" type="password" autocomplete="new-password" minlength="15" maxlength="128" required></label><p class="auth-password-hint">Usa una frase única de 15 caracteres o más. Puedes incluir espacios y usar un gestor de contraseñas.</p><button type="submit">Crear cuenta de cliente</button></form>`
@@ -258,7 +277,7 @@ export function mountConnected({app, services, supabase, authLinkIntent=null}) {
     const epoch=++authEpoch;
     const {data,error}=await supabase.auth.getSession();
     if(epoch!==authEpoch)return;
-    if(error || !data?.session){session=null;profile=null;customerChatPage=0;renderHome();return}
+    if(error || !data?.session){session=null;profile=null;syncOwnerAccess();customerChatPage=0;renderHome();return}
     const userId=data.session.user.id;
     if(session?.user?.id!==userId)customerChatPage=0;
     session=data.session;
@@ -266,7 +285,7 @@ export function mountConnected({app, services, supabase, authLinkIntent=null}) {
     const result=await supabase.from('profiles').select('id,full_name,phone,role').eq('id',userId).maybeSingle();
     if(epoch!==authEpoch || !isCurrentUser(userId))return;
     if(result.error){
-      profile=null;renderHome();
+      profile=null;syncOwnerAccess();renderHome();
       const note=document.createElement('p');
       note.className='notice';
       note.textContent='No se pudo cargar tu perfil. Comprueba la conexión antes de utilizar las funciones privadas.';
@@ -274,6 +293,7 @@ export function mountConnected({app, services, supabase, authLinkIntent=null}) {
       return;
     }
     profile=result.data || {role:'customer',full_name:''};
+    syncOwnerAccess();
     app.querySelector('#logout').classList.add('hidden');
     const avatar=app.querySelector('.round-profile');
     if(avatar && profile?.full_name)avatar.textContent=profile.full_name.trim().slice(0,1).toUpperCase();
@@ -285,6 +305,8 @@ export function mountConnected({app, services, supabase, authLinkIntent=null}) {
     else if(destination==='agenda')loadAgenda();
     else if(destination==='chat')loadChat();
     else if(destination==='profile')loadProfile();
+    else if(destination==='owner'&&profile?.role==='admin')showOwnerDashboard();
+    else if(profile?.role==='admin'&&!destination)showOwnerDashboard();
     else renderHome();
     registerNativePush();
   }
@@ -650,7 +672,7 @@ export function mountConnected({app, services, supabase, authLinkIntent=null}) {
     if(!session){showLogin();return}
     currentView='profile';
     main.innerHTML=`<section class="card">${backButton}<h2>Mi perfil</h2><p>${esc(session.user.email)}</p><p>Tipo de cuenta: ${esc(profile?.role||'customer')}</p>
-      <form id="profile-form"><label>Nombre completo<input name="full_name" autocomplete="name" maxlength="100" value="${esc(profile?.full_name||'')}"></label><label>Teléfono<input name="phone" type="tel" autocomplete="tel" maxlength="25" value="${esc(profile?.phone||'')}"></label><button type="submit">Guardar perfil</button></form><div class="flex-actions"><button type="button" data-logout>Cerrar sesión</button><button type="button" data-view="notifications">🔔 Mis avisos</button><button type="button" id="view-invoices">🧾 Mis facturas</button>${userIsStaff()?'<button type="button" data-view="admin">🧰 Gestión interna</button>':''}${profile?.role==='admin'?'<button type="button" data-view="review-moderation">⭐ Moderar reseñas</button><button type="button" data-view="support-admin">🐞 Incidencias de clientes</button>':''}</div>
+      <form id="profile-form"><label>Nombre completo<input name="full_name" autocomplete="name" maxlength="100" value="${esc(profile?.full_name||'')}"></label><label>Teléfono<input name="phone" type="tel" autocomplete="tel" maxlength="25" value="${esc(profile?.phone||'')}"></label><button type="submit">Guardar perfil</button></form><div class="flex-actions"><button type="button" data-logout>Cerrar sesión</button><button type="button" data-view="notifications">🔔 Mis avisos</button><button type="button" id="view-invoices">🧾 Mis facturas</button>${userIsStaff()?'<button type="button" data-view="admin">🧰 Gestión interna</button>':''}${profile?.role==='admin'?'<button type="button" data-view="owner">⚙ Panel del propietario</button>':''}${profile?.role==='admin'?'<button type="button" data-view="review-moderation">⭐ Moderar reseñas</button><button type="button" data-view="support-admin">🐞 Incidencias de clientes</button>':''}</div>
       <section class="reparado-help" aria-label="Ayuda y atención al cliente"><h3>Atención y ayuda</h3>
         <form id="reparado-issue-report"><label>¿En qué parte de la app ha ocurrido?
           <select name="context" required>
@@ -933,7 +955,7 @@ export function mountConnected({app, services, supabase, authLinkIntent=null}) {
     });
   }
 
-  async function loadStaffChat(customerId, serviceName, page=0){
+  async function loadStaffChat(customerId, serviceName, page=0, returnView='admin'){
     if(!userIsStaff() || !session)return renderHome();
     currentView='staff-chat';
     const staffUserId=session.user.id;
@@ -942,8 +964,8 @@ export function mountConnected({app, services, supabase, authLinkIntent=null}) {
     const box=document.createElement('section');
     box.className='card';
     const back=document.createElement('button');
-    back.className='back';back.type='button';back.textContent='← Panel interno';
-    back.addEventListener('click',()=>renderAdmin());
+    back.className='back';back.type='button';back.textContent=returnView==='owner-messages'?'← Mensajes del propietario':'← Panel interno';
+    back.addEventListener('click',()=>returnView==='owner-messages'?showOwnerMessages():renderAdmin());
     const heading=document.createElement('h2');
     heading.textContent='Chat: '+serviceName;
     const history=document.createElement('div');
@@ -960,11 +982,11 @@ export function mountConnected({app, services, supabase, authLinkIntent=null}) {
     if(result.error){
       history.textContent='No se pudieron cargar los mensajes. Comprueba la conexión.';
       const retry=document.createElement('button');
-      retry.type='button';retry.textContent='Reintentar';retry.addEventListener('click',()=>loadStaffChat(customerId,serviceName,requestedPage));
+      retry.type='button';retry.textContent='Reintentar';retry.addEventListener('click',()=>loadStaffChat(customerId,serviceName,requestedPage,returnView));
       box.append(retry);
       return;
     }
-    if(result.count>0&&requestedPage>=customerChatPageCount(result.count))return loadStaffChat(customerId,serviceName,0);
+    if(result.count>0&&requestedPage>=customerChatPageCount(result.count))return loadStaffChat(customerId,serviceName,0,returnView);
     for(const row of result.data||[]){
       const p=document.createElement('p');
       p.className=row.sender_id===staffUserId?'me':'';
@@ -983,18 +1005,18 @@ export function mountConnected({app, services, supabase, authLinkIntent=null}) {
       const newer=document.createElement('button');
       newer.type='button';newer.textContent='← Más recientes';
       newer.disabled=requestedPage===0;
-      newer.addEventListener('click',()=>loadStaffChat(customerId,serviceName,requestedPage-1));
+      newer.addEventListener('click',()=>loadStaffChat(customerId,serviceName,requestedPage-1,returnView));
       const older=document.createElement('button');
       older.type='button';older.textContent='Anteriores →';
       older.disabled=!customerChatCanReadOlder(requestedPage,result.count);
-      older.addEventListener('click',()=>loadStaffChat(customerId,serviceName,requestedPage+1));
+      older.addEventListener('click',()=>loadStaffChat(customerId,serviceName,requestedPage+1,returnView));
       actions.append(newer,older);
       nav.append(summary,actions);
       box.append(nav);
     }
     const refresh=document.createElement('button');
     refresh.type='button';refresh.textContent='Actualizar conversación';
-    refresh.addEventListener('click',()=>loadStaffChat(customerId,serviceName,0));
+    refresh.addEventListener('click',()=>loadStaffChat(customerId,serviceName,0,returnView));
     box.append(refresh);
     const form=document.createElement('form');
     const label=document.createElement('label');
@@ -1020,7 +1042,7 @@ export function mountConnected({app, services, supabase, authLinkIntent=null}) {
         });
         if(!isCurrentUser(staffUserId)||!box.isConnected||currentView!=='staff-chat')return;
         if(error)throw error;
-        await loadStaffChat(customerId,serviceName,0);
+        await loadStaffChat(customerId,serviceName,0,returnView);
       }catch{
         if(isCurrentUser(staffUserId)&&box.isConnected)
           feedback.textContent='No se pudo confirmar el mensaje. Revisa el chat antes de reenviarlo.';
@@ -1130,6 +1152,64 @@ export function mountConnected({app, services, supabase, authLinkIntent=null}) {
       isActive:()=>currentView==='review-moderation' && Boolean(session) && profile?.role==='admin',
       onBack:()=>renderAdmin(adminFilter)
     });
+  }
+
+  // V84 · Una sola entrada privada para la cuenta propietaria.
+  // El rol se obtiene del perfil autenticado, nunca de un botón o parámetro.
+  const ownerOnly=()=>Boolean(session?.user?.id&&profile?.role==='admin');
+  const ownerRoute=(view,filter)=>{
+    if(!ownerOnly())return;
+    if(view==='admin')return renderAdmin(filter||'all');
+    if(view==='owner-calendar')return showOwnerCalendar();
+    if(view==='owner-messages')return showOwnerMessages();
+    if(view==='owner-mail')return showOwnerMail();
+    if(view==='support-admin')return loadSupportReports();
+    if(view==='review-moderation')return openReviewModeration();
+  };
+  async function showOwnerDashboard(){
+    if(!ownerOnly()){if(!session)showLogin();else renderHome();return}
+    setActiveNav(app,'profile');
+    currentView='owner';
+    const ownerId=session.user.id,epoch=authEpoch;
+    await mountOwnerDashboard({
+      main,supabase,
+      isActive:()=>currentView==='owner'&&isCurrentUser(ownerId)&&
+        authEpoch===epoch&&ownerOnly(),
+      onNavigate:ownerRoute
+    });
+  }
+  async function showOwnerCalendar(){
+    if(!ownerOnly()){if(!session)showLogin();else renderHome();return}
+    setActiveNav(app,'profile');
+    currentView='owner-calendar';
+    const ownerId=session.user.id,epoch=authEpoch;
+    await mountOwnerCalendar({
+      main,supabase,
+      isActive:()=>currentView==='owner-calendar'&&isCurrentUser(ownerId)&&
+        authEpoch===epoch&&ownerOnly(),
+      onBack:()=>showOwnerDashboard(),
+      onNavigate:ownerRoute
+    });
+  }
+  async function showOwnerMessages(){
+    if(!ownerOnly()){if(!session)showLogin();else renderHome();return}
+    setActiveNav(app,'profile');
+    currentView='owner-messages';
+    const ownerId=session.user.id,epoch=authEpoch;
+    await mountOwnerMessages({
+      main,supabase,
+      isActive:()=>currentView==='owner-messages'&&isCurrentUser(ownerId)&&
+        authEpoch===epoch&&ownerOnly(),
+      onBack:()=>showOwnerDashboard(),
+      onConversation:customerId=>loadStaffChat(customerId,'Cliente',0,'owner-messages')
+    });
+  }
+  function showOwnerMail(){
+    if(!ownerOnly()){if(!session)showLogin();else renderHome();return}
+    setActiveNav(app,'profile');
+    currentView='owner-mail';
+    main.innerHTML=ownerMailMarkup();
+    main.querySelector('[data-owner-mail-back]')?.addEventListener('click',()=>showOwnerDashboard());
   }
 
   async function renderAdmin(filter=adminFilter){
@@ -1554,7 +1634,7 @@ export function mountConnected({app, services, supabase, authLinkIntent=null}) {
     if(event==='SIGNED_OUT'){
       authEpoch++;
       void pushManager.suspend();
-      session=null;profile=null;passwordSetupPending=false;
+      session=null;profile=null;passwordSetupPending=false;syncOwnerAccess();
       customerChatPage=0;pendingService=null;pendingView=null;renderHome();
     }else if(event==='PASSWORD_RECOVERY'){
       authEpoch++;
