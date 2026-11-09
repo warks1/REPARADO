@@ -92,7 +92,7 @@ test('V70: contador desconocido o corte de red nunca se interpreta como 0',async
 test('V70: solo administrador consulta la segunda bandeja global y conserva RLS',()=>{
   const app=readFileSync(new URL('../connected.js',import.meta.url),'utf8');
   assert.ok(app.includes("if(!userIsStaff()){renderHome();return}"));
-  assert.ok(app.includes("admin ? baseJobs : baseJobs.eq('operator_id',staffUserId)"));
+  assert.ok(app.includes("fetchStaffWorkCounts(supabase,{operatorId:admin?null:staffUserId})"));
   assert.ok(app.includes("filter==='unassigned'"));
   assert.ok(app.includes("fetchUnassignedRequestsCount(supabase)"));
   assert.ok(app.includes("fetchUnassignedRequestsPage(supabase"));
@@ -113,7 +113,7 @@ test('V70: la interfaz indica la diferencia entre la bandeja completa y los trab
   const app=readFileSync(new URL('../connected.js',import.meta.url),'utf8');
   assert.ok(app.includes("Trabajos sin operario consultados directamente en Supabase, de 50 en 50."));
   assert.ok(app.includes("Historial completo por páginas de 50"));
-  assert.ok(app.includes("Sin operario${admin?' (total)':''}"));
+  assert.ok(app.includes('Sin operario (total)'));
   assert.ok(app.includes("los avisos por correo dependen de una configuración externa"));
   const css=readFileSync(new URL('../vivid-theme.css',import.meta.url),'utf8');
   assert.ok(css.includes(".staff-new-pagination button:focus-visible"));
