@@ -706,12 +706,17 @@ body,.shell,.customer-header,.customer-nav {background:#fff}
 
 /* V86 · Sexta categoría electricidad, coherente con el boceto luminoso original. */
 .category-tile.theme-electricity{
+  grid-column:1/-1;aspect-ratio:auto;min-height:143px!important;
+  padding:20px min(4vw,30px)!important;justify-content:center;
   background:linear-gradient(135deg,#d8f8ff 0%,#8ddfff 48%,#4dbaff 100%);
   box-shadow:inset 0 1px 0 #f6fdff,0 5px 13px #1874b128;
 }
 .category-tile.theme-electricity .category-art{
-  filter:drop-shadow(0 7px 7px #1467ac33);
+  position:absolute;right:8%;top:8px;width:32%;height:calc(100% - 16px);
+  max-height:none;filter:drop-shadow(0 7px 7px #1467ac33);
 }
+.category-tile.theme-electricity strong{font-size:clamp(19px,2.7vw,25px)}
+.category-tile.theme-electricity>span:not(.tile-arrow){max-width:55%;font-size:clamp(12px,1.5vw,15px)}
 .category-tile.theme-electricity .category-art svg{width:100%;height:100%;max-height:138px}
 .category-view.theme-electricity .category-hero{
   background:radial-gradient(circle at 85% 20%,#ffe56b 0%,#d8f5ff 40%,transparent 70%),
@@ -721,7 +726,8 @@ body,.shell,.customer-header,.customer-nav {background:#fff}
 .category-view.theme-electricity .category-hero svg{width:100%;height:100%;max-height:210px}
 .thumb-electricity{background:linear-gradient(135deg,#f4fcff,#ccefff)}
 @media(max-width:560px){
- .category-tile.theme-electricity .category-art{max-width:100%}
+ .category-tile.theme-electricity{min-height:123px!important;padding:14px 17px!important}
+ .category-tile.theme-electricity .category-art{max-width:100%;width:37%;top:5px;height:calc(100% - 10px)}
  .category-view.theme-electricity .category-hero .category-art{width:115px}
 }
 @media(prefers-reduced-motion:reduce){
