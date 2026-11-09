@@ -24,23 +24,23 @@ test('V63: todos los servicios por m² o m incluyen un mínimo y no confunden el
   assert.equal(unitQuote(named('Sustitución de grifo'),'20'),null);
 });
 
-test('V63: presupuesto de parquet de 20 m² no se confunde con 49 € totales',()=>{
+test('V63: presupuesto de parquet de 20 m² no se confunde con 54 € totales',()=>{
   const parquet=named('Instalación de parquet/laminado');
-  assert.equal(unitQuote(parquet,'20').total,980);
-  assert.equal(unitQuote(parquet,'15').total,735);
+  assert.equal(unitQuote(parquet,'20').total,1080);
+  assert.equal(unitQuote(parquet,'15').total,810);
   assert.equal(unitQuote(parquet,'14,5').status,'below-minimum');
   assert.equal(unitQuote(parquet,'').status,'empty');
-  assert.match(unitQuoteText(unitQuote(parquet,'20')),/980,00 €/);
+  assert.match(unitQuoteText(unitQuote(parquet,'20')),/1080,00 €/);
   assert.match(unitQuoteText(unitQuote(parquet,'20')),/presupuesto aceptado/);
   assert.match(unitQuoteText(unitQuote(parquet,'14,5')),/presupuesto específico/);
   assert.match(unitQuantityDescription(unitQuote(parquet,'20')),/20 m²/);
-  assert.doesNotMatch(unitQuantityDescription(unitQuote(parquet,'20')),/980|€|precio aceptado/i);
+  assert.doesNotMatch(unitQuantityDescription(unitQuote(parquet,'20')),/1080|€|precio aceptado/i);
 });
 
 test('V63: longitudes con decimales españoles y validación de cantidades',()=>{
   const rodapie=named('Colocación de rodapié');
-  assert.equal(unitQuote(rodapie,'15,25').total,335.5);
-  assert.equal(unitQuote(rodapie,'15.25').total,335.5);
+  assert.equal(unitQuote(rodapie,'15,25').total,366);
+  assert.equal(unitQuote(rodapie,'15.25').total,366);
   assert.equal(unitQuote(rodapie,'14.99').status,'below-minimum');
   for(const bad of ['-1','0','0,00','10001','1e2','1,234','20xyz','NaN','10/2','1.000,00']){
     assert.equal(unitQuote(rodapie,bad).status,'invalid',bad);

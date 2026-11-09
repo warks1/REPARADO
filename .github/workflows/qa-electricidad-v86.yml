@@ -1,0 +1,53 @@
+name: REPARADO V86 · Electricidad, tarifas Cataluña y fotos
+on:
+  pull_request:
+    branches: [main, feat/v85-manitas-sin-material]
+    paths:
+      - 'catalog-data.js'
+      - 'customer-ui.js'
+      - 'service-photos.js'
+      - 'vivid-theme.css'
+      - 'public/creditos-fotos-servicios.html'
+      - 'tests/electricidad-v86.test.mjs'
+      - 'tests/catalog.test.mjs'
+      - 'tests/catalog-prices-v61.test.mjs'
+      - 'tests/manitas-no-material-v85.test.mjs'
+      - 'e2e/electricidad-v86.spec.mjs'
+      - 'store-metadata/es-ES.json'
+      - '.github/workflows/qa-electricidad-v86.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'catalog-data.js'
+      - 'customer-ui.js'
+      - 'service-photos.js'
+      - 'vivid-theme.css'
+      - 'public/creditos-fotos-servicios.html'
+      - 'tests/electricidad-v86.test.mjs'
+      - 'tests/catalog.test.mjs'
+      - 'tests/catalog-prices-v61.test.mjs'
+      - 'e2e/electricidad-v86.spec.mjs'
+      - '.github/workflows/qa-electricidad-v86.yml'
+permissions:
+  contents: read
+jobs:
+  catalog:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: {node-version: '22'}
+      - run: npm install --no-audit --no-fund
+      - run: npm test
+      - run: npm run build
+  mobile:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: {node-version: '22'}
+      - run: npm install --no-audit --no-fund
+      - run: npx playwright install --with-deps chromium webkit
+      - run: npx playwright test --config playwright.config.mjs e2e/electricidad-v86.spec.mjs

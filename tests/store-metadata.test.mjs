@@ -25,11 +25,11 @@ test('V39: metadatos listos y dentro de los límites de Apple y Google',()=>{
   assert.equal(apple.description,google.full_description);
 });
 
-test('V39: la ficha refleja las cinco categorías reales del catálogo',()=>{
+test('V86: la ficha refleja las seis categorías reales del catálogo',()=>{
   const labels=new Set(services.map(row=>row[0]));
-  for(const category of ['Fontanería','Albañilería','Parquet','Manitas','Reformas integrales'])
+  for(const category of ['Fontanería','Albañilería','Parquet','Manitas','Reformas integrales','Electricidad'])
     assert.ok(labels.has(category),'Falta categoría de catálogo '+category);
-  for(const word of ['Fontanería','pladur','Parquet','Manitas','Reformas','Cataluña'])
+  for(const word of ['Fontanería','pladur','Parquet','Manitas','Reformas','Electricidad','Cataluña'])
     assert.ok(google.full_description.toLowerCase().includes(word.toLowerCase()),'Falta '+word);
   assert.match(google.full_description,/21 % de IVA incluido/);
   assert.match(google.full_description,/orientativos/);
