@@ -1,0 +1,56 @@
+name: REPARADO V97 · CSV privado de trabajos
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'owner-work-export.js'
+      - 'owner-export-view.js'
+      - 'owner-dashboard.js'
+      - 'connected.js'
+      - 'tests/owner-work-export-v97.test.mjs'
+      - 'e2e-private/owner-panel-v84.spec.mjs'
+      - '.github/workflows/qa-owner-export-v97.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'owner-work-export.js'
+      - 'owner-export-view.js'
+      - 'owner-dashboard.js'
+      - 'connected.js'
+      - 'tests/owner-work-export-v97.test.mjs'
+      - 'e2e-private/owner-panel-v84.spec.mjs'
+      - '.github/workflows/qa-owner-export-v97.yml'
+permissions:
+  contents: read
+jobs:
+  csv-unit-build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: {node-version: '22'}
+      - run: npm install --no-audit --no-fund
+      - name: Pruebas CSV antifórmulas, privacidad, roles y paginación
+        run: node --test tests/owner-work-export-v97.test.mjs
+      - name: Compilar app web
+        run: npm run build
+  csv-iphone-android:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: {node-version: '22'}
+      - run: npm install --no-audit --no-fund
+      - run: npx playwright install --with-deps chromium webkit
+      - name: Generación y descarga del CSV en iPhone y Android simulados
+        run: npx playwright test --config playwright.invite.config.mjs e2e-private/owner-panel-v84.spec.mjs -g V97 --project=iphone --project=android
+      - name: Conservar evidencias
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: reparado-v97-export-evidence
+          path: test-results
+          if-no-files-found: warn
+          retention-days: 7
