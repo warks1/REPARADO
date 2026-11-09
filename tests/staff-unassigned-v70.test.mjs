@@ -99,7 +99,7 @@ test('V70: solo administrador consulta la segunda bandeja global y conserva RLS'
   assert.ok(app.includes("counts.unassigned=unassignedQueue.count"));
   assert.ok(app.includes("if(admin && unassignedQueue?.error)"));
   assert.ok(app.includes("filter==='unassigned' && unassignedRequestsPage>="));
-  assert.ok(app.includes("const all=admin && filter==='new' ? newQueue.data : admin && filter==='unassigned' ? unassignedQueue.data : recent"));
+  assert.ok(app.includes("const all=admin && filter==='new' ? newQueue.data : admin && filter==='unassigned' ? unassignedQueue.data : filteredPage.data"));
   assert.ok(app.includes("No se mostrará un recuento incompleto"));
   assert.ok(app.includes("Sin operario"));
   assert.ok(app.includes("data-admin-filter=\"unassigned\""));
@@ -112,7 +112,7 @@ test('V70: solo administrador consulta la segunda bandeja global y conserva RLS'
 test('V70: la interfaz indica la diferencia entre la bandeja completa y los trabajos recientes',()=>{
   const app=readFileSync(new URL('../connected.js',import.meta.url),'utf8');
   assert.ok(app.includes("Trabajos sin operario consultados directamente en Supabase, de 50 en 50."));
-  assert.ok(app.includes("Máximo 150 recientes."));
+  assert.ok(app.includes("Historial completo por páginas de 50"));
   assert.ok(app.includes("Sin operario${admin?' (total)':''}"));
   assert.ok(app.includes("los avisos por correo dependen de una configuración externa"));
   const css=readFileSync(new URL('../vivid-theme.css',import.meta.url),'utf8');

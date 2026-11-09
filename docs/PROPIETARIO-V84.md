@@ -1,4 +1,4 @@
-# REPARADO V91 · Panel del propietario
+# REPARADO V92 · Panel del propietario
 
 ## Cómo entrar
 Iniciar sesión con la única cuenta que tenga el rol **admin** en Supabase.
@@ -113,3 +113,21 @@ se comparte con clientes ni operarios.
 Si la V91 no se instala, la V90 sigue mostrando las conversaciones pero
 sin insignias de lectura; en ningún caso REPARADO inventa estados «leído»
 o «no leído». No es una integración de email externo de Outlook.
+
+## V92 · Historial operativo completo
+
+Las pantallas **Todos, Pendientes, Agenda, En curso y Finalizados** del panel
+interno ya no dependen de la lista de los 150 trabajos recientes para mostrar
+sus resultados. Consultan cada filtro en Supabase con su estado y paginan
+de **50 en 50**, con total exacto de trabajos en el filtro abierto.
+
+La agenda se ordena por fecha de visita; las demás vistas, por creación
+descendente e ID estable. Los operarios consultan únicamente servicios con
+su `operator_id`, además de las políticas RLS existentes.
+
+**Distinguir contadores:** la zona de resumen y los números de pestañas
+no seleccionadas reflejan los últimos 150 servicios, salvo Nuevas y Sin
+operario, que tienen recuentos exactos. El filtro abierto y su navegador de
+páginas muestran el **total real** confirmado por Supabase, no el parcial.
+Las vistas específicas Nuevas y Sin operario conservan su paginación
+anterior. Guardar cambios mantiene la página actual cuando es posible.
