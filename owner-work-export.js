@@ -1,4 +1,5 @@
 import {Capacitor} from '@capacitor/core';
+import {madridLocalDateTimeToIso} from './staff-timezone.js';
 // REPARADO V97 · Informe de trabajo interno CSV, NO una factura.
 // Solo el titular con sesión admin verificada puede preparar la descarga.
 // La selección y exportación respetan RLS; nunca usa service_role en el cliente.
@@ -11,6 +12,31 @@ export const ownerExportColumns=
   'id,service_name,category,status,city,price,operator_name,created_at,scheduled_at';
 const UUID=/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i;
 
+// Los filtros corresponden a días naturales en Cataluña, no al huso del móvil.
+function checkedExportDate(value){
+  if(value===''||value===null||value===undefined)return '';
+  if(typeof value!=='string'||!/^20\d{2}-\d{2}-\d{2}$/.test(value))
+    throw new OwnerExportError('date');
+  const [year,month,day]=value.split('-').map(Number);
+  if(new Date(Date.UTC(year,month-1,day)).toISOString().slice(0,10)!==value)
+    throw new OwnerExportError('date');
+  return value;
+}
+export function ownerExportDateRange(fromDate='',toDate=''){
+  const from=checkedExportDate(fromDate),to=checkedExportDate(toDate);
+  if(from&&to&&from>to)throw new OwnerExportError('date');
+  const startIso=from?madridLocalDateTimeToIso(from+'T00:00').iso:null;
+  let endExclusiveIso=null;
+  if(to){
+    const [year,month,day]=to.split('-').map(Number);
+    const next=new Date(Date.UTC(year,month-1,day+1)).toISOString().slice(0,10);
+    endExclusiveIso=madridLocalDateTimeToIso(next+'T00:00').iso;
+  }
+  if((from&&!startIso)||(to&&!endExclusiveIso))
+    throw new OwnerExportError('date');
+  return {fromDate:from,toDate:to,startIso,endExclusiveIso};
+}
+
 export class OwnerExportError extends Error{
   constructor(code){
     super(code==='session'?
@@ -19,6 +45,8 @@ export class OwnerExportError extends Error{
       'El historial supera 10.000 trabajos. Acota el informe por estado o solicita una exportación especializada.':
       code==='changed'?
       'El historial cambió durante la exportación. Vuelve a generar la copia para evitar registros incompletos.':
+      code==='date'?
+      'Revisa el intervalo: utiliza fechas válidas de 2000 a 2099 y Desde no posterior a Hasta.':
       'No se pudo generar la copia privada. Comprueba la conexión e inténtalo de nuevo.');
     this.code=code;this.name='OwnerExportError';
   }
@@ -72,17 +100,21 @@ export function ownerWorkCsv(rows){
   }
   return '\uFEFF'+lines.join('\r\n')+'\r\n';
 }
-export function ownerWorkFilename(now=new Date(),status='all'){
+export function ownerWorkFilename(now=new Date(),status='all',fromDate='',toDate=''){
   if(!(now instanceof Date)||!Number.isFinite(now.getTime())||
      !ownerExportStatuses.includes(status))throw new OwnerExportError('network');
-  return 'REPARADO-trabajos-'+status+'-'+now.toISOString().slice(0,10)+'.csv';
+  const period=ownerExportDateRange(fromDate,toDate);
+  const suffix=(period.fromDate?'-desde-'+period.fromDate:'')+
+    (period.toDate?'-hasta-'+period.toDate:'');
+  return 'REPARADO-trabajos-'+status+suffix+'-'+now.toISOString().slice(0,10)+'.csv';
 }
 
 export async function buildOwnerWorkCsv({supabase,ownerId,isActive,
-  status='all',onProgress=()=>{},now=new Date()}={}){
+  status='all',fromDate='',toDate='',onProgress=()=>{},now=new Date()}={}){
   if(!ownerExportStatuses.includes(status)||!supabase||
      !(now instanceof Date)||!Number.isFinite(now.getTime()))
     throw new OwnerExportError('network');
+  const period=ownerExportDateRange(fromDate,toDate);
   await verifyServerOwner(supabase,ownerId,isActive);
   const rows=[],ids=new Set();
   let expected=null;
@@ -91,6 +123,8 @@ export async function buildOwnerWorkCsv({supabase,ownerId,isActive,
     let query=supabase.from('service_requests')
       .select(ownerExportColumns,{count:'exact'});
     if(status!=='all')query=query.eq('status',status);
+    if(period.startIso)query=query.gte('created_at',period.startIso);
+    if(period.endExclusiveIso)query=query.lt('created_at',period.endExclusiveIso);
     let result;
     try{
       result=await query.order('created_at',{ascending:true})
@@ -122,8 +156,8 @@ export async function buildOwnerWorkCsv({supabase,ownerId,isActive,
   await verifyServerOwner(supabase,ownerId,isActive);
   return {
     type:'REPARADO_WORK_REPORT_CSV_V97',ownerId,
-    filename:ownerWorkFilename(now,status),
-    count:rows.length,status,
+    filename:ownerWorkFilename(now,status,period.fromDate,period.toDate),
+    count:rows.length,status,fromDate:period.fromDate,toDate:period.toDate,
     contents:ownerWorkCsv(rows)
   };
 }
@@ -146,7 +180,7 @@ export async function shareOwnerWorkCsv(snapshot,{
   if(snapshot?.type!=='REPARADO_WORK_REPORT_CSV_V97'||
      snapshot.ownerId!==ownerId||!ownerExportStatuses.includes(snapshot.status)||
      typeof snapshot.contents!=='string'||!snapshot.contents.startsWith('\uFEFF')||
-     !/^REPARADO-trabajos-(all|new|quoted|accepted|scheduled|in_progress|completed|cancelled)-\d{4}-\d{2}-\d{2}\.csv$/.test(String(snapshot.filename)))
+     !/^REPARADO-trabajos-(all|new|quoted|accepted|scheduled|in_progress|completed|cancelled)(?:-desde-\d{4}-\d{2}-\d{2})?(?:-hasta-\d{4}-\d{2}-\d{2})?-\d{4}-\d{2}-\d{2}\.csv$/.test(String(snapshot.filename)))
     throw exportFailure();
   if(!isNative()){
     webDownload(snapshot);

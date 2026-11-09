@@ -1,4 +1,4 @@
-# REPARADO V98 · Panel del propietario
+# REPARADO V99 · Panel del propietario
 
 ## Cómo entrar
 Iniciar sesión con la única cuenta que tenga el rol **admin** en Supabase.
@@ -250,3 +250,29 @@ después de V91; primero REPARADO Test, luego producción tras revisión
 independiente. Si falta la RPC o falla la conexión, la insignia se
 omite; **jamás se inventa un cero**. Pulsar «Actualizar» vuelve a contar.
 Este número no incluye Outlook ni mensajes externos.
+
+## V99 · Exportar el CSV por fechas de solicitud
+
+El formulario privado **Exportar historial CSV** incluye ahora dos fechas
+opcionales **Desde** y **Hasta** (esta última inclusive). Se pueden combinar
+con el filtro por estado o dejar vacías para descargar todo el histórico,
+sin eliminar la limitación de 10.000 registros por copia.
+
+Las fechas son días naturales de **Europe/Madrid (Cataluña)** y se convierten
+a límites UTC para la consulta `service_requests` de Supabase. Esto mantiene
+correctos los días de 23 y 25 horas cuando se cambia entre horario de
+invierno y verano, incluso si el iPhone, Android o PC está configurado en
+otra zona horaria.
+
+El filtro se aplica **en el servidor y antes de paginar**. Se conserva la
+doble verificación de sesión de administrador, RLS, columnas limitadas sin
+datos de contacto de clientes, protección de fórmulas CSV y control de
+duplicados. Si un filtro cambia, la descarga anterior queda deshabilitada
+hasta preparar un informe nuevo. El nombre del archivo identifica el
+intervalo seleccionado.
+
+**Pruebas:** `tests/owner-work-export-v99.test.mjs` valida conversiones
+horarias, filtros del servidor, fechas inválidas y CSV descargable; además,
+`e2e-private/owner-panel-v84.spec.mjs` prueba fechas, cambio de filtros y
+descarga en navegadores móviles simulados. No genera facturas fiscales ni
+sincroniza correos de Outlook.
