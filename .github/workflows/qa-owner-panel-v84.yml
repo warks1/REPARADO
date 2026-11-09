@@ -13,6 +13,8 @@ on:
       - 'tests/owner-calendar-pagination-v87.test.mjs'
       - 'tests/owner-agenda-v88.test.mjs'
       - 'tests/owner-directory-search-v89.test.mjs'
+      - 'tests/owner-conversations-v90.test.mjs'
+      - 'supabase/migration-v90-owner-inbox.sql'
       - 'e2e-private/owner-panel-v84.spec.mjs'
       - '.github/workflows/qa-owner-panel-v84.yml'
   push:
@@ -28,6 +30,8 @@ on:
       - 'tests/owner-calendar-pagination-v87.test.mjs'
       - 'tests/owner-agenda-v88.test.mjs'
       - 'tests/owner-directory-search-v89.test.mjs'
+      - 'tests/owner-conversations-v90.test.mjs'
+      - 'supabase/migration-v90-owner-inbox.sql'
       - 'e2e-private/owner-panel-v84.spec.mjs'
       - '.github/workflows/qa-owner-panel-v84.yml'
 permissions:

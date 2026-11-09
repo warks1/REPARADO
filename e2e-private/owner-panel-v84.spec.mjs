@@ -15,7 +15,7 @@ function jwt(id){
  })+'.fake-signature';
 }
 
-async function setup(page,role='admin'){
+async function setup(page,role='admin',inboxRpc=false){
  const id=role==='admin'?adminId:role==='operator'?operatorId:clientId;
  const user={id,email:role+'@example.invalid',role:'authenticated',aud:'authenticated',
    app_metadata:{provider:'email',providers:['email']},
@@ -25,7 +25,7 @@ async function setup(page,role='admin'){
  await page.addInitScript(({key,session})=>localStorage.setItem(key,JSON.stringify(session)),{
    key:'sb-reparado-test-placeholder-auth-token',session
  });
- const counts=[],updates=[],reads=[],peopleQueries=[];
+ const counts=[],updates=[],reads=[],peopleQueries=[],conversationReads=[];
  let currentStatus='accepted',scheduledAt=null,assignedTo=null;
  const job=()=>({id:jobId,service_name:'Instalación de grifo',
    status:currentStatus,operator_id:assignedTo,
@@ -60,6 +60,18 @@ async function setup(page,role='admin'){
    }
    if(path==='/rest/v1/customer_reviews')return output([],false,0);
    if(path==='/rest/v1/support_reports')return output([],false,0);
+   if(path==='/rest/v1/rpc/reparado_owner_conversations'&&method==='POST'){
+     conversationReads.push('conversations');
+     if(role!=='admin')return route.fulfill({status:403,contentType:'application/json',
+       body:'{"code":"42501","message":"Acceso denegado"}'});
+     if(!inboxRpc)return route.fulfill({status:404,contentType:'application/json',
+       body:'{"code":"PGRST202","message":"No existe la función"}'});
+     return output({total:1,rows:[{
+       customer_id:clientId,last_message_id:'e0000000-0000-4000-8000-000000000005',
+       sender_id:clientId,last_message_at:'2026-11-09T10:00:00Z',
+       last_body:'¿Cuándo podéis venir?'
+     }]},false,1);
+   }
    if(path==='/rest/v1/messages'&&method==='GET'){
      reads.push('messages');
      return output([{
@@ -88,7 +100,7 @@ async function setup(page,role='admin'){
    }
    return route.fulfill({status:404,contentType:'application/json',body:'{}'});
  });
- return {counts,updates,reads,peopleQueries};
+ return {counts,updates,reads,peopleQueries,conversationReads};
 }
 
 test('V84: administrador entra al centro privado y abre las diez secciones',async({page})=>{
@@ -242,4 +254,18 @@ test('V89: titular busca contactos por nombre o teléfono y recupera el director
  await expect(form.locator('[name="term"]')).toHaveValue('');
  await expect(people.locator('[data-owner-people-status]')).toContainText('perfiles');
  expect(called.peopleQueries.at(-1).includes('ilike.')).toBe(false);
+});
+
+test('V90: inbox del propietario agrupa por conversación cuando hay RPC segura',async({page})=>{
+ const called=await setup(page,'admin',true);
+ await page.goto('/');
+ await page.locator('[data-owner-target="owner-messages"]').click();
+ const inbox=page.locator('#reparado-owner-messages');
+ await expect(inbox.locator('.owner-message-row')).toHaveCount(1);
+ await expect(inbox.locator('[data-owner-messages-status]')).toContainText('1 conversaciones');
+ await expect(inbox).toContainText('¿Cuándo podéis venir?');
+ expect(called.conversationReads.length).toBeGreaterThanOrEqual(1);
+ expect(called.reads).toHaveLength(0); // no se consulta la lista legacy
+ await inbox.locator('[data-owner-open-chat]').click();
+ await expect(page.locator('#messages')).toContainText('¿Cuándo podéis venir?');
 });
