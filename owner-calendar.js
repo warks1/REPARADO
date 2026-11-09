@@ -1,4 +1,4 @@
-// REPARADO V87 · Calendario privado del propietario, horario de Cataluña.
+// REPARADO V88 · Calendario privado del propietario, horario de Cataluña.
 // Estado accepted significa presupuesto aceptado por el cliente. No programar
 // solicitudes new/quoted; las comprobaciones SQL/RLS y V7 son autoritativas.
 import {madridDateTimeInput,madridDateTimeText,madridLocalDateTimeToIso,
@@ -38,6 +38,19 @@ export function ownerTodayMadrid(now=new Date()){
 }
 export function ownerWeekDays(start){
   return Array.from({length:7},(_,i)=>plusDays(ownerWeekStart(start),i));
+}
+
+// Selección de operario permitida solamente desde el directorio autenticado.
+export function ownerValidOperatorId(operators,requestedId){
+  if(!requestedId||!UUID.test(String(requestedId))||!Array.isArray(operators))return null;
+  const match=operators.find(row=>row.id===requestedId&&row.role==='operator');
+  return match?match.id:null;
+}
+
+// El filtro es una ayuda visual. Los permisos reales siguen siendo las RLS.
+export function ownerVisibleVisits(visits,operatorId=null){
+  if(!Array.isArray(visits))return [];
+  return operatorId?visits.filter(row=>row.operator_id===operatorId):visits;
 }
 
 export async function fetchOwnerCalendar(supabase,start){
@@ -159,7 +172,7 @@ function dayLabel(day){
     day:'numeric',month:'short'}).format(new Date(day+'T12:00:00Z'));
 }
 
-export async function mountOwnerCalendar({main,supabase,isActive,onBack,onNavigate}){
+export async function mountOwnerCalendar({main,supabase,isActive,onBack,onNavigate,initialOperatorId=null}){
   if(!isActive())return;
   let monday=ownerWeekStart(ownerTodayMadrid()),activeData=null;
   let sequence=0,saving=false;
@@ -173,11 +186,16 @@ export async function mountOwnerCalendar({main,supabase,isActive,onBack,onNaviga
     '<button type="button" data-owner-week="prev">← Semana anterior</button>'+
     '<strong data-owner-week-label></strong>'+
     '<button type="button" data-owner-week="next">Semana siguiente →</button></div>'+
+    '<div class="owner-calendar-filters">'+
+    '<label>Operario<select data-owner-operator-filter aria-label="Filtrar citas por operario">'+
+    '<option value="">Todos los operarios</option></select></label>'+
+    '<label>Ir a semana de <input type="date" data-owner-date aria-label="Ir a la semana de una fecha"></label>'+
+    '<button type="button" data-owner-today>Semana actual</button></div>'+
     '<p role="status" aria-live="polite" data-owner-calendar-feedback>Cargando agenda…</p>'+
     '<div class="owner-week-grid" data-owner-days></div>'+ 
     '<button type="button" data-owner-more="scheduled" hidden>Mostrar más visitas de esta semana</button>'+
     '<section class="owner-pending-visits"><h2>Aceptados por programar</h2>'+
-    '<p>Solo se programa un presupuesto después de que el cliente lo acepte.</p>'+
+    '<p>Solo se programa un presupuesto después de que el cliente lo acepte. El filtro de operarios afecta a las visitas; aquí aparecen todos los trabajos pendientes de asignación.</p>'+
     '<div data-owner-accepted></div>'+ 
     '<button type="button" data-owner-more="accepted" hidden>Mostrar más presupuestos aceptados</button></section>'+
     '<section class="owner-visit-editor" data-owner-editor hidden><h2>Asignar o cambiar visita</h2>'+
@@ -194,13 +212,19 @@ export async function mountOwnerCalendar({main,supabase,isActive,onBack,onNaviga
   const queue=root.querySelector('[data-owner-accepted]');
   const editor=root.querySelector('[data-owner-editor]');
   const form=root.querySelector('[data-owner-visit-form]');
-  let selected=null,loadingMore=false;
+  let selected=null,loadingMore=false,selectedOperatorId=initialOperatorId;
+  const operatorFilter=root.querySelector('[data-owner-operator-filter]');
+  const weekPicker=root.querySelector('[data-owner-date]');
   const moreVisits=root.querySelector('[data-owner-more="scheduled"]');
   const moreAccepted=root.querySelector('[data-owner-more="accepted"]');
   const active=()=>root.isConnected&&isActive();
   const render=()=>{
     if(!activeData)return;
-    feedback.textContent=activeData.scheduled.length+' visitas cargadas esta semana · '+
+    const visible=ownerVisibleVisits(activeData.scheduled,selectedOperatorId);
+    const operator=activeData.operators.find(row=>row.id===selectedOperatorId);
+    feedback.textContent=(operator?
+      visible.length+' de '+activeData.scheduled.length+' visitas cargadas de '+(operator.full_name||'Operario'):
+      activeData.scheduled.length+' visitas cargadas esta semana')+' · '+
       activeData.accepted.length+' trabajos aceptados cargados para programar'+
       (activeData.partialWeek||activeData.partialQueue?' · Puedes cargar los restantes.':'');
     moreVisits.hidden=!activeData.partialWeek;
@@ -209,7 +233,7 @@ export async function mountOwnerCalendar({main,supabase,isActive,onBack,onNaviga
     moreAccepted.disabled=loadingMore;
     const days=ownerWeekDays(monday);
     grid.innerHTML=days.map(day=>{
-      const entries=activeData.scheduled.filter(item=>
+      const entries=visible.filter(item=>
         madridDateTimeInput(item.scheduled_at).slice(0,10)===day);
       return '<div class="owner-day"><h3>'+esc(dayLabel(day))+'</h3>'+
         (entries.length?entries.map(item=>
@@ -242,6 +266,12 @@ export async function mountOwnerCalendar({main,supabase,isActive,onBack,onNaviga
       return;
     }
     activeData=result;
+    selectedOperatorId=ownerValidOperatorId(result.operators,selectedOperatorId);
+    operatorFilter.innerHTML='<option value="">Todos los operarios</option>'+
+      result.operators.filter(op=>op.role==='operator'&&UUID.test(String(op.id))).map(op=>
+        '<option value="'+esc(op.id)+'">'+esc(op.full_name||'Operario')+'</option>').join('');
+    operatorFilter.value=selectedOperatorId||'';
+    weekPicker.value=monday;
     render();
   };
   const loadMore=async kind=>{
@@ -272,8 +302,9 @@ export async function mountOwnerCalendar({main,supabase,isActive,onBack,onNaviga
     if(!active()||!activeData||saving)return;
     selected=[...activeData.scheduled,...activeData.accepted].find(x=>x.id===id)||null;
     if(!selected)return;
+    const preferred=selected.operator_id||selectedOperatorId;
     const choices=activeData.operators.map(op=>
-      '<option value="'+esc(op.id)+'" '+(selected.operator_id===op.id?'selected':'')+'>'+
+      '<option value="'+esc(op.id)+'" '+(preferred===op.id?'selected':'')+'>'+
       esc(op.full_name||'Operario')+'</option>').join('');
     form.elements.namedItem('operator').innerHTML='<option value="">Selecciona operario</option>'+choices;
     form.elements.namedItem('when').value=madridDateTimeInput(selected.scheduled_at);
@@ -293,6 +324,28 @@ export async function mountOwnerCalendar({main,supabase,isActive,onBack,onNaviga
       monday=moveOwnerWeek(monday,weekButton.dataset.ownerWeek==='prev'?-1:1);
       void show();return;
     }
+  });
+  operatorFilter.addEventListener('change',()=>{
+    if(!active()||!activeData||saving)return;
+    selectedOperatorId=ownerValidOperatorId(activeData.operators,operatorFilter.value);
+    operatorFilter.value=selectedOperatorId||'';
+    render();
+  });
+  weekPicker.addEventListener('change',()=>{
+    if(!active()||saving)return;
+    try{
+      const nextWeek=ownerWeekStart(weekPicker.value);
+      monday=nextWeek;
+      void show();
+    }catch{
+      weekPicker.value=monday;
+      feedback.textContent='Fecha no válida. El calendario no se ha cambiado.';
+    }
+  });
+  root.querySelector('[data-owner-today]').addEventListener('click',()=>{
+    if(!active()||saving)return;
+    monday=ownerWeekStart(ownerTodayMadrid());
+    void show();
   });
   root.querySelector('[data-owner-back]').addEventListener('click',onBack);
   root.querySelector('[data-owner-reload]').addEventListener('click',()=>{if(!saving)void show()});
