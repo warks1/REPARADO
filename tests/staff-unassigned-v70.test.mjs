@@ -96,7 +96,7 @@ test('V70: solo administrador consulta la segunda bandeja global y conserva RLS'
   assert.ok(app.includes("filter==='unassigned'"));
   assert.ok(app.includes("fetchUnassignedRequestsCount(supabase)"));
   assert.ok(app.includes("fetchUnassignedRequestsPage(supabase"));
-  assert.ok(app.includes("counts.unassigned=unassignedQueue.count"));
+  assert.ok(app.includes("unassigned:admin?unassignedQueue.count:0"));
   assert.ok(app.includes("if(admin && unassignedQueue?.error)"));
   assert.ok(app.includes("filter==='unassigned' && unassignedRequestsPage>="));
   assert.ok(app.includes("const all=admin && filter==='new' ? newQueue.data : admin && filter==='unassigned' ? unassignedQueue.data : filteredPage.data"));
