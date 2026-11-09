@@ -16,10 +16,10 @@ import {serviceAreaIssue,serviceAreaNoticeMarkup} from './service-area.js'
 import {preferredDateField,preferredDateMinimum,preferredDateIssue} from './date-preference.js'
 import {madridDateTimeInput,madridDateTimeText,madridVisitDateTimeToIso} from './staff-timezone.js'
 import { operatorMaySetStatus } from './rules.js'
-import {jobFilters,filterJobs,jobCounters,vatIncluded,sameOperatorSlot,staffVisitGapMinutes,validateAdminJobUpdate} from './staff-workflows.js'
+import {jobFilters,filterJobs,vatIncluded,sameOperatorSlot,staffVisitGapMinutes,validateAdminJobUpdate} from './staff-workflows.js'
 import {fetchNewRequestsCount,fetchNewRequestsPage,newRequestsPageCount,canAdvanceNewRequests} from './staff-inbox.js'
 import {fetchUnassignedRequestsCount,fetchUnassignedRequestsPage} from './staff-unassigned.js'
-import {fetchStaffWorkPage,staffWorkPageCount,staffWorkCanAdvance} from './staff-work-pages.js'
+import {fetchStaffWorkPage,fetchStaffWorkCounts,staffWorkPageCount,staffWorkCanAdvance} from './staff-work-pages.js'
 import {fetchStaffSupportPage,staffSupportPageSize,staffSupportPageCount,staffSupportCanAdvance} from './staff-support-page.js'
 import {fetchCustomerChatPage,customerChatPageSize,customerChatPageCount,customerChatCanReadOlder} from './customer-chat-page.js'
 import {fetchCustomerRequestsPage,customerRequestsPageSize,customerRequestsPageCount,customerRequestsCanAdvance} from './customer-requests-page.js'
@@ -1279,13 +1279,9 @@ export function mountConnected({app, services, supabase, authLinkIntent=null}) {
     main.innerHTML=`<section class="card">${backButton}<h2>Panel interno</h2><p>Cargando solicitudes…</p></section>`;
     const admin=profile?.role==='admin';
     const staffUserId=session.user.id, loadingScreen=main.firstElementChild;
-    const baseJobs=supabase.from('service_requests')
-      .select('id,customer_id,service_name,street,address_number,postal_code,city,phone,description,status,scheduled_at,operator_id,operator_name,price')
-      .order('created_at',{ascending:false}).limit(150);
-    let jobs,team,newQueue,unassignedQueue,filteredPage;
+    let team,newQueue,unassignedQueue,filteredPage,filterCounts;
     try{
-      [jobs,team,newQueue,unassignedQueue,filteredPage]=await Promise.all([
-        admin ? baseJobs : baseJobs.eq('operator_id',staffUserId),
+      [team,newQueue,unassignedQueue,filteredPage,filterCounts]=await Promise.all([
         admin ? supabase.from('profiles').select('id,full_name,role').eq('role','operator') : Promise.resolve({data:[],error:null}),
         admin
           ? (filter==='new'
@@ -1301,12 +1297,13 @@ export function mountConnected({app, services, supabase, authLinkIntent=null}) {
           ? Promise.resolve({data:[],count:0,error:false})
           : fetchStaffWorkPage(supabase,{
               filter,page:staffWorkPage,operatorId:admin?null:staffUserId
-            })
+            }),
+        fetchStaffWorkCounts(supabase,{operatorId:admin?null:staffUserId})
       ]);
-    }catch{jobs={data:null,error:new Error('Error de conexión')};team={data:[],error:null};newQueue={count:null,error:true};unassignedQueue={count:null,error:true};filteredPage={error:true};}
+    }catch{team={data:[],error:null};newQueue={count:null,error:true};unassignedQueue={count:null,error:true};filteredPage={error:true};filterCounts={counts:null,error:true};}
     if(currentView!=='admin'||!isCurrentUser(staffUserId)||main.firstElementChild!==loadingScreen)return;
-    if(jobs.error){
-      main.innerHTML=`<section class="card">${backButton}<h2>Panel interno</h2><p>No se pudieron cargar los trabajos. Comprueba la conexión.</p><button type="button" data-reload-staff>Reintentar</button></section>`;
+    if(filterCounts?.error||!filterCounts?.counts){
+      main.innerHTML=`<section class="card">${backButton}<h2>Panel interno</h2><p>No se pudieron comprobar los contadores completos del servidor. No se mostrarán cifras parciales como si fueran totales.</p><button type="button" data-reload-staff>Reintentar</button></section>`;
       main.querySelector('[data-reload-staff]')?.addEventListener('click',()=>renderAdmin(filter));
       return;
     }
@@ -1345,25 +1342,22 @@ export function mountConnected({app, services, supabase, authLinkIntent=null}) {
       void renderAdmin('unassigned');
       return;
     }
-    const recent=jobs.data||[], operators=team.data||[];
+    const operators=team.data||[];
     const all=admin && filter==='new' ? newQueue.data : admin && filter==='unassigned' ? unassignedQueue.data : filteredPage.data;
-    const counts=jobCounters(recent);
-    if(admin){
-      counts.new=newQueue.count;
-      counts.unassigned=unassignedQueue.count;
-    }
+    const counts={...filterCounts.counts,unassigned:admin?unassignedQueue.count:0};
+    if(admin)counts.new=newQueue.count;
+    if(!admin||!['new','unassigned'].includes(filter))counts[filter]=filteredPage.count;
     const tabCounts={...counts};
-    if(!admin||!['new','unassigned'].includes(filter))
-      tabCounts[filter]=filteredPage.count;
     const chosen=filterJobs(all,filter);
     const statuses=validStatus.map(x=>({id:x,label:statusLabels[x]}));
-    main.innerHTML=`<section class="card">${backButton}<h2>Panel interno · Reparado</h2><p class="notice">${admin && filter==='new'?'Solicitudes nuevas consultadas directamente en Supabase, de 50 en 50.':admin && filter==='unassigned'?'Trabajos sin operario consultados directamente en Supabase, de 50 en 50.':(admin?'Panel de administración':'Solicitudes asignadas a tu cuenta')+'. Historial completo por páginas de 50; los contadores de pestañas (excepto Nuevas y Sin operario) resumen los 150 trabajos recientes.'}</p>
+    main.innerHTML=`<section class="card">${backButton}<h2>Panel interno · Reparado</h2><p class="notice">${admin && filter==='new'?'Solicitudes nuevas consultadas directamente en Supabase, de 50 en 50.':admin && filter==='unassigned'?'Trabajos sin operario consultados directamente en Supabase, de 50 en 50.':(admin?'Panel de administración':'Solicitudes asignadas a tu cuenta')+'. Historial completo por páginas de 50. Todos los contadores consultan el total real autorizado en Supabase, sin límite de 150.'}</p>
     ${admin?`<div class="staff-new-queue" role="status"><div><strong>${counts.new===0?'No hay solicitudes nuevas':counts.new+' solicitud(es) nueva(s)'}</strong><small>Recuento de todas las solicitudes nuevas del servidor y ${counts.unassigned} trabajos sin operario en total, no solo los últimos 150. Consulta ambas bandejas por páginas; los avisos por correo dependen de una configuración externa.</small></div><div class="staff-queue-actions"><button type="button" data-admin-filter="new">Ver nuevas</button><button type="button" data-admin-filter="unassigned">Ver sin operario</button><button type="button" data-reload-staff>Actualizar solicitudes</button></div></div>`:''}
     <div class="staff-summary">
-      <div><strong>${counts.all}</strong><small>Trabajos recientes</small></div>
+      <div><strong>${counts.all}</strong><small>Trabajos totales</small></div>
       <div><strong>${counts.pending}</strong><small>Pendientes</small></div>
       <div><strong>${counts.agenda}</strong><small>Programados / en curso</small></div>
-      <div><strong>${counts.unassigned}</strong><small>Sin operario${admin?' (total)':''}</small></div>
+      ${admin?'<div><strong>'+counts.unassigned+'</strong><small>Sin operario (total)</small></div>':
+      '<div><strong>'+counts.finished+'</strong><small>Terminados</small></div>'}
     </div>
     <div class="staff-filters" role="group" aria-label="Filtrar trabajos">${jobFilters.filter(f=>admin||f.id!=='unassigned').map(f=>`<button type="button" data-admin-filter="${f.id}" aria-pressed="${filter===f.id}">${esc(f.label)} (${tabCounts[f.id]})</button>`).join('')}</div>
     ${admin?'<button type="button" class="review-moderation-entry" data-view="review-moderation">⭐ Revisar reseñas de clientes</button>':''}
