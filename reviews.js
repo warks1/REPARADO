@@ -1,4 +1,5 @@
 import {fetchReviewableRequests,recentReviewableLimit} from './reviewable-requests.js';
+import {fetchApprovedReviewsPage,publicReviewsHasMore,publicReviewsPageSize} from './public-reviews-page.js';
 // Reseñas publicadas: exclusivamente comentarios reales, aprobados por administración.
 // Nunca se crean opiniones ni puntuaciones de demostración para la portada.
 const escapeText=value=>String(value??'').replace(/[&<>"']/g,c=>({
@@ -54,6 +55,8 @@ export function renderReviewsSection(){
     '<p class="reviews-summary" data-reviews-summary aria-live="polite">Consultando valoraciones reales…</p>'+
     '<div class="review-feed-grid" data-review-feed>'+reviewFeedMarkup().html+'</div>'+
     '<button class="services-expand review-expand" type="button" data-expand-reviews aria-expanded="false" hidden>Ver más valoraciones ↓</button>'+
+    '<button class="services-expand review-load-more" type="button" data-load-more-reviews hidden>Cargar más valoraciones ↓</button>'+
+    '<p data-reviews-load-feedback role="status" aria-live="polite"></p>'+
     '<div class="review-write"><h3>Valora tu servicio</h3>'+
     '<p data-review-mode-info>Para publicar una opinión auténtica hay que iniciar sesión y tener un servicio finalizado.</p>'+
     '<button type="button" class="primary-cta" data-review-login hidden>Iniciar sesión para valorar</button>'+
@@ -69,8 +72,11 @@ export async function mountReviews(main,{supabase=null,session=null,selectedRequ
   const root=main.querySelector('#reparado-reviews');
   if(!root)return;
   let real=[],expanded=false,loaded=!supabase,loadFailed=false;
+  let rawLoaded=0,total=null,loadingMore=false,moreFailed=false;
   const feed=root.querySelector('[data-review-feed]');
   const expand=root.querySelector('[data-expand-reviews]');
+  const more=root.querySelector('[data-load-more-reviews]');
+  const moreFeedback=root.querySelector('[data-reviews-load-feedback]');
   const summary=root.querySelector('[data-reviews-summary]');
   const showFeed=()=>{
     if(!root.isConnected)return;
@@ -79,17 +85,51 @@ export async function mountReviews(main,{supabase=null,session=null,selectedRequ
       '<p class="review-loading">No se pudieron cargar las valoraciones reales. Vuelve a intentarlo más tarde.</p>':html;
     expand.hidden=loadFailed||count<=4;
     expand.setAttribute('aria-expanded',String(expanded));
-    expand.textContent=expanded?'Mostrar menos valoraciones ↑':'Ver todas las valoraciones ('+count+') ↓';
+    expand.textContent=expanded?'Mostrar menos valoraciones ↑':'Ver más valoraciones ('+count+') ↓';
+    more.hidden=loadFailed||!expanded||!publicReviewsHasMore(rawLoaded,total);
+    more.disabled=loadingMore;
+    more.textContent=loadingMore?'Cargando valoraciones…':moreFailed?
+      'Reintentar cargar más valoraciones':'Cargar más valoraciones ↓';
     if(!loaded)summary.textContent='Consultando valoraciones reales…';
     else if(loadFailed)summary.textContent='Las valoraciones reales no están disponibles en este momento.';
     else {
       const stats=verifiedReviewSummary(real);
-      summary.textContent=stats.count?
-        stats.count+' valoraciones reales · '+stats.average.toLocaleString('es-ES')+'/5 de media':
-        'Todavía no hay valoraciones reales publicadas.';
+      if(!stats.count){
+        summary.textContent=total===0?'Todavía no hay valoraciones reales publicadas.':
+          'No se han podido mostrar valoraciones válidas.';
+      }else if(total===stats.count){
+        summary.textContent=stats.count+' valoraciones reales · '+
+          stats.average.toLocaleString('es-ES')+'/5 de media';
+      }else{
+        summary.textContent=stats.count+' de '+total+' valoraciones reales mostradas · '+
+          stats.average.toLocaleString('es-ES')+'/5 de media de las mostradas';
+      }
     }
   };
   expand.addEventListener('click',()=>{expanded=!expanded;showFeed()});
+  more.addEventListener('click',async()=>{
+    if(!root.isConnected||loadingMore||!publicReviewsHasMore(rawLoaded,total)||!supabase)return;
+    loadingMore=true;
+    moreFailed=false;
+    moreFeedback.textContent='';
+    showFeed();
+    try{
+      const result=await fetchApprovedReviewsPage(supabase,rawLoaded);
+      if(!root.isConnected)return;
+      if(result.error||(!result.data.length&&rawLoaded<result.count))
+        throw Error('Consulta de reseñas incompleta');
+      real=[...real,...result.data];
+      rawLoaded+=result.data.length;
+      total=result.count;
+    }catch{
+      if(!root.isConnected)return;
+      moreFailed=true;
+      moreFeedback.textContent='No se pudieron cargar más valoraciones. Puedes reintentarlo.';
+    }finally{
+      loadingMore=false;
+      if(root.isConnected)showFeed();
+    }
+  });
   showFeed();
   const note=root.querySelector('[data-review-mode-info]');
   const form=root.querySelector('#reparado-review-form');
@@ -108,12 +148,12 @@ export async function mountReviews(main,{supabase=null,session=null,selectedRequ
     return;
   }
   try{
-    const {data,error}=await supabase.from('customer_reviews')
-      .select('id,rating,comment,created_at,status').eq('status','approved')
-      .order('created_at',{ascending:false}).limit(50);
-    if(error)throw error;
+    const result=await fetchApprovedReviewsPage(supabase,0);
+    if(result.error)throw Error('No se pudieron cargar las reseñas');
     if(!root.isConnected)return;
-    real=Array.isArray(data)?data:[];
+    real=result.data;
+    rawLoaded=result.data.length;
+    total=result.count;
     loaded=true;showFeed();
   }catch{
     if(!root.isConnected)return;
