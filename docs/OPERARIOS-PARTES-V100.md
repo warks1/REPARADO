@@ -27,3 +27,7 @@ La migración V100 se ha instalado y verificado en **REPARADO Test**. El chequeo
 Para activar V100 en una instancia comercial de Supabase se debe ejecutar **la misma migración** en ese proyecto tras comprobar las migraciones previas, probar con cuentas reales separadas (cliente, operario, propietario), configurar la retención y eliminación de fotos de intervenciones, revisar el estado de los certificados de iOS/Android y verificar RLS desde cada perfil. Una interfaz funcional en GitHub Pages no prueba que la base de datos comercial esté conectada.
 
 Pruebas de código: `tests/operator-work-v100.test.mjs`; prueba de navegador `e2e-private/operator-work-v100.spec.mjs`. CI: `.github/workflows/qa-operator-work-v100.yml`.
+
+## Trabajos que ya estaban en curso antes de V100
+
+Si el servicio aparece **En curso** pero no tiene parte anterior, el operario asignado verá **Preparar parte de trabajo**. Esa acción crea el parte sin volver a pasar el servicio por Programado y sin cambiar su estado existente. Solo después se habilitan descripción, subida de fotos y cierre. No se inventa una fecha antigua de inicio: el parte puede mostrar cuándo se creó por primera vez.
