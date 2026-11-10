@@ -91,3 +91,55 @@ test('V103: PostgreSQL mantiene RLS sobre partes y bucket privado después del c
  assert.match(sql,/grant select on public\.work_operator_transfers to authenticated/);
  assert.match(sql,/for select to authenticated using \(\(select public\.is_reparado_admin\(\)\)\)/);
 });
+
+
+test('V103: la agenda exige confirmación y bloquea un traspaso obsoleto',async()=>{
+ const {saveOwnerVisit}=await import('../owner-calendar.js');
+ const current={id:job,status:'in_progress',operator_id:op1,
+   scheduled_at:'2026-11-10T09:00:00.000Z'};
+ const ops=[{id:op2,full_name:'Operario sustituto',role:'operator'}];
+ let modified=0;
+ const db={from(){
+  const query={
+   select(){return this},
+   eq(){return this},
+   in(){return this},
+   gte(){return this},
+   async lt(){return {data:[],error:null}},
+   update(){modified++;return this},
+   async selectResult(){return {data:[],error:null}}
+  };
+  return {
+    select(){return query},
+    update(){modified++;return {
+      eq(){return this},
+      async select(){return {data:[{id:job,status:'in_progress',
+        operator_id:op2,scheduled_at:'2026-11-10T09:00:00.000Z'}],error:null}}
+    }}
+  };
+ }};
+ const blocked=await saveOwnerVisit(db,{job:current,operatorId:op2,
+   datetime:'2026-11-10T10:00',operators:ops});
+ assert.equal(blocked.ok,false);
+ assert.match(blocked.message,/Confirma expresamente/);
+ assert.equal(modified,0);
+
+ const accepted=await saveOwnerVisit(db,{job:current,operatorId:op2,
+   datetime:'2026-11-10T10:00',operators:ops,handoverConfirmed:true});
+ assert.equal(accepted.ok,true);
+ assert.equal(modified,1);
+});
+
+test('V103: el calendario del propietario avisa de traspasos en curso',()=>{
+ const source=readFileSync(new URL('../owner-calendar.js',import.meta.url),'utf8');
+ assert.match(source,/handoverConfirmed=false/);
+ assert.match(source,/const handover=job\.status==='in_progress'/);
+ assert.match(source,/if\(handover\)update=update\.eq\('operator_id',job\.operator_id\)/);
+ assert.match(source,/window\.confirm\(/);
+ assert.match(source,/Traspaso cancelado/);
+ const sql=readFileSync(new URL('./operator-handover-v103.sql',import.meta.url),'utf8');
+ assert.match(sql,/^begin;/im);
+ assert.match(sql,/\brollback;\s*$/i);
+ assert.match(sql,/V103_FORMER_OPERATOR_CAN_STILL_READ/);
+ assert.match(sql,/V103_HISTORY_OR_COMPLETION_NOT_PRESERVED/);
+});
