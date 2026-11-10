@@ -67,8 +67,8 @@ export function ownerDashboardMarkup(counts=null,operational=null,unreadCount=nu
       '<span class="owner-inbox-pending" aria-label="'+escape(unreadCount)+' conversaciones sin leer">'+
       escape(unreadCount)+' sin leer</span>':'')+
     (item.view==='owner-deletions'&&Number.isSafeInteger(deletionCount)&&deletionCount>0?
-      '<span class="owner-inbox-pending" aria-label="'+escape(deletionCount)+' solicitudes de supresión recibidas">'+
-      escape(deletionCount)+' recibida(s)</span>':'')+'</span>'+
+      '<span class="owner-inbox-pending" aria-label="'+escape(deletionCount)+' solicitudes de supresión pendientes">'+
+      escape(deletionCount)+' pendiente(s)</span>':'')+'</span>'+
     '<span class="owner-module-arrow" aria-hidden="true">›</span></button>').join('');
   return '<section class="card owner-workspace" id="reparado-owner-dashboard">'+
     '<div class="owner-heading"><div><p class="owner-eyebrow">GESTIÓN PRIVADA</p>'+

@@ -39,7 +39,7 @@ async function setup(page,role='admin'){
   if(path==='/auth/v1/user')return respond(route,user,1,true);
   if(method==='HEAD')return route.fulfill({
     status:200,headers:{'content-range':'*/'+(
-      path==='/rest/v1/account_deletion_requests'&&status==='requested'?1:0
+      path==='/rest/v1/account_deletion_requests'&&status!=='completed'?1:0
     ),'access-control-expose-headers':'Content-Range',
     'access-control-allow-origin':'*'},body:''
   });
@@ -89,7 +89,7 @@ test('V105: el propietario consulta solicitudes y abre revisión sin borrado',as
  const ownerPanel=page.locator('#reparado-owner-dashboard');
  await expect(ownerPanel).toBeVisible();
  const entry=ownerPanel.locator('[data-owner-target="owner-deletions"]');
- await expect(entry).toContainText('1 recibida(s)');
+ await expect(entry).toContainText('1 pendiente(s)');
  await entry.click();
  const inbox=page.locator('#reparado-owner-deletions');
  await expect(inbox).toBeVisible();
@@ -104,6 +104,14 @@ test('V105: el propietario consulta solicitudes y abre revisión sin borrado',as
  await expect(inbox.locator('[data-owner-deletion-status]')).toContainText('No se han borrado datos');
  expect(state.get().status).toBe('in_review');
  expect(state.get().updates).toBe(1);
+ // La revisión NO resuelve la supresión: el indicador del propietario
+ // debe seguir mostrando el caso como pendiente al volver al panel.
+ await inbox.locator('[data-owner-deletion-back]').click();
+ await expect(ownerPanel).toBeVisible();
+ await expect(ownerPanel.locator('[data-owner-target="owner-deletions"]'))
+   .toContainText('1 pendiente(s)');
+ await ownerPanel.locator('[data-owner-target="owner-deletions"]').click();
+ await expect(inbox.locator('.owner-deletion-item')).toContainText('En revisión');
  await inbox.locator('[data-owner-deletion-filter="completed"]').click();
  await expect(inbox.locator('.owner-deletion-item')).toHaveCount(0);
  await expect(inbox).toContainText('No hay solicitudes');

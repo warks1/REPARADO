@@ -10,7 +10,7 @@ consultarla. La V105 añade en el **Panel del propietario** la sección
 
 ## Funcionalidad
 
-- Indicador de solicitudes **recibidas** en el panel privado.
+- Indicador de solicitudes **pendientes** (recibidas o en revisión) en el panel privado.
 - Bandeja de solicitudes pendientes (**Recibida** y **En revisión**)
   ordenadas por antigüedad, con paginación real de 30.
 - Nombre y teléfono del perfil si el propietario está autorizado para
@@ -69,3 +69,9 @@ y la confirmación al solicitante. No afirmar que una solicitud está
 "completada" antes de ejecutar y verificar esas operaciones. Este
 módulo es una bandeja de trabajo, no una función de eliminación
 automática ni una certificación de cumplimiento RGPD.
+
+## V106 · Contador de privacidad sin falsas resoluciones
+
+El contador del panel del propietario incluye tanto las solicitudes `requested` como las `in_review`, y solo deja de contarlas cuando constan formalmente como `completed`. Antes, al pulsar «Marcar en revisión», desaparecían del indicador a pesar de no haberse realizado la eliminación.
+
+Esta corrección es de interfaz y consulta: **no concede nuevos permisos, no cambia RLS, no elimina fotografías ni marca solicitudes como finalizadas**. Se comprueba con pruebas unitarias y E2E de iPhone/Android simulados, incluida la vuelta al panel después de cambiar el estado.

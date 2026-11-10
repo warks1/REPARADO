@@ -62,7 +62,7 @@ test('V105: el propietario tiene una sección privada nueva sin cambiar métrica
   assert.equal(ownerSections.length,14);
   const card=ownerSections.find(x=>x.view==='owner-deletions');
   assert.match(card.title,/Privacidad/);
-  assert.match(ownerDashboardMarkup(null,null,null,4),/4 recibida\(s\)/);
+  assert.match(ownerDashboardMarkup(null,null,null,4),/4 pendiente\(s\)/);
   assert.match(ownerDashboardMarkup(),/data-owner-target="owner-deletions"/);
   const js=readFileSync(new URL('../connected.js',import.meta.url),'utf8');
   assert.match(js,/import \{mountOwnerDeletionInbox\} from '\.\/owner-deletions\.js'/);
@@ -114,8 +114,8 @@ test('V105: recuento servidor y validación de filtros sin consultar cuentas ext
       return {
         select(fields,opts){
           calls.push(['select',fields,opts]);
-          return {async eq(field,status){
-            calls.push(['eq',field,status]);
+          return {async in(field,statuses){
+            calls.push(['in',field,statuses]);
             return {count:5,error:null};
           }};
         }
@@ -124,7 +124,7 @@ test('V105: recuento servidor y validación de filtros sin consultar cuentas ext
   };
   assert.deepEqual(await fetchOwnerDeletionCount(counter),{count:5,error:false});
   assert.deepEqual(calls[0],['select','id',{head:true,count:'exact'}]);
-  assert.deepEqual(calls[1],['eq','status','requested']);
+  assert.deepEqual(calls[1],['in','status',['requested','in_review']]);
   assert.equal((await fetchOwnerDeletionPage(counter,-1)).error,true);
   assert.equal((await fetchOwnerDeletionPage(counter,0,'invalid')).error,true);
   assert.equal((await fetchOwnerDeletionPage(null,0)).error,true);

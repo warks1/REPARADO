@@ -23,7 +23,7 @@ export async function fetchOwnerDeletionCount(supabase){
   if(!supabase?.from)return {count:null,error:true};
   try{
     const r=await supabase.from('account_deletion_requests')
-      .select('id',{head:true,count:'exact'}).eq('status','requested');
+      .select('id',{head:true,count:'exact'}).in('status',['requested','in_review']);
     return r?.error||!Number.isSafeInteger(r.count)||r.count<0
       ?{count:null,error:true}:{count:r.count,error:false};
   }catch{return {count:null,error:true}}
