@@ -1,7 +1,7 @@
 // REPARADO V105 · Privacidad: solicitudes de supresión, SOLO propietario.
 // No elimina cuentas ni fotos; un estado "En revisión" no equivale a borrado.
 export const ownerDeletionPageSize=30;
-const UUID=/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i;
+const UUID=/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i;
 const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({
   '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
 })[c]);
