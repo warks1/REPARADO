@@ -1583,6 +1583,8 @@ export function mountConnected({app, services, supabase, authLinkIntent=null}) {
       const operator_id=String(fields.get('operator_id'))||null;
       const activeTransfer=original.status==='in_progress' &&
         operator_id!==original.operator_id;
+      if(activeTransfer&&status!=='in_progress')
+        return message('Para cambiar el operario de un trabajo iniciado, mantén el estado «En curso». El sustituto debe registrar su propio parte antes de finalizar.',true);
       if(original.status==='completed' && operator_id!==original.operator_id)
         return message('No puedes cambiar el operario de un servicio terminado. Su autoría y el parte deben conservarse.',true);
       if(activeTransfer && !window.confirm(
