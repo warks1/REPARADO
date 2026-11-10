@@ -39,3 +39,38 @@ Si el servicio aparece **En curso** pero no tiene parte anterior, el operario as
 - **Actualizar parte y fotografías** recarga el estado del servidor sin perder el texto aún escrito en la descripción. Si la lectura falla por conexión, aparece **Reintentar carga**.
 - La confirmación de inicio, guardado, fotos o cierre queda visible **después** de redibujar la pantalla. No se muestra éxito sin confirmar la respuesta del servidor.
 - Pruebas de navegador V101: un intento de subir dos fotos con un fallo de red simulado guarda solo una, informa del error y permite el segundo intento sin duplicados. Ningún paso usa cuentas comerciales.
+
+## V102 · Cámara del móvil y cuota obligatoria de fotos en Supabase
+
+El operario puede utilizar la galería o **Hacer una foto ahora (móvil)**.
+Este segundo selector solicita la cámara trasera cuando el navegador o
+dispositivo lo admite; en otros dispositivos puede abrir un selector de
+archivos. La imagen pasa por la misma validación y subida privada, y debe
+estar guardada en el servidor antes de cerrar el servicio.
+
+**Cambio crítico de seguridad:** el máximo de 8 fotos no queda solo en la
+interfaz. La migración
+`supabase/migration-v102-work-photo-quota.sql` impone la cuota al insertar
+cada objeto en Supabase Storage, incluso desde clientes antiguos o
+peticiones directas. Se comprueba el identificador del operario, la
+asignación, el estado «En curso», la ruta, la extensión y el recuento.
+Un bloqueo transaccional del parte evita aceptar subidas simultáneas
+por encima de la cuota.
+
+El recuento de metadatos se implementa en una función limitada a un esquema
+**no expuesto** `reparado_private`, para evitar RLS recursiva en
+`storage.objects`. La función no es ejecutable por `anon`. El bucket
+`work-photos` sigue siendo privado y con tipos MIME y tamaño máximo
+restringidos. No se han ampliado permisos de lectura ni de borrado.
+
+**Verificado en REPARADO Test:** un operario asignado inició un servicio
+ficticio, se aceptaron 8 objetos de prueba, el noveno fue rechazado por el
+servidor y la transacción completa se revirtió. No quedaron trabajos ni
+imágenes ficticias. El script reproducible y reversible está en
+`tests/work-photo-quota-v102.sql`.
+
+**Para producción:** ejecutar V100 antes de V102 en Supabase comercial,
+validar el resultado con cuentas separadas y revisar políticas de
+eliminación/retención del material fotográfico antes de aceptar trabajos
+reales. El servicio de facturación fiscal y la publicación en tiendas
+siguen siendo tareas independientes.
