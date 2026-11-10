@@ -117,6 +117,14 @@ cambio, los dos partes, las dos fotografías, el único registro de
 traspaso, el cierre del sustituto y la pérdida de acceso del operario
 anterior. La transacción se revirtió sin conservar datos ficticios.
 
+**V103a — cierre seguro al traspasar:** el propietario debe mantener el
+servicio **En curso** cuando cambia su operario. No puede reasignarlo y
+marcarlo Terminado en una sola operación: el sustituto primero debe
+preparar su parte, aportar una foto y cerrar el trabajo desde su cuenta.
+El servidor lo garantiza mediante
+`supabase/migration-v103a-guard-active-transfer.sql`.
+La prueba reversible también verifica que el intento combinado se rechaza.
+
 **No habilitado aún en producción**: hace falta migrar el proyecto
 comercial Supabase en orden V100 → V102 → V103 y realizar pruebas de
 aceptación con cuentas reales antes de prestar servicios.
