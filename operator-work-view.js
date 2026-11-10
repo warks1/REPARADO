@@ -49,7 +49,7 @@ function viewMarkup(job,report,photos,{userId,role,preserve='',history=[],transf
       '<textarea name="work_description" rows="5" maxlength="'+WORK_DESCRIPTION_MAX+
       '" placeholder="Explica qué se ha reparado, comprobaciones, materiales y resultado..." required>'+esc(description)+'</textarea></label>'+
       '<button type="button" data-work-save-notes>Guardar descripción</button>'
-      :'<div class="operator-work-readonly"><h2>Trabajo realizado</h2><p data-work-description>'+
+      :role==='admin'?'':'<div class="operator-work-readonly"><h2>Trabajo realizado</h2><p data-work-description>'+
        esc(report?.description|| (ended?'Pendiente de parte histórico.':'Aún no se ha iniciado.'))+'</p></div>')+
     (role==='admin'?'<section class="operator-work-history" data-work-history>'+
       '<h2>Historial completo de intervenciones</h2>'+
@@ -58,7 +58,11 @@ function viewMarkup(job,report,photos,{userId,role,preserve='',history=[],transf
         '<p><strong>Operario:</strong> '+esc(entry.operator_label||entry.operator_id)+
         ' · <strong>Parte abierto:</strong> '+esc(displayTime(entry.created_at))+'</p>'+
         '<p><strong>Trabajo realizado:</strong> '+esc(entry.description||'Sin descripción guardada')+'</p>'+
-        '<p>'+entry.photoCount+' fotografía(s) de esta intervención</p></article>'
+        '<p>'+entry.photoCount+' fotografía(s) de esta intervención</p>'+
+        '<div class="operator-work-gallery" data-work-gallery-operator="'+esc(entry.operator_id)+
+        '" aria-label="Fotografías de '+esc(entry.operator_label||entry.operator_id)+'">'+
+        (entry.photoCount?'':'<p class="notice">Sin fotografías de esta intervención.</p>')+
+        '</div></article>'
       ).join(''):'<p>No hay partes de intervención registrados.</p>')+
       '<h3>Traspasos de operario</h3>'+
       (transfers.length?transfers.map(transfer=>
@@ -71,7 +75,9 @@ function viewMarkup(job,report,photos,{userId,role,preserve='',history=[],transf
     '<h2>Fotografías del trabajo</h2><p data-work-photo-count>'+
       (role==='admin'?photos.length+' fotografías del historial':
         photos.length+' de '+MAX_WORK_PHOTOS+' fotografías adjuntas')+'</p>'+
-    '<div class="operator-work-gallery" data-work-gallery aria-label="Fotos del trabajo"></div>'+
+    (role==='admin'
+      ?'<p class="notice">Cada fotografía se muestra en el parte del operario que la adjuntó.</p>'
+      :'<div class="operator-work-gallery" data-work-gallery aria-label="Fotos del trabajo"></div>')+
     '<button type="button" data-work-refresh>↻ Actualizar parte y fotografías</button>'+
     (finish?'<div class="operator-work-upload">'+
       '<label>Seleccionar fotos del trabajo <input type="file" data-work-files multiple '+
@@ -251,9 +257,13 @@ export async function mountOperatorWork({main,supabase,requestId,userId,role,isA
         supabase,requestId,operatorId:userId,description:notes.value,isActive
       }),'Servicio finalizado y cerrado correctamente.'));
     // Enlaces firmados breves: Storage privado, nunca URLs públicas permanentes.
-    const gallery=screen.querySelector('[data-work-gallery]');
+    const operatorGallery=screen.querySelector('[data-work-gallery]');
     for(const photo of photos){
       if(!active())return;
+      const gallery=role==='admin'
+        ?screen.querySelector('[data-work-gallery-operator="'+photo.operator_id+'"]')
+        :operatorGallery;
+      if(!gallery)continue;
       const path=photo.operator_id+'/'+requestId+'/'+photo.name;
       try{
         const {data,error}=await supabase.storage.from('work-photos')
@@ -263,12 +273,14 @@ export async function mountOperatorWork({main,supabase,requestId,userId,role,isA
         const link=document.createElement('a');
         link.href=data.signedUrl;link.target='_blank';link.rel='noopener noreferrer';
         const img=document.createElement('img');img.src=data.signedUrl;
-        img.alt='Foto de intervención del operario '+photo.operator_id;
+        const author=history.find(entry=>entry.operator_id===photo.operator_id);
+        img.alt='Foto del trabajo de '+(author?.operator_label||photo.operator_id);
         img.loading='lazy';
         link.append(img);gallery.append(link);
       }catch{/* Seguir mostrando las fotos accesibles aunque una URL falle. */}
     }
-    if(!gallery.children.length)gallery.textContent='Aún no hay fotografías accesibles.';
+    if(operatorGallery&&!operatorGallery.children.length)
+      operatorGallery.textContent='Aún no hay fotografías accesibles.';
   }
   await render();
 }

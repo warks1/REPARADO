@@ -128,3 +128,9 @@ La prueba reversible también verifica que el intento combinado se rechaza.
 **No habilitado aún en producción**: hace falta migrar el proyecto
 comercial Supabase en orden V100 → V102 → V103 y realizar pruebas de
 aceptación con cuentas reales antes de prestar servicios.
+
+## V104 · Fotografías clasificadas por operario en el historial
+
+Cuando un encargo ha cambiado de operario, el propietario ya no ve las fotos de todos mezcladas en una sola galería. En **Panel interno → Ver parte de trabajo**, cada intervención incluye su **propia galería**, debajo del nombre del operario, la fecha de apertura y la descripción. La pantalla indica qué intervenciones no tienen fotografías y mantiene el número total de evidencias del servicio.
+
+Se conserva el acceso privado mediante URL firmada de 120 segundos y la ruta original `<operario>/<servicio>/<foto>`. La interfaz agrupa la presentación sin mover, copiar ni modificar ningún archivo ni permiso de Supabase. El operario sigue teniendo su galería individual habitual. Se han ampliado las pruebas E2E de iPhone/Android simulado para comprobar que una foto antigua no aparece dentro del parte del operario sustituto.

@@ -101,6 +101,13 @@ test('V103: el propietario conserva los partes y fotografías de ambos operarios
  await expect(current).toContainText('probado el cuadro');
  await expect(part.locator('[data-work-photo-count]')).toContainText('2 fotografías del historial');
  await expect(part.locator('.operator-work-gallery a')).toHaveCount(2);
+ await expect(previous.locator('[data-work-gallery-operator="'+oldOp+'"] a')).toHaveCount(1);
+ await expect(current.locator('[data-work-gallery-operator="'+newOp+'"] a')).toHaveCount(1);
+ await expect(previous.locator('[data-work-gallery-operator="'+newOp+'"]')).toHaveCount(0);
+ await expect(current.locator('[data-work-gallery-operator="'+oldOp+'"]')).toHaveCount(0);
+ await expect(previous.locator('img')).toHaveAttribute('alt',/Foto del trabajo de/);
+ await expect(current.locator('img')).toHaveAttribute('alt',/Foto del trabajo de/);
+ await expect(part.locator('[data-work-gallery]')).toHaveCount(0);
  await expect(part.locator('.operator-work-transfer')).toContainText('De '+oldOp+' a '+newOp);
  await expect(part.locator('[data-work-finish]')).toHaveCount(0);
 });

@@ -12,6 +12,7 @@ on:
       - 'tests/operator-work-v100.test.mjs'
       - 'tests/operator-work-v102.test.mjs'
       - 'tests/operator-handover-v103.test.mjs'
+      - 'tests/operator-gallery-v104.test.mjs'
       - 'tests/operator-handover-v103.sql'
       - 'supabase/migration-v103-operator-handover.sql'
       - 'supabase/migration-v103a-guard-active-transfer.sql'
@@ -34,6 +35,7 @@ on:
       - 'tests/operator-work-v100.test.mjs'
       - 'tests/operator-work-v102.test.mjs'
       - 'tests/operator-handover-v103.test.mjs'
+      - 'tests/operator-gallery-v104.test.mjs'
       - 'tests/operator-handover-v103.sql'
       - 'supabase/migration-v103-operator-handover.sql'
       - 'supabase/migration-v103a-guard-active-transfer.sql'
@@ -56,7 +58,7 @@ jobs:
         with: {node-version: '22'}
       - run: npm install --no-audit --no-fund
       - name: Pruebas de seguridad del operario y galerías
-        run: node --test tests/operator-work-v100.test.mjs tests/operator-work-v102.test.mjs tests/operator-handover-v103.test.mjs
+        run: node --test tests/operator-work-v100.test.mjs tests/operator-work-v102.test.mjs tests/operator-handover-v103.test.mjs tests/operator-gallery-v104.test.mjs
       - name: Compilación completa
         run: npm run build
   operator-mobile:
