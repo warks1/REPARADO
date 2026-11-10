@@ -11,6 +11,9 @@ begin
 end $preflight$;
 
 alter table public.account_deletion_requests enable row level security;
+-- user_id se muestra solo en la bandeja del titular gracias a RLS.
+-- El usuario normal únicamente puede recuperar el ID de su propia solicitud.
+grant select(user_id) on public.account_deletion_requests to authenticated;
 
 -- SELECT del propietario, aparte del SELECT de su propia solicitud por usuario.
 drop policy if exists "deletion request admin read v105"
