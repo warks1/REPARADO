@@ -166,24 +166,21 @@ export async function mountOwnerDeletionInbox({main,supabase,isActive,onBack}){
     if(!UUID.test(String(requestId||'')))return;
     if(!window.confirm('¿Marcar esta solicitud de eliminación como EN REVISIÓN? '+
       'Esto no borra la cuenta ni sus archivos. Debes completar la supresión por el procedimiento seguro.'))return;
-    busy=true;button.disabled=true;
+    busy=true;
+    for(const b of root.querySelectorAll('[data-owner-deletion-review]'))b.disabled=true;
     previous.disabled=true;next.disabled=true;
     status.textContent='Registrando el inicio de revisión…';
+    let outcome='';
     try{
       await beginOwnerDeletionReview({supabase,requestId,isActive:active});
-      await load();
-      if(active()&&status.textContent!=='Consultando las solicitudes del servidor…'&&
-        !status.textContent.startsWith('No se pudieron'))
-        status.textContent='Solicitud marcada En revisión. No se han borrado datos.';
-    }catch(error){
-      if(active())status.textContent=error.message;
-    }finally{
+      outcome='Solicitud marcada En revisión. No se han borrado datos.';
+    }catch(error){outcome=error.message||'No se pudo registrar la revisión.'}
+    finally{
       busy=false;
       if(active()){
-        const row=await fetchOwnerDeletionCount(supabase);
-        if(active()&&row.error)status.textContent+=' Actualiza la bandeja para confirmar el estado.';
-        previous.disabled=page===0;
-        next.disabled=true;
+        await load();
+        if(active()&&!status.textContent.startsWith('No se pudieron'))
+          status.textContent=outcome;
       }
     }
   });
