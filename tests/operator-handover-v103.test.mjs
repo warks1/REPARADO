@@ -143,3 +143,15 @@ test('V103: el calendario del propietario avisa de traspasos en curso',()=>{
  assert.match(sql,/V103_FORMER_OPERATOR_CAN_STILL_READ/);
  assert.match(sql,/V103_HISTORY_OR_COMPLETION_NOT_PRESERVED/);
 });
+
+
+test('V103a: el propietario no puede transferir y cerrar simultáneamente',()=>{
+ const sql=readFileSync(new URL('../supabase/migration-v103-operator-handover.sql',import.meta.url),'utf8');
+ const patch=readFileSync(new URL('../supabase/migration-v103a-guard-active-transfer.sql',import.meta.url),'utf8');
+ const code=readFileSync(new URL('../connected.js',import.meta.url),'utf8');
+ assert.match(sql,/REPARADO_TRANSFER_MUST_STAY_ACTIVE/);
+ assert.match(patch,/REPARADO_TRANSFER_MUST_STAY_ACTIVE/);
+ assert.match(patch,/new\.status is distinct from old\.status/);
+ assert.match(code,/if\(activeTransfer&&status!=='in_progress'\)/);
+ assert.match(code,/El sustituto debe registrar su propio parte antes de finalizar/);
+});
