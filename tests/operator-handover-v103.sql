@@ -41,6 +41,24 @@ values('work-photos',current_setting('qa.v103.old')||
  auth.uid(),auth.uid()::text);
 
 select set_config('request.jwt.claim.sub',current_setting('qa.v103.admin'),true);
+-- Impedir transferir y cerrar sin permitir un parte al nuevo operario.
+do $must_stay_active$
+begin
+ begin
+  update public.service_requests
+  set operator_id=current_setting('qa.v103.new')::uuid,
+      operator_name='Nuevo operario',
+      status='completed'
+  where id='f1030000-0000-4000-8000-000000000103';
+  raise exception 'V103_TRANSFER_AND_FINISH_WAS_ALLOWED';
+ exception when check_violation then null;
+ end;
+ if exists(select 1 from public.service_requests
+   where id='f1030000-0000-4000-8000-000000000103'
+   and (status<>'in_progress' or
+        operator_id<>current_setting('qa.v103.old')::uuid))
+ then raise exception 'V103_SIMULTANEOUS_TRANSFER_CHANGED_JOB'; end if;
+end $must_stay_active$;
 update public.service_requests
  set operator_id=current_setting('qa.v103.new')::uuid,
  operator_name='Operario sustituto'
