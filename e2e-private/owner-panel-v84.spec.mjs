@@ -186,7 +186,7 @@ test('V84: administrador entra al centro privado y abre las diez secciones',asyn
  const owner=page.locator('#reparado-owner-dashboard');
  await expect(owner).toBeVisible();
  await expect(page.locator('.owner-header-launch')).toBeVisible();
- await expect(owner.locator('.owner-module')).toHaveCount(13);
+ await expect(owner.locator('.owner-module')).toHaveCount(14);
  await expect(owner.locator('.owner-metric')).toHaveCount(10);
  await expect(owner.locator('[data-owner-status]')).toContainText('Datos actualizados desde el servidor');
  expect(called.counts.length).toBeGreaterThanOrEqual(8);
