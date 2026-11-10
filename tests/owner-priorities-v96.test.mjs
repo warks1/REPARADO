@@ -96,7 +96,7 @@ test('V96: métricas y prioridades se actualizan juntas en el panel privado',()=
    {acceptedUnassigned:5,pastVisits:0}
  );
  assert.equal((html.match(/class="owner-metric"/g)||[]).length,10);
- assert.equal((html.match(/class="owner-module"/g)||[]).length,13);
+ assert.equal((html.match(/class="owner-module"/g)||[]).length,14);
  assert.equal((html.match(/class="owner-priority-card"/g)||[]).length,4);
  const src=readFileSync(new URL('../owner-dashboard.js',import.meta.url),'utf8');
  assert.ok(src.includes('fetchOwnerOperationalCounts(supabase)'));
@@ -107,5 +107,5 @@ test('V96: métricas y prioridades se actualizan juntas en el panel privado',()=
  const conn=readFileSync(new URL('../connected.js',import.meta.url),'utf8');
  assert.ok(conn.includes("const ownerOnly=()=>Boolean(session?.user?.id&&profile?.role==='admin')"));
  assert.ok(conn.includes("if(!ownerOnly()){if(!session)showLogin();else renderHome();return}"));
- assert.equal(ownerSections.length,13);
+ assert.equal(ownerSections.length,14);
 });

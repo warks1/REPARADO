@@ -5,6 +5,11 @@ on:
     paths:
       - 'connected.js'
       - 'owner-dashboard.js'
+      - 'owner-deletions.js'
+      - 'supabase/migration-v105-owner-deletion-inbox.sql'
+      - 'tests/owner-deletions-v105.sql'
+      - 'tests/owner-deletions-v105.test.mjs'
+      - 'e2e-private/owner-deletions-v105.spec.mjs'
       - 'owner-export-view.js'
       - 'owner-work-export.js'
       - 'tests/owner-work-export-v97.test.mjs'
@@ -36,6 +41,11 @@ on:
     paths:
       - 'connected.js'
       - 'owner-dashboard.js'
+      - 'owner-deletions.js'
+      - 'supabase/migration-v105-owner-deletion-inbox.sql'
+      - 'tests/owner-deletions-v105.sql'
+      - 'tests/owner-deletions-v105.test.mjs'
+      - 'e2e-private/owner-deletions-v105.spec.mjs'
       - 'owner-export-view.js'
       - 'owner-work-export.js'
       - 'tests/owner-work-export-v97.test.mjs'
@@ -88,7 +98,7 @@ jobs:
       - name: Instalar navegadores de prueba
         run: npx playwright install --with-deps chromium webkit
       - name: Acceso exclusivo y calendario en iPhone y Android simulados
-        run: npx playwright test --config playwright.invite.config.mjs e2e-private/owner-panel-v84.spec.mjs --project=iphone --project=android
+        run: npx playwright test --config playwright.invite.config.mjs e2e-private/owner-panel-v84.spec.mjs e2e-private/owner-deletions-v105.spec.mjs --project=iphone --project=android
       - name: Conservar trazas de errores
         if: always()
         uses: actions/upload-artifact@v4

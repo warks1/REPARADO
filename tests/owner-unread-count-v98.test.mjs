@@ -48,7 +48,7 @@ test('V98: insignia de mensajes solo con total positivo confirmado',()=>{
  assert.ok(!noUnread.includes('sin leer'));
  const unknown=ownerDashboardMarkup(counts,extra,null);
  assert.ok(!unknown.includes('owner-inbox-pending'));
- assert.equal(ownerSections.length,13);
+ assert.equal(ownerSections.length,14);
 });
 
 test('V98: estado de lectura y panel permanecen protegidos por admin y RLS',()=>{

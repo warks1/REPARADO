@@ -40,6 +40,7 @@ import {mountOperatorWork} from './operator-work-view.js'
 import {mountOwnerCalendar} from './owner-calendar.js'
 import {mountOwnerMessages,ownerMailMarkup} from './owner-messages.js'
 import {mountOwnerPeople} from './owner-people.js'
+import {mountOwnerDeletionInbox} from './owner-deletions.js'
 import {publicRegistrationEnabled} from './auth-mode.js'
 import {validateNewPassword} from './password-policy.js'
 import { Capacitor } from '@capacitor/core'
@@ -135,6 +136,7 @@ export function mountConnected({app, services, supabase, authLinkIntent=null}) {
       else if(view==='owner-operators')showOwnerPeople('operator');
       else if(view==='owner-mail')showOwnerMail();
       else if(view==='owner-export')showOwnerWorkExport();
+      else if(view==='owner-deletions')showOwnerDeletions();
       else if(view==='review-moderation')openReviewModeration();
       else if(view==='support-admin')loadSupportReports();
       else renderHome();
@@ -1208,6 +1210,7 @@ export function mountConnected({app, services, supabase, authLinkIntent=null}) {
     if(view==='owner-operators')return showOwnerPeople('operator');
     if(view==='owner-mail')return showOwnerMail();
     if(view==='owner-export')return showOwnerWorkExport();
+    if(view==='owner-deletions')return showOwnerDeletions();
     if(view==='support-admin')return loadSupportReports();
     if(view==='review-moderation')return openReviewModeration();
   };
@@ -1262,6 +1265,18 @@ export function mountConnected({app, services, supabase, authLinkIntent=null}) {
       onBack:()=>showOwnerDashboard(),
       onChat:id=>loadStaffChat(id,'Cliente',0,view),
       onCalendar:id=>showOwnerCalendar(id)
+    });
+  }
+  async function showOwnerDeletions(){
+    if(!ownerOnly()){if(!session)showLogin();else renderHome();return}
+    setActiveNav(app,'profile');
+    currentView='owner-deletions';
+    const ownerId=session.user.id,epoch=authEpoch;
+    await mountOwnerDeletionInbox({
+      main,supabase,
+      isActive:()=>currentView==='owner-deletions'&&isCurrentUser(ownerId)&&
+        authEpoch===epoch&&ownerOnly(),
+      onBack:()=>showOwnerDashboard()
     });
   }
   async function showOwnerWorkExport(){
