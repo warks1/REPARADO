@@ -114,7 +114,7 @@ export async function fetchOwnerCalendarMore(supabase,start,kind,offset){
   }catch{return {error:true}}
 }
 
-export async function saveOwnerVisit(supabase,{job,operatorId,datetime,operators,allowed=()=>true}){
+export async function saveOwnerVisit(supabase,{job,operatorId,datetime,operators,allowed=()=>true,handoverConfirmed=false}){
   if(!allowed())return {ok:false,message:'Sesión de administración no disponible.'};
   if(!job||!UUID.test(String(job.id))||
      !['accepted','scheduled','in_progress'].includes(job.status))
@@ -122,6 +122,8 @@ export async function saveOwnerVisit(supabase,{job,operatorId,datetime,operators
   const operator=Array.isArray(operators)?
     operators.find(x=>x.id===operatorId&&x.role==='operator'&&UUID.test(String(x.id))):null;
   if(!operator)return {ok:false,message:'Selecciona un operario autorizado.'};
+  const handover=job.status==='in_progress'&&operatorId!==job.operator_id;
+  if(handover&&!handoverConfirmed)return {ok:false,message:'Confirma expresamente el traspaso del trabajo en curso antes de guardar.'};
   const time=madridVisitDateTimeToIso(datetime,job.scheduled_at);
   if(time.error||!time.iso)
     return {ok:false,message:time.error||'Selecciona una fecha y hora de Cataluña.'};
@@ -145,11 +147,12 @@ export async function saveOwnerVisit(supabase,{job,operatorId,datetime,operators
       return {ok:false,message:'El operario tiene otra cita a menos de 60 minutos.'};
     if(!allowed())return {ok:false,message:'Sesión de administración no disponible.'};
     const targetStatus=job.status==='accepted'?'scheduled':job.status;
-    const updated=await supabase.from('service_requests')
+    let update=supabase.from('service_requests')
       .update({status:targetStatus,operator_id:operator.id,
         operator_name:operator.full_name||null,scheduled_at:time.iso})
-      .eq('id',job.id).eq('status',job.status)
-      .select('id,status,operator_id,scheduled_at');
+      .eq('id',job.id).eq('status',job.status);
+    if(handover)update=update.eq('operator_id',job.operator_id);
+    const updated=await update.select('id,status,operator_id,scheduled_at');
     if(!allowed())return {ok:false,message:'Sesión de administración no disponible.'};
     if(updated?.error){
       if(updated.error.code==='23P01'||
@@ -309,7 +312,9 @@ export async function mountOwnerCalendar({main,supabase,isActive,onBack,onNaviga
     form.elements.namedItem('operator').innerHTML='<option value="">Selecciona operario</option>'+choices;
     form.elements.namedItem('when').value=madridDateTimeInput(selected.scheduled_at);
     root.querySelector('[data-owner-selected]').textContent=selected.service_name+
-      ' · '+(selected.status==='accepted'?'Aceptado: programar primera visita':'Cambiar operario o fecha');
+      ' · '+(selected.status==='accepted'?'Aceptado: programar primera visita':
+      selected.status==='in_progress'?'EN CURSO: traspaso con historial protegido':
+      'Cambiar operario o fecha');
     editor.hidden=false;
     editor.scrollIntoView({block:'nearest',behavior:'auto'});
   };
@@ -357,10 +362,22 @@ export async function mountOwnerCalendar({main,supabase,isActive,onBack,onNaviga
     saving=true;
     const submit=form.querySelector('[type=submit]');
     submit.disabled=true;
+    const selectedOperator=form.elements.namedItem('operator').value;
+    const handover=selected.status==='in_progress'&&
+      selectedOperator!==selected.operator_id;
+    if(handover&&!window.confirm(
+      '¿Cambiar el operario de una intervención EN CURSO? '+
+      'Los partes y fotos anteriores quedarán en el historial privado. '+
+      'El nuevo operario continuará con un parte propio.'
+    )){
+      saving=false;submit.disabled=false;
+      feedback.textContent='Traspaso cancelado. La asignación sigue igual.';
+      return;
+    }
     feedback.textContent='Comprobando y guardando programación…';
     const result=await saveOwnerVisit(supabase,{
       job:selected,operators:activeData.operators,
-      operatorId:form.elements.namedItem('operator').value,
+      operatorId:selectedOperator,handoverConfirmed:handover,
       datetime:form.elements.namedItem('when').value,allowed:active
     });
     saving=false;
