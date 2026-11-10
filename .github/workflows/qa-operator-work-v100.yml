@@ -10,6 +10,9 @@ on:
       - 'supabase/migration-v100-operator-work-reports.sql'
       - 'vivid-theme.css'
       - 'tests/operator-work-v100.test.mjs'
+      - 'tests/operator-work-v102.test.mjs'
+      - 'tests/work-photo-quota-v102.sql'
+      - 'supabase/migration-v102-work-photo-quota.sql'
       - 'e2e-private/operator-work-v100.spec.mjs'
       - '.github/workflows/qa-operator-work-v100.yml'
   push:
@@ -22,6 +25,9 @@ on:
       - 'supabase/migration-v100-operator-work-reports.sql'
       - 'vivid-theme.css'
       - 'tests/operator-work-v100.test.mjs'
+      - 'tests/operator-work-v102.test.mjs'
+      - 'tests/work-photo-quota-v102.sql'
+      - 'supabase/migration-v102-work-photo-quota.sql'
       - 'e2e-private/operator-work-v100.spec.mjs'
       - '.github/workflows/qa-operator-work-v100.yml'
 permissions:
@@ -36,7 +42,7 @@ jobs:
         with: {node-version: '22'}
       - run: npm install --no-audit --no-fund
       - name: Pruebas de seguridad del operario y galerías
-        run: node --test tests/operator-work-v100.test.mjs
+        run: node --test tests/operator-work-v100.test.mjs tests/operator-work-v102.test.mjs
       - name: Compilación completa
         run: npm run build
   operator-mobile:
