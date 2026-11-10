@@ -23,7 +23,7 @@ test('V84: centro propietario ofrece todas las áreas sin confundir correos exte
   'Directorio de clientes','Equipo de operarios']){
    assert.ok(html.includes(name),name);
  }
- assert.equal(ownerSections.length,13);
+ assert.equal(ownerSections.length,14);
  assert.ok(html.includes('Acceso exclusivo del rol administrador'));
  assert.ok(!html.includes('admin@reparado.com'));
  assert.ok(ownerMailMarkup().includes('outlook.live.com/mail/'));
