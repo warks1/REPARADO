@@ -58,6 +58,8 @@ function viewMarkup(job,report,photos,{userId,role,preserve=''}) {
       '<label>Seleccionar fotos del trabajo <input type="file" data-work-files multiple '+
       'accept="image/jpeg,image/png,image/webp,image/heic"></label>'+
       '<button type="button" data-work-upload>Subir fotos</button>'+
+      '<label>Hacer una foto ahora (móvil)<input type="file" data-work-camera '+
+      'capture="environment" accept="image/jpeg,image/png,image/webp,image/heic"></label>'+
       '<p class="notice">Hasta 8 fotos JPG, PNG, WEBP o HEIC (8 MB cada una). '+
       'Las imágenes son privadas y quedan vinculadas a este servicio.</p></div>'+
       '<div class="operator-work-close"><p>Para cerrar el servicio, '+
@@ -163,8 +165,7 @@ export async function mountOperatorWork({main,supabase,requestId,userId,role,isA
       ()=>saveOperatorWorkDescription({
         supabase,requestId,operatorId:userId,description:notes.value,isActive
       }),'Descripción guardada.',true));
-    screen.querySelector('[data-work-upload]')?.addEventListener('click',()=>transact(async()=>{
-      const files=screen.querySelector('[data-work-files]')?.files;
+    const uploadPictures=files=>transact(async()=>{
       const result=await uploadOperatorWorkPhotos({
         supabase,operatorId:userId,requestId,files,isActive
       });
@@ -174,7 +175,12 @@ export async function mountOperatorWork({main,supabase,requestId,userId,role,isA
         'Selecciona de nuevo las fallidas para reintentarlas; las demás no se duplican.';
       return 'Fotografías verificadas en el parte: '+result.total+
         ' · nuevas: '+saved+' · ya existentes: '+result.alreadyPresent+'.';
-    },'Fotos guardadas.',true));
+    },'Fotos guardadas.',true);
+    screen.querySelector('[data-work-upload]')?.addEventListener('click',()=>
+      void uploadPictures(screen.querySelector('[data-work-files]')?.files));
+    screen.querySelector('[data-work-camera]')?.addEventListener('change',event=>{
+      if(event.target.files?.length)void uploadPictures(event.target.files);
+    });
     screen.querySelector('[data-work-finish]')?.addEventListener('click',()=>transact(
       ()=>completeOperatorWork({
         supabase,requestId,operatorId:userId,description:notes.value,isActive
