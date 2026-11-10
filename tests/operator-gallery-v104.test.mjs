@@ -51,7 +51,7 @@ test('V104: las fotos del propietario quedan junto al parte del operario que las
    html.indexOf('data-work-gallery-operator="'+operatorA+'"'));
  assert.ok(html.indexOf('Reparación y verificación.') <
    html.indexOf('data-work-gallery-operator="'+operatorB+'"'));
- assert.doesNotMatch(html,/data-work-gallery(?!=)/);
+ assert.doesNotMatch(html,/\sdata-work-gallery(?=[\s>])/);
 });
 
 test('V104: no mezcla fotos, fechas ni campos editables de otro operario',()=>{
