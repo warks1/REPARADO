@@ -58,7 +58,7 @@ test('V102: la cámara móvil y la galería comparten las comprobaciones de subi
 test('V102: la prueba de SQL termina en rollback y valida cliente y novena foto',()=>{
   const path=new URL('./work-photo-quota-v102.sql',import.meta.url);
   const check=readFileSync(path,'utf8');
-  assert.match(check,/^begin;/i);
+  assert.match(check,/^begin;/im);
   assert.match(check,/\brollback;\s*$/i);
   assert.match(check,/REPARADO_V102_CUSTOMER_STARTED_WORK/);
   assert.match(check,/REPARADO_V102_NINTH_PHOTO_WAS_ALLOWED/);
