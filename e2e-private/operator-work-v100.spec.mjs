@@ -198,3 +198,28 @@ test('V101: subida parcial muestra fotos realmente guardadas y reintenta sin dup
   await expect(work.locator('[data-work-feedback]')).toContainText('Servicio finalizado y cerrado correctamente');
   expect(state.get().finished).toBe(1);
 });
+
+
+test('V102: el operario puede fotografiar desde el móvil y el parte registra la imagen',async({page})=>{
+ const state=await setup(page);
+ await page.goto('/');
+ await page.locator('.customer-nav [data-view="profile"]').click();
+ await page.locator('[data-view="admin"]').click();
+ await page.locator('[data-work-detail]').first().click();
+ const work=page.locator('#reparado-operator-work');
+ await work.locator('[data-work-start]').click();
+ const camera=work.locator('[data-work-camera]');
+ await expect(camera).toHaveAttribute('capture','environment');
+ await camera.setInputFiles({
+   name:'foto-camara.jpg',mimeType:'image/jpeg',
+   buffer:Buffer.from([255,216,255,224,0,16,74,70,73,70,0,1])
+ });
+ await expect(work.locator('[data-work-photo-count]')).toContainText('1 de 8');
+ await expect(work.locator('[data-work-feedback]')).toContainText('nuevas: 1');
+ expect(state.get().uploads).toBe(1);
+ await work.locator('[name="work_description"]')
+   .fill('Se ha ajustado la conexión y comprobado el correcto funcionamiento.');
+ await work.locator('[data-work-finish]').click();
+ await expect(work.locator('[data-work-description]')).toContainText('Se ha ajustado');
+ expect(state.get().finished).toBe(1);
+});
