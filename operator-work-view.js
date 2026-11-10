@@ -55,7 +55,7 @@ function viewMarkup(job,report,photos,{userId,role,preserve='',history=[],transf
       '<h2>Historial completo de intervenciones</h2>'+
       (history.length?history.map(entry=>
         '<article class="operator-work-history-item" data-work-report-operator="'+esc(entry.operator_id)+'">'+
-        '<p><strong>Operario:</strong> '+esc(entry.operator_id)+
+        '<p><strong>Operario:</strong> '+esc(entry.operator_label||entry.operator_id)+
         ' · <strong>Parte abierto:</strong> '+esc(displayTime(entry.created_at))+'</p>'+
         '<p><strong>Trabajo realizado:</strong> '+esc(entry.description||'Sin descripción guardada')+'</p>'+
         '<p>'+entry.photoCount+' fotografía(s) de esta intervención</p></article>'
@@ -63,8 +63,8 @@ function viewMarkup(job,report,photos,{userId,role,preserve='',history=[],transf
       '<h3>Traspasos de operario</h3>'+
       (transfers.length?transfers.map(transfer=>
         '<p class="operator-work-transfer">'+esc(displayTime(transfer.changed_at))+
-        ' · De '+esc(transfer.previous_operator_id||'Sin asignar')+
-        ' a '+esc(transfer.next_operator_id||'Sin asignar')+
+        ' · De '+esc(transfer.previous_operator_label||transfer.previous_operator_id||'Sin asignar')+
+        ' a '+esc(transfer.next_operator_label||transfer.next_operator_id||'Sin asignar')+
         ' · '+esc(transfer.status_at_transfer)+'</p>'
       ).join(''):'<p>No se han registrado traspasos.</p>')+
       '</section>':'')+
@@ -136,6 +136,32 @@ export async function mountOperatorWork({main,supabase,requestId,userId,role,isA
           supabase,requestId,operatorId:userId,isActive
         });
         if(report)history=[report];
+      }
+      if(role==='admin'&&(history.length||transfers.length)){
+        const ids=[...new Set([
+          ...history.map(entry=>entry.operator_id),
+          ...transfers.flatMap(entry=>[
+            entry.previous_operator_id,entry.next_operator_id
+          ])
+        ].filter(Boolean))];
+        if(ids.length){
+          const named=await supabase.from('profiles')
+            .select('id,full_name').in('id',ids);
+          if(!isActive())return;
+          if(!named.error&&Array.isArray(named.data)){
+            const names=new Map(named.data.map(op=>[
+              op.id,op.full_name||op.id
+            ]));
+            history=history.map(entry=>({
+              ...entry,operator_label:names.get(entry.operator_id)||entry.operator_id
+            }));
+            transfers=transfers.map(entry=>({
+              ...entry,
+              previous_operator_label:names.get(entry.previous_operator_id),
+              next_operator_label:names.get(entry.next_operator_id)
+            }));
+          }
+        }
       }
       for(const entry of history){
         const originals=await listWorkPhotos({
