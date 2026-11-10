@@ -49,6 +49,10 @@ begin
      message='REPARADO_COMPLETED_OPERATOR_LOCKED';
  end if;
  if old.status='in_progress' then
+   if new.status is distinct from old.status then
+     raise exception using errcode='23514',
+       message='REPARADO_TRANSFER_MUST_STAY_ACTIVE';
+   end if;
    if new.operator_id is null then
      raise exception using errcode='23514',
        message='REPARADO_ACTIVE_OPERATOR_REQUIRED';
