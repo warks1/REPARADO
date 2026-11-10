@@ -322,11 +322,11 @@ test('V89: titular busca contactos por nombre o teléfono y recupera el director
  await form.getByRole('button',{name:'Buscar'}).click();
  await expect(form.locator('[name="term"]')).toHaveValue('Cliente');
  await expect(people.locator('[data-owner-people-status]')).toContainText('coincidencias');
- expect(called.peopleQueries.some(v=>v.includes('full_name=ilike.'))).toBeTruthy();
+ await expect.poll(()=>called.peopleQueries.some(v=>v.includes('full_name=ilike.'))).toBeTruthy();
  await form.locator('[name="field"]').selectOption('phone');
  await form.locator('[name="term"]').fill('600');
  await form.getByRole('button',{name:'Buscar'}).click();
- expect(called.peopleQueries.some(v=>v.includes('phone=ilike.'))).toBeTruthy();
+ await expect.poll(()=>called.peopleQueries.some(v=>v.includes('phone=ilike.'))).toBeTruthy();
  await people.locator('[data-owner-people-clear]').click();
  await expect(form.locator('[name="term"]')).toHaveValue('');
  await expect(people.locator('[data-owner-people-status]')).toContainText('perfiles');
