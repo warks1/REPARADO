@@ -26,6 +26,7 @@ select set_config('qa.v105.req_id',(
  where user_id=current_setting('qa.v105.customer')::uuid
 ),true);
 do $customer$
+declare changed_rows integer;
 begin
  if not exists(select 1 from public.account_deletion_requests
   where id=current_setting('qa.v105.req_id')::uuid)
@@ -33,7 +34,10 @@ begin
  begin
    update public.account_deletion_requests set status='in_review'
    where id=current_setting('qa.v105.req_id')::uuid;
-   raise exception 'V105_CUSTOMER_ILLEGALLY_UPDATED_STATUS';
+   get diagnostics changed_rows = row_count;
+   if changed_rows<>0 then
+     raise exception 'V105_CUSTOMER_ILLEGALLY_UPDATED_STATUS';
+   end if;
  exception when insufficient_privilege then null;
  end;
 end $customer$;
@@ -46,6 +50,7 @@ begin
 end $other$;
 select set_config('request.jwt.claim.sub',current_setting('qa.v105.admin'),true);
 do $owner$
+declare changed_rows integer;
 begin
  if not exists(select 1 from public.account_deletion_requests
   where id=current_setting('qa.v105.req_id')::uuid and status='requested')
@@ -60,7 +65,10 @@ begin
  begin
    update public.account_deletion_requests set status='completed'
    where id=current_setting('qa.v105.req_id')::uuid;
-   raise exception 'V105_UNVERIFIED_COMPLETION_ALLOWED';
+   get diagnostics changed_rows = row_count;
+   if changed_rows<>0 then
+      raise exception 'V105_UNVERIFIED_COMPLETION_ALLOWED';
+   end if;
  exception when insufficient_privilege then null;
  end;
  begin
