@@ -74,3 +74,57 @@ validar el resultado con cuentas separadas y revisar políticas de
 eliminación/retención del material fotográfico antes de aceptar trabajos
 reales. El servicio de facturación fiscal y la publicación en tiendas
 siguen siendo tareas independientes.
+
+## V103 · Cambio de operario con historial intacto
+
+El propietario puede cambiar un operario desde **Panel interno** o desde
+**Agenda**, incluso cuando el servicio ya está **En curso**. En ese caso,
+la aplicación exige una confirmación expresa del traspaso.
+
+Cada servicio conserva un parte privado por pareja **servicio + operario**.
+El sustituto, después de acceder con su cuenta, pulsa **Preparar parte de
+trabajo** y registra su propia descripción y sus propias fotos. No se
+sobrescriben la explicación ni las fotografías del operario anterior.
+Cuando el sustituto termina, finaliza el servicio con una descripción
+válida y al menos una foto de su propia intervención.
+
+En **Panel interno → Ver parte de trabajo**, el propietario consulta
+**todos los partes**, con fechas de creación, operarios, descripciones,
+fotos y traspasos registrados. Se muestran los nombres de los operarios
+cuando sus perfiles pueden consultarse, o una referencia interna si no.
+
+Seguridad de servidor (migración
+`supabase/migration-v103-operator-handover.sql`):
+
+- La clave del historial cambia de `request_id` a
+  `(request_id,operator_id)`; se conservan las filas existentes.
+- El registro `work_operator_transfers` tiene RLS y solo el propietario
+  puede consultar sus entradas. La auditoría se escribe en la misma
+  transacción que el cambio de asignación.
+- El operario anterior ya no puede editar ni leer su parte mediante
+  la interfaz privada después de ser sustituido. El propietario sí
+  conserva lectura de todos los partes y sus fotos.
+- Un servicio **Terminado** no puede reasignarse retrospectivamente.
+- Las escrituras del panel y agenda comprueban la asignación original
+  para evitar que dos cambios concurrentes se sobrescriban.
+- El límite de **8 fotografías por parte y operario** sigue aplicado
+  en el servidor mediante la protección V102. No se comparten carpetas
+  entre operarios.
+
+Prueba reproducible:
+`tests/operator-handover-v103.sql`. En REPARADO Test se verificó el
+cambio, los dos partes, las dos fotografías, el único registro de
+traspaso, el cierre del sustituto y la pérdida de acceso del operario
+anterior. La transacción se revirtió sin conservar datos ficticios.
+
+**V103a — cierre seguro al traspasar:** el propietario debe mantener el
+servicio **En curso** cuando cambia su operario. No puede reasignarlo y
+marcarlo Terminado en una sola operación: el sustituto primero debe
+preparar su parte, aportar una foto y cerrar el trabajo desde su cuenta.
+El servidor lo garantiza mediante
+`supabase/migration-v103a-guard-active-transfer.sql`.
+La prueba reversible también verifica que el intento combinado se rechaza.
+
+**No habilitado aún en producción**: hace falta migrar el proyecto
+comercial Supabase en orden V100 → V102 → V103 y realizar pruebas de
+aceptación con cuentas reales antes de prestar servicios.

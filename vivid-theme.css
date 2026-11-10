@@ -1096,3 +1096,12 @@ body,.shell,.customer-header,.customer-nav {background:#fff}
  .operator-work-gallery{grid-template-columns:repeat(2,minmax(0,1fr))}
  .operator-work-view .operator-work-close button,.operator-work-view [data-work-upload],.operator-work-view [data-work-start]{width:100%}
 }
+
+
+/* V103 · Historial privado de partes al sustituir un operario. */
+.operator-work-history{margin:1.3rem 0;padding:1rem;border:1px solid rgba(35,76,110,.20);border-radius:15px;background:rgba(238,246,253,.55)}
+.operator-work-history h2,.operator-work-history h3{margin:.4rem 0 .9rem}
+.operator-work-history-item{padding:.9rem;background:rgba(255,255,255,.9);border:1px solid rgba(35,76,110,.16);border-radius:12px;margin:.65rem 0;overflow-wrap:anywhere}
+.operator-work-history-item p{margin:.3rem 0}
+.operator-work-transfer{padding:.65rem .85rem;border-left:3px solid #3b87ae;background:rgba(255,255,255,.8);border-radius:7px;margin:.55rem 0;overflow-wrap:anywhere}
+@media (max-width:560px){.operator-work-history{padding:.7rem}.operator-work-history-item{padding:.75rem}}

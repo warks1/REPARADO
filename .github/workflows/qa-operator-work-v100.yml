@@ -11,6 +11,13 @@ on:
       - 'vivid-theme.css'
       - 'tests/operator-work-v100.test.mjs'
       - 'tests/operator-work-v102.test.mjs'
+      - 'tests/operator-handover-v103.test.mjs'
+      - 'tests/operator-handover-v103.sql'
+      - 'supabase/migration-v103-operator-handover.sql'
+      - 'supabase/migration-v103a-guard-active-transfer.sql'
+      - 'operator-work-service.js'
+      - 'owner-calendar.js'
+      - 'e2e-private/operator-handover-v103.spec.mjs'
       - 'tests/work-photo-quota-v102.sql'
       - 'supabase/migration-v102-work-photo-quota.sql'
       - 'e2e-private/operator-work-v100.spec.mjs'
@@ -26,6 +33,13 @@ on:
       - 'vivid-theme.css'
       - 'tests/operator-work-v100.test.mjs'
       - 'tests/operator-work-v102.test.mjs'
+      - 'tests/operator-handover-v103.test.mjs'
+      - 'tests/operator-handover-v103.sql'
+      - 'supabase/migration-v103-operator-handover.sql'
+      - 'supabase/migration-v103a-guard-active-transfer.sql'
+      - 'operator-work-service.js'
+      - 'owner-calendar.js'
+      - 'e2e-private/operator-handover-v103.spec.mjs'
       - 'tests/work-photo-quota-v102.sql'
       - 'supabase/migration-v102-work-photo-quota.sql'
       - 'e2e-private/operator-work-v100.spec.mjs'
@@ -42,7 +56,7 @@ jobs:
         with: {node-version: '22'}
       - run: npm install --no-audit --no-fund
       - name: Pruebas de seguridad del operario y galerías
-        run: node --test tests/operator-work-v100.test.mjs tests/operator-work-v102.test.mjs
+        run: node --test tests/operator-work-v100.test.mjs tests/operator-work-v102.test.mjs tests/operator-handover-v103.test.mjs
       - name: Compilación completa
         run: npm run build
   operator-mobile:
@@ -55,7 +69,7 @@ jobs:
       - run: npm install --no-audit --no-fund
       - run: npx playwright install --with-deps chromium webkit
       - name: Prueba de parte en iPhone y Android simulados
-        run: npx playwright test --config playwright.invite.config.mjs e2e-private/operator-work-v100.spec.mjs --project=iphone --project=android
+        run: npx playwright test --config playwright.invite.config.mjs e2e-private/operator-work-v100.spec.mjs e2e-private/operator-handover-v103.spec.mjs --project=iphone --project=android
       - name: Guardar evidencias si falla
         if: always()
         uses: actions/upload-artifact@v4

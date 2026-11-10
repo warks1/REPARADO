@@ -48,16 +48,50 @@ export function mayStartWork(job,operatorId){
 export function mayFinishWork(job,operatorId){
   return mayOperateWork(job,operatorId) && job.status==='in_progress';
 }
-export async function fetchWorkReport({supabase,requestId,isActive}){
+export async function fetchWorkReport({supabase,requestId,operatorId=null,isActive}){
+  ensureActive(isActive);
+  if(!UUID.test(String(requestId||''))||!supabase?.from||
+    (operatorId!==null&&!UUID.test(String(operatorId))))
+    throw new Error('Servicio no válido.');
+  const query=supabase.from('work_reports')
+    .select('request_id,operator_id,description,created_at')
+    .eq('request_id',requestId);
+  if(operatorId)query.eq('operator_id',operatorId);
+  const response=await query.maybeSingle();
+  ensureActive(isActive);
+  if(response?.error)throw new Error('No se pudo consultar el parte del operario. Revisa la conexión y la migración V103.');
+  return response?.data??null;
+}
+
+// Solo la cuenta del propietario recibe el historial COMPLETO gracias a RLS.
+// Cada operario sigue leyendo exclusivamente su parte asignado.
+export async function fetchWorkReports({supabase,requestId,isActive}){
   ensureActive(isActive);
   if(!UUID.test(String(requestId||''))||!supabase?.from)
     throw new Error('Servicio no válido.');
-  const response=await supabase.from('work_reports')
+  const result=await supabase.from('work_reports')
     .select('request_id,operator_id,description,created_at')
-    .eq('request_id',requestId).maybeSingle();
+    .eq('request_id',requestId)
+    .order('created_at',{ascending:true})
+    .order('operator_id',{ascending:true});
   ensureActive(isActive);
-  if(response?.error)throw new Error('No se pudo consultar el parte de trabajo. Revisa la conexión y la migración V100.');
-  return response?.data??null;
+  if(result?.error||!Array.isArray(result?.data))
+    throw new Error('No se pudo consultar el historial de intervenciones.');
+  return result.data;
+}
+
+export async function fetchWorkTransfers({supabase,requestId,isActive}){
+  ensureActive(isActive);
+  if(!UUID.test(String(requestId||''))||!supabase?.from)
+    throw new Error('Servicio no válido.');
+  const result=await supabase.from('work_operator_transfers')
+    .select('request_id,previous_operator_id,next_operator_id,changed_by,changed_at,status_at_transfer')
+    .eq('request_id',requestId)
+    .order('changed_at',{ascending:true});
+  ensureActive(isActive);
+  if(result?.error||!Array.isArray(result?.data))
+    throw new Error('No se pudo consultar el historial de traspasos.');
+  return result.data;
 }
 export async function listWorkPhotos({supabase,operatorId,requestId,isActive}){
   ensureActive(isActive);

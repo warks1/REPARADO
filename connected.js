@@ -1581,6 +1581,17 @@ export function mountConnected({app, services, supabase, authLinkIntent=null}) {
          !['accepted','scheduled','in_progress','completed'].includes(original.status))
         return message('Antes de programar o finalizar el trabajo, el cliente debe aceptar el presupuesto.',true);
       const operator_id=String(fields.get('operator_id'))||null;
+      const activeTransfer=original.status==='in_progress' &&
+        operator_id!==original.operator_id;
+      if(activeTransfer&&status!=='in_progress')
+        return message('Para cambiar el operario de un trabajo iniciado, mantén el estado «En curso». El sustituto debe registrar su propio parte antes de finalizar.',true);
+      if(original.status==='completed' && operator_id!==original.operator_id)
+        return message('No puedes cambiar el operario de un servicio terminado. Su autoría y el parte deben conservarse.',true);
+      if(activeTransfer && !window.confirm(
+        '¿Confirmas el traspaso del servicio EN CURSO a otro operario? '+
+        'Los partes y las fotografías anteriores se conservarán en el historial privado del propietario. '+
+        'El nuevo operario tendrá que abrir su propio parte para continuar.'
+      ))return message('Traspaso cancelado; no se han aplicado cambios.',true);
       const date=String(fields.get('scheduled_at'));
       const rawPrice=String(fields.get('price')??'').trim();
       const quotedPrice=rawPrice===''?null:Number(rawPrice);
@@ -1620,10 +1631,22 @@ export function mountConnected({app, services, supabase, authLinkIntent=null}) {
           return message('El operario ya tiene una visita a menos de '+staffVisitGapMinutes+' minutos. Selecciona otra hora u otro operario.',true);
       }
       const operator=operators.find(op=>op.id===operator_id);
-      const {error}=await supabase.from('service_requests').update({
-        status,price:quotedPrice,operator_id,operator_name:operator?.full_name||null,scheduled_at:stamp?stamp.toISOString():null
+      // Los traspasos deben comprobar que la asignación original sigue
+      // vigente: dos propietarios no pueden pisarse los cambios.
+      let change=supabase.from('service_requests').update({
+        status,price:quotedPrice,operator_id,
+        operator_name:operator?.full_name||null,
+        scheduled_at:stamp?stamp.toISOString():null
       }).eq('id',jobId);
+      if(activeTransfer){
+        change=change.eq('operator_id',original.operator_id)
+          .eq('status','in_progress');
+      }
+      const saveResult=activeTransfer ?await change.select('id'):await change;
+      const {error}=saveResult;
       if(!isCurrentUser(staffUserId)||currentView!=='admin'||!form.isConnected)return;
+      if(!error&&activeTransfer&&(!Array.isArray(saveResult.data)||saveResult.data.length!==1))
+        return message('Otro cambio se ha realizado antes que tú. Actualiza el panel y revisa el operario asignado.',true);
       if(error){
         // Postgres V7: error transaccional, incluso con dos administradores
         // guardando en paralelo. No anunciar cambios cuando el servidor falla.
@@ -1635,6 +1658,10 @@ export function mountConnected({app, services, supabase, authLinkIntent=null}) {
           return message('Solo el cliente puede aceptar su presupuesto desde Mis solicitudes.',true);
         if(error.code==='23514' && error.message?.includes('REPARADO_QUOTE_MUST_BE_ACCEPTED_FIRST'))
           return message('No se puede programar o finalizar un trabajo sin la aceptación del presupuesto.',true);
+        if(error.code==='23514' && error.message?.includes('REPARADO_COMPLETED_OPERATOR_LOCKED'))
+          return message('No se puede reasignar un trabajo ya terminado. Consulta el historial de intervenciones.',true);
+        if(error.code==='23514' && error.message?.includes('REPARADO_ACTIVE_OPERATOR_REQUIRED'))
+          return message('Un trabajo en curso no puede quedarse sin operario asignado.',true);
         if(error.code==='23514' && error.message?.includes('REPARADO_ACCEPTED_QUOTE_CANNOT_REOPEN'))
           return message('Un presupuesto ya aceptado no se puede volver a abrir ni modificar.',true);
         if(error.message?.includes('REPARADO_SCHEDULE_OPERATOR_REQUIRED')||

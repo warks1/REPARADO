@@ -1,7 +1,8 @@
 // REPARADO V100 · Pantalla privada del parte de servicio.
 // Solo operario asignado edita; el propietario consulta partes y evidencias.
 import {
-  fetchWorkReport,listWorkPhotos,startOperatorWork,saveOperatorWorkDescription,
+  fetchWorkReport,fetchWorkReports,fetchWorkTransfers,
+  listWorkPhotos,startOperatorWork,saveOperatorWorkDescription,
   completeOperatorWork,uploadOperatorWorkPhotos,
   mayStartWork,mayFinishWork,MAX_WORK_PHOTOS,WORK_DESCRIPTION_MAX
 } from './operator-work-service.js';
@@ -17,7 +18,7 @@ const displayTime=value=>{
       timeZone:'Europe/Madrid',dateStyle:'medium',timeStyle:'short'
     }).format(d):'Sin registrar';
 };
-function viewMarkup(job,report,photos,{userId,role,preserve=''}) {
+function viewMarkup(job,report,photos,{userId,role,preserve='',history=[],transfers=[]}) {
   const canEdit=role==='operator'&&job.operator_id===userId;
   const start=canEdit&&mayStartWork(job,userId);
   const finish=canEdit&&mayFinishWork(job,userId)&&Boolean(report);
@@ -50,8 +51,26 @@ function viewMarkup(job,report,photos,{userId,role,preserve=''}) {
       '<button type="button" data-work-save-notes>Guardar descripción</button>'
       :'<div class="operator-work-readonly"><h2>Trabajo realizado</h2><p data-work-description>'+
        esc(report?.description|| (ended?'Pendiente de parte histórico.':'Aún no se ha iniciado.'))+'</p></div>')+
+    (role==='admin'?'<section class="operator-work-history" data-work-history>'+
+      '<h2>Historial completo de intervenciones</h2>'+
+      (history.length?history.map(entry=>
+        '<article class="operator-work-history-item" data-work-report-operator="'+esc(entry.operator_id)+'">'+
+        '<p><strong>Operario:</strong> '+esc(entry.operator_label||entry.operator_id)+
+        ' · <strong>Parte abierto:</strong> '+esc(displayTime(entry.created_at))+'</p>'+
+        '<p><strong>Trabajo realizado:</strong> '+esc(entry.description||'Sin descripción guardada')+'</p>'+
+        '<p>'+entry.photoCount+' fotografía(s) de esta intervención</p></article>'
+      ).join(''):'<p>No hay partes de intervención registrados.</p>')+
+      '<h3>Traspasos de operario</h3>'+
+      (transfers.length?transfers.map(transfer=>
+        '<p class="operator-work-transfer">'+esc(displayTime(transfer.changed_at))+
+        ' · De '+esc(transfer.previous_operator_label||transfer.previous_operator_id||'Sin asignar')+
+        ' a '+esc(transfer.next_operator_label||transfer.next_operator_id||'Sin asignar')+
+        ' · '+esc(transfer.status_at_transfer)+'</p>'
+      ).join(''):'<p>No se han registrado traspasos.</p>')+
+      '</section>':'')+
     '<h2>Fotografías del trabajo</h2><p data-work-photo-count>'+
-      photos.length+' de '+MAX_WORK_PHOTOS+' fotografías adjuntas</p>'+
+      (role==='admin'?photos.length+' fotografías del historial':
+        photos.length+' de '+MAX_WORK_PHOTOS+' fotografías adjuntas')+'</p>'+
     '<div class="operator-work-gallery" data-work-gallery aria-label="Fotos del trabajo"></div>'+
     '<button type="button" data-work-refresh>↻ Actualizar parte y fotografías</button>'+
     (finish?'<div class="operator-work-upload">'+
@@ -104,12 +123,56 @@ export async function mountOperatorWork({main,supabase,requestId,userId,role,isA
       return;
     }
     const job=response.data;
-    let report=null,photos=[];
+    let report=null,photos=[],history=[],transfers=[];
     try{
-      report=await fetchWorkReport({supabase,requestId,isActive});
-      if(report)photos=await listWorkPhotos({
-        supabase,operatorId:report.operator_id,requestId,isActive
-      });
+      history=role==='admin'
+        ?await fetchWorkReports({supabase,requestId,isActive})
+        :[];
+      if(role==='admin'){
+        transfers=await fetchWorkTransfers({supabase,requestId,isActive});
+        report=history.find(entry=>entry.operator_id===job.operator_id)||null;
+      }else{
+        report=await fetchWorkReport({
+          supabase,requestId,operatorId:userId,isActive
+        });
+        if(report)history=[report];
+      }
+      if(role==='admin'&&(history.length||transfers.length)){
+        const ids=[...new Set([
+          ...history.map(entry=>entry.operator_id),
+          ...transfers.flatMap(entry=>[
+            entry.previous_operator_id,entry.next_operator_id
+          ])
+        ].filter(Boolean))];
+        if(ids.length){
+          const named=await supabase.from('profiles')
+            .select('id,full_name').in('id',ids);
+          if(!isActive())return;
+          if(!named.error&&Array.isArray(named.data)){
+            const names=new Map(named.data.map(op=>[
+              op.id,op.full_name||op.id
+            ]));
+            history=history.map(entry=>({
+              ...entry,operator_label:names.get(entry.operator_id)||entry.operator_id
+            }));
+            transfers=transfers.map(entry=>({
+              ...entry,
+              previous_operator_label:names.get(entry.previous_operator_id),
+              next_operator_label:names.get(entry.next_operator_id)
+            }));
+          }
+        }
+      }
+      for(const entry of history){
+        const originals=await listWorkPhotos({
+          supabase,operatorId:entry.operator_id,requestId,isActive
+        });
+        if(!isActive())return;
+        entry.photoCount=originals.length;
+        photos.push(...originals.map(photo=>({
+          name:photo.name,operator_id:entry.operator_id
+        })));
+      }
     }catch(error){
       if(!isActive())return;
       main.innerHTML='<section class="card"><h2>Parte de trabajo</h2>'+
@@ -123,7 +186,9 @@ export async function mountOperatorWork({main,supabase,requestId,userId,role,isA
       return;
     }
     if(!stillHere())return;
-    main.innerHTML=viewMarkup(job,report,photos,{userId,role,preserve});
+    main.innerHTML=viewMarkup(job,report,photos,{
+      userId,role,preserve,history,transfers
+    });
     screen=main.querySelector('#reparado-operator-work');
     const notes=screen.querySelector('[name="work_description"]');
     const show=text=>{
@@ -189,7 +254,7 @@ export async function mountOperatorWork({main,supabase,requestId,userId,role,isA
     const gallery=screen.querySelector('[data-work-gallery]');
     for(const photo of photos){
       if(!active())return;
-      const path=report.operator_id+'/'+requestId+'/'+photo.name;
+      const path=photo.operator_id+'/'+requestId+'/'+photo.name;
       try{
         const {data,error}=await supabase.storage.from('work-photos')
           .createSignedUrl(path,120);
@@ -198,7 +263,8 @@ export async function mountOperatorWork({main,supabase,requestId,userId,role,isA
         const link=document.createElement('a');
         link.href=data.signedUrl;link.target='_blank';link.rel='noopener noreferrer';
         const img=document.createElement('img');img.src=data.signedUrl;
-        img.alt='Foto de intervención';img.loading='lazy';
+        img.alt='Foto de intervención del operario '+photo.operator_id;
+        img.loading='lazy';
         link.append(img);gallery.append(link);
       }catch{/* Seguir mostrando las fotos accesibles aunque una URL falle. */}
     }
