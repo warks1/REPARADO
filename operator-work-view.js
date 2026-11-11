@@ -73,7 +73,7 @@ function viewMarkup(job,report,photos,{userId,role,preserve='',history=[],transf
       ).join(''):'<p>No se han registrado traspasos.</p>')+
       '</section>':'')+
     '<h2>Fotografías del trabajo</h2><p data-work-photo-count>'+
-      (role==='admin'?(history.some(entry=>entry.photoError) ? photos.length+' fotografías accesibles del historial · Algunas intervenciones tienen fotos pendientes de consultar.' : photos.length+' fotografías del historial'):
+      (role==='admin'?(history.some(entry=>entry.photoError) ? photos.length+' fotografía'+(photos.length===1?'':'s')+' accesible'+(photos.length===1?'':'s')+' del historial · Algunas intervenciones tienen fotos pendientes de consultar.' : photos.length+' fotografías del historial'):
         photos.length+' de '+MAX_WORK_PHOTOS+' fotografías adjuntas')+'</p>'+
     (role==='admin'
       ?'<p class="notice">Cada fotografía se muestra en el parte del operario que la adjuntó.</p>'
