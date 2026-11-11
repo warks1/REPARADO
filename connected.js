@@ -92,6 +92,27 @@ export function mountConnected({app, services, supabase, authLinkIntent=null}) {
   const userIsStaff = () => profile && ['admin','operator'].includes(profile.role);
   // UI privada de forma predeterminada. No sustituye cerrar registros en Supabase Auth.
   const openRegistration=publicRegistrationEnabled(import.meta.env?.VITE_REPARADO_ALLOW_PUBLIC_REGISTRATION);
+  let operatorWorkNavigationGuard=null;
+  // La pantalla del parte no contiene la navegación global. Interceptar
+  // únicamente la navegación voluntaria del usuario, nunca la revocación
+  // de sesión que ordena Supabase.
+  app.addEventListener('click',event=>{
+    if(currentView!=='operator-work'||!operatorWorkNavigationGuard)return;
+    if(!event.target.closest(
+      '[data-view],[data-service],[data-logout],[data-back],'+
+      '[data-category-open],[data-custom-request],[data-review-login]'
+    ))return;
+    if(operatorWorkNavigationGuard.canLeave())return;
+    event.preventDefault();
+    event.stopImmediatePropagation();
+  },true);
+  // El navegador decide si muestra su aviso genérico. No expone las notas.
+  window.addEventListener('beforeunload',event=>{
+    if(currentView==='operator-work'&&operatorWorkNavigationGuard?.hasUnsaved()){
+      event.preventDefault();
+      event.returnValue='';
+    }
+  });
   app.addEventListener('click', event => {
     const expand=event.target.closest('[data-expand-services]');
     if(expand){
@@ -1303,13 +1324,19 @@ export function mountConnected({app, services, supabase, authLinkIntent=null}) {
   async function showOperatorWork(requestId){
     if(!userIsStaff()||!session?.user?.id)return renderHome();
     const userId=session.user.id,epoch=authEpoch,role=profile.role;
+    operatorWorkNavigationGuard=null;
     currentView='operator-work';
     setActiveNav(app,'profile');
     await mountOperatorWork({
       main,supabase,requestId,userId,role,
       isActive:()=>currentView==='operator-work'&&isCurrentUser(userId)&&
         authEpoch===epoch&&profile?.role===role,
-      onBack:()=>renderAdmin(adminFilter)
+      onBack:()=>renderAdmin(adminFilter),
+      onNavigationGuard:guard=>{
+        if(currentView==='operator-work'&&isCurrentUser(userId)&&
+           authEpoch===epoch&&profile?.role===role)
+          operatorWorkNavigationGuard=guard;
+      }
     });
   }
 
