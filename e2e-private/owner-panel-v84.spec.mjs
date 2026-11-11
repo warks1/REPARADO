@@ -77,6 +77,8 @@ async function setup(page,role='admin',inboxRpc=false,history=false,directoryFai
        if(directoryFailure)return route.fulfill({
          status:directoryFailure==='permission'?403:503,
          contentType:'application/json',
+         headers:{'access-control-allow-origin':'*',
+           'access-control-allow-headers':'*'},
          body:JSON.stringify(directoryFailure==='permission'?
            {code:'42501',message:'Acceso denegado'}:
            {code:'08006',message:'Conexión temporalmente no disponible'})
@@ -590,6 +592,8 @@ test('V110: fallo temporal al buscar nombres no oculta mensajes del propietario'
   await page.goto('/');
   await page.locator('[data-owner-target="owner-messages"]').click();
   const inbox=page.locator('#reparado-owner-messages');
+  await expect(inbox.locator('[data-owner-messages-status]'))
+    .toContainText('No se han podido consultar los nombres');
   await expect(inbox.locator('.owner-message-row')).toHaveCount(1);
   await expect(inbox).toContainText('¿Cuándo podéis venir?');
   await expect(inbox).toContainText('Cliente (nombre no disponible)');
