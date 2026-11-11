@@ -58,10 +58,10 @@ function viewMarkup(job,report,photos,{userId,role,preserve='',history=[],transf
         '<p><strong>Operario:</strong> '+esc(entry.operator_label||entry.operator_id)+
         ' · <strong>Parte abierto:</strong> '+esc(displayTime(entry.created_at))+'</p>'+
         '<p><strong>Trabajo realizado:</strong> '+esc(entry.description||'Sin descripción guardada')+'</p>'+
-        '<p>'+entry.photoCount+' fotografía(s) de esta intervención</p>'+
+        '<p>'+(entry.photoError?'Fotografías no disponibles: error de lectura o permisos.':entry.photoCount+' fotografía(s) de esta intervención')+'</p>'+
         '<div class="operator-work-gallery" data-work-gallery-operator="'+esc(entry.operator_id)+
         '" aria-label="Fotografías de '+esc(entry.operator_label||entry.operator_id)+'">'+
-        (entry.photoCount?'':'<p class="notice">Sin fotografías de esta intervención.</p>')+
+        (entry.photoError?'<p class="notice" role="status">No se pudieron consultar estas fotografías. Usa «Actualizar parte y fotografías» para reintentar.</p>':(entry.photoCount?'':'<p class="notice">Sin fotografías de esta intervención.</p>'))+
         '</div></article>'
       ).join(''):'<p>No hay partes de intervención registrados.</p>')+
       '<h3>Traspasos de operario</h3>'+
@@ -73,7 +73,7 @@ function viewMarkup(job,report,photos,{userId,role,preserve='',history=[],transf
       ).join(''):'<p>No se han registrado traspasos.</p>')+
       '</section>':'')+
     '<h2>Fotografías del trabajo</h2><p data-work-photo-count>'+
-      (role==='admin'?photos.length+' fotografías del historial':
+      (role==='admin'?(history.some(entry=>entry.photoError) ? photos.length+' fotografía'+(photos.length===1?'':'s')+' accesible'+(photos.length===1?'':'s')+' del historial · Algunas intervenciones tienen fotos pendientes de consultar.' : photos.length+' fotografías del historial'):
         photos.length+' de '+MAX_WORK_PHOTOS+' fotografías adjuntas')+'</p>'+
     (role==='admin'
       ?'<p class="notice">Cada fotografía se muestra en el parte del operario que la adjuntó.</p>'
@@ -170,9 +170,21 @@ export async function mountOperatorWork({main,supabase,requestId,userId,role,isA
         }
       }
       for(const entry of history){
-        const originals=await listWorkPhotos({
-          supabase,operatorId:entry.operator_id,requestId,isActive
-        });
+        let originals;
+        try{
+          originals=await listWorkPhotos({
+            supabase,operatorId:entry.operator_id,requestId,isActive
+          });
+        }catch(error){
+          if(!isActive())return;
+          // Al propietario no se le ocultan partes ni traspasos por el
+          // fallo de lectura de una galería. Al operario se le bloquea
+          // la pantalla para no presentar fotos desconocidas como cero.
+          if(role!=='admin')throw error;
+          entry.photoCount=null;
+          entry.photoError=true;
+          continue;
+        }
         if(!isActive())return;
         entry.photoCount=originals.length;
         photos.push(...originals.map(photo=>({
@@ -258,6 +270,12 @@ export async function mountOperatorWork({main,supabase,requestId,userId,role,isA
       }),'Servicio finalizado y cerrado correctamente.'));
     // Enlaces firmados breves: Storage privado, nunca URLs públicas permanentes.
     const operatorGallery=screen.querySelector('[data-work-gallery]');
+    const showPhotoUnavailable=gallery=>{
+      const message=document.createElement('p');
+      message.className='notice';
+      message.textContent='No se pudo cargar una fotografía privada. Actualiza el parte para reintentar.';
+      gallery.append(message);
+    };
     for(const photo of photos){
       if(!active())return;
       const gallery=role==='admin'
@@ -269,7 +287,10 @@ export async function mountOperatorWork({main,supabase,requestId,userId,role,isA
         const {data,error}=await supabase.storage.from('work-photos')
           .createSignedUrl(path,120);
         if(!active())return;
-        if(error||!data?.signedUrl)continue;
+        if(error||!data?.signedUrl){
+          showPhotoUnavailable(gallery);
+          continue;
+        }
         const link=document.createElement('a');
         link.href=data.signedUrl;link.target='_blank';link.rel='noopener noreferrer';
         const img=document.createElement('img');img.src=data.signedUrl;
@@ -277,7 +298,7 @@ export async function mountOperatorWork({main,supabase,requestId,userId,role,isA
         img.alt='Foto del trabajo de '+(author?.operator_label||photo.operator_id);
         img.loading='lazy';
         link.append(img);gallery.append(link);
-      }catch{/* Seguir mostrando las fotos accesibles aunque una URL falle. */}
+      }catch{showPhotoUnavailable(gallery)}
     }
     if(operatorGallery&&!operatorGallery.children.length)
       operatorGallery.textContent='Aún no hay fotografías accesibles.';
