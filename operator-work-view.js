@@ -6,6 +6,7 @@ import {
   completeOperatorWork,uploadOperatorWorkPhotos,
   mayStartWork,mayFinishWork,MAX_WORK_PHOTOS,WORK_DESCRIPTION_MAX
 } from './operator-work-service.js';
+import {bindWorkPhotoRetry} from './work-photo-recovery.js';
 
 const UUID=/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i;
 const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({
@@ -293,11 +294,19 @@ export async function mountOperatorWork({main,supabase,requestId,userId,role,isA
         }
         const link=document.createElement('a');
         link.href=data.signedUrl;link.target='_blank';link.rel='noopener noreferrer';
-        const img=document.createElement('img');img.src=data.signedUrl;
+        const img=document.createElement('img');
         const author=history.find(entry=>entry.operator_id===photo.operator_id);
         img.alt='Foto del trabajo de '+(author?.operator_label||photo.operator_id);
         img.loading='lazy';
         link.append(img);gallery.append(link);
+        // Registrar el error antes de asignar src para recuperar también
+        // fallos inmediatos y URLs caducadas al cargar miniaturas diferidas.
+        bindWorkPhotoRetry({
+          image:img,link,gallery,
+          store:supabase.storage.from('work-photos'),path,
+          isActive:active,onUnavailable:showPhotoUnavailable
+        });
+        img.src=data.signedUrl;
       }catch{showPhotoUnavailable(gallery)}
     }
     if(operatorGallery&&!operatorGallery.children.length)
