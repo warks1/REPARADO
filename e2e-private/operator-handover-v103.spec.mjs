@@ -78,6 +78,11 @@ async function fakeOwner(page){
    return fulfill(route,[{name:picture}],1);
   if(path.startsWith('/storage/v1/object/sign/work-photos/')&&method==='POST')
    return fulfill(route,{signedURL:'/storage/v1/object/sign/work-photos/foto.jpg?token=mock'},1,true);
+  // La URL firmada debe devolver una imagen real: de otro modo el navegador
+  // simula un enlace caducado y activa la recuperación V108 sin necesidad.
+  if(path.startsWith('/storage/v1/object/sign/work-photos/')&&method==='GET')
+   return route.fulfill({status:200,contentType:'image/png',
+    body:Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADElEQVR4nGP4//8/AAX+Av4N70a4AAAAAElFTkSuQmCC','base64')});
   if(path==='/rest/v1/customer_reviews'||path==='/rest/v1/support_reports')
    return fulfill(route,[],0);
   return route.fulfill({status:404,contentType:'application/json',
