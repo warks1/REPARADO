@@ -233,3 +233,30 @@ antes de iniciar otra tarea. En móvil, usar primero **Guardar descripción**.
 
 Pruebas: `tests/work-notes-navigation-v111.test.mjs` y
 `e2e-private/operator-work-v100.spec.mjs` en iPhone/Android simulados.
+
+## V112 · Guardar partes provisionales sin cerrar el servicio
+
+El operario puede guardar **una descripción provisional**, aunque todavía
+no alcance 20 caracteres. También puede guardar el campo vacío para
+corregir una descripción previa mientras el servicio continúa en curso.
+El botón **Guardar descripción** confirma el texto contra Supabase, y el
+indicador V109/V111 distingue lo guardado de los cambios pendientes.
+
+**El cierre no se relaja:** «Terminar y cerrar servicio» sigue exigiendo
+20 caracteres como mínimo y al menos una fotografía guardada en el
+bucket privado del servicio. La validación se mantiene tanto en el cliente
+como en la RPC/trigger del servidor. El máximo sigue siendo 4.000
+caracteres, incluidos los borradores; no se introducen cambios de
+roles, políticas RLS, estructura SQL ni cupos de fotos.
+
+Se corrige además la conservación de notas al pulsar **Actualizar parte
+y fotografías** o subir imágenes: un campo que el operario ha borrado
+deliberadamente permanece **vacío**, en lugar de restaurar el texto
+antiguo que aún está guardado en el servidor. El estado se muestra
+como **Cambios sin guardar** hasta que el operario pulse Guardar.
+
+**Pruebas:** `tests/operator-work-v100.test.mjs`,
+`tests/work-notes-draft-v109.test.mjs` y
+`e2e-private/operator-work-v100.spec.mjs` (iPhone y Android simulados).
+Antes de producción comercial siguen siendo necesarias las pruebas con
+cuentas de operario y dispositivo reales.
