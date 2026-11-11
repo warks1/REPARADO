@@ -272,9 +272,16 @@ export async function mountOperatorWork({main,supabase,requestId,userId,role,isA
       if(!requestLeave())return;
       onBack();
     });
-    screen.querySelector('[data-work-refresh]')?.addEventListener('click',()=>{
+    screen.querySelector('[data-work-refresh]')?.addEventListener('click',async()=>{
       if(busy||!active())return;
-      void render(notes?.value??null);
+      busy=true;
+      show('Actualizando el parte y fotografías…');
+      try{
+        await render(notes?.value??null);
+        if(active())show('Parte actualizado. Comprueba los cambios antes de finalizar.');
+      }catch{
+        if(active())show('No se pudo actualizar el parte. Comprueba la conexión e inténtalo otra vez.');
+      }finally{busy=false}
     });
     screen.querySelector('[data-work-start]')?.addEventListener('click',()=>transact(
       ()=>startOperatorWork({supabase,requestId,operatorId:userId,isActive}),
