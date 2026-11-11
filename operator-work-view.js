@@ -102,7 +102,7 @@ function viewMarkup(job,report,photos,{userId,role,preserve='',history=[],transf
     '</section>';
 }
 
-export async function mountOperatorWork({main,supabase,requestId,userId,role,isActive,onBack}){
+export async function mountOperatorWork({main,supabase,requestId,userId,role,isActive,onBack,onNavigationGuard}){
   if(!isActive()||!UUID.test(String(requestId||''))||
     !UUID.test(String(userId||''))||!['admin','operator'].includes(role))return;
   main.innerHTML='<section class="card" data-work-loading><h2>Parte de trabajo</h2>'+
@@ -225,6 +225,22 @@ export async function mountOperatorWork({main,supabase,requestId,userId,role,isA
     };
     notes?.addEventListener('input',updateDraftIndicator);
     updateDraftIndicator();
+    const requestLeave=()=>{
+      if(!active()||!screen.isConnected)return true;
+      // No navegar mientras una escritura o subida está en curso.
+      if(busy)return false;
+      return confirmWorkNotesExit({
+        draft:notes?.value,confirmed:confirmedNotes,
+        confirmExit:message=>window.confirm(message)
+      });
+    };
+    // El menú general está fuera de esta pantalla; la app principal debe
+    // aplicar el mismo control que el botón Volver sin almacenar el borrador.
+    onNavigationGuard?.({
+      canLeave:requestLeave,
+      hasUnsaved:()=>active()&&screen.isConnected&&
+        workNotesDirty(notes?.value,confirmedNotes)
+    });
     const show=text=>{
       if(active()){
         const feedback=main.querySelector('[data-work-feedback]');
@@ -251,11 +267,7 @@ export async function mountOperatorWork({main,supabase,requestId,userId,role,isA
       }
     };
     screen.querySelector('[data-work-back]')?.addEventListener('click',()=>{
-      if(busy||!active())return;
-      if(!confirmWorkNotesExit({
-        draft:notes?.value,confirmed:confirmedNotes,
-        confirmExit:message=>window.confirm(message)
-      }))return;
+      if(!requestLeave())return;
       onBack();
     });
     screen.querySelector('[data-work-refresh]')?.addEventListener('click',()=>{
