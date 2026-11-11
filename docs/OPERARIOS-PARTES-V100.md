@@ -134,3 +134,26 @@ aceptación con cuentas reales antes de prestar servicios.
 Cuando un encargo ha cambiado de operario, el propietario ya no ve las fotos de todos mezcladas en una sola galería. En **Panel interno → Ver parte de trabajo**, cada intervención incluye su **propia galería**, debajo del nombre del operario, la fecha de apertura y la descripción. La pantalla indica qué intervenciones no tienen fotografías y mantiene el número total de evidencias del servicio.
 
 Se conserva el acceso privado mediante URL firmada de 120 segundos y la ruta original `<operario>/<servicio>/<foto>`. La interfaz agrupa la presentación sin mover, copiar ni modificar ningún archivo ni permiso de Supabase. El operario sigue teniendo su galería individual habitual. Se han ampliado las pruebas E2E de iPhone/Android simulado para comprobar que una foto antigua no aparece dentro del parte del operario sustituto.
+
+## V107 · Historial visible aunque falle la lectura de una galería
+
+En **Panel del propietario → Ver parte de trabajo**, un error temporal al
+consultar las fotos privadas de un operario ya no debe ocultar los partes
+de otros operarios ni el historial de traspasos. El propietario seguirá
+viendo las descripciones y las intervenciones consultadas correctamente.
+
+- El contador de fotos indica cuántas son **accesibles** y advierte que
+  existen intervenciones cuya galería no se ha podido consultar.
+- Una galería con error muestra **fotografías no disponibles**, nunca
+  «0 fotos» o «sin fotografías»; esta última indicación se reserva para
+  galerías efectivamente consultadas sin resultados.
+- Si falla la firma de una foto concreta, se muestra un aviso en su lugar
+  sin bloquear la consulta de las demás. **Actualizar parte y fotografías**
+  permite reintentar con nuevos enlaces privados temporales.
+- El **operario** no aplica esta recuperación parcial: un error al leer
+  su parte o sus fotos sigue impidiendo mostrar un estado de trabajo
+  incompleto como si estuviera verificado.
+
+No se amplían permisos RLS, no se vuelve público el bucket y no se modifica
+el cierre de trabajos. La regresión está en
+`tests/operator-gallery-v107.test.mjs`.
