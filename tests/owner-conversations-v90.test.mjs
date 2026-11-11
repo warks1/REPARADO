@@ -159,3 +159,34 @@ test('V110: solo un error claramente de conectividad permite nombres ausentes',a
   assert.equal(transientOwnerDirectoryError({code:'PGRST301'}),false);
   assert.equal(transientOwnerDirectoryError({message:'Permiso denegado'}),false);
 });
+
+test('V110: búsqueda de nombres limitada en tiempo ante reintentos de Supabase',async()=>{
+  const {fetchOwnerProfileNames,transientOwnerDirectoryError}=
+    await import('../owner-messages.js');
+  let aborted=false;
+  const db={from(table){
+    assert.equal(table,'profiles');
+    return {select:()=>({in:()=>({
+      abortSignal(signal){
+        signal.addEventListener('abort',()=>{aborted=true});
+        return new Promise(()=>{}); // Simula reintentos 503 que no terminan.
+      }
+    })})};
+  }};
+  const result=await fetchOwnerProfileNames(db,[a],{timeoutMs:15});
+  assert.equal(result.data,null);
+  assert.equal(result.error.code,'OWNER_DIRECTORY_TIMEOUT');
+  assert.equal(transientOwnerDirectoryError(result.error),true);
+  assert.equal(aborted,true);
+});
+
+test('V110: búsqueda de nombres normal no espera ni altera el resultado',async()=>{
+  const {fetchOwnerProfileNames}=await import('../owner-messages.js');
+  const names=[{id:a,full_name:'Cliente autorizado'}];
+  const db={from:()=>({select:()=>({in:()=>({
+    abortSignal:async()=>({data:names,error:null})
+  })})})};
+  const result=await fetchOwnerProfileNames(db,[a],{timeoutMs:50});
+  assert.deepEqual(result.data,names);
+  assert.equal(result.error,null);
+});
