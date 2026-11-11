@@ -260,3 +260,7 @@ como **Cambios sin guardar** hasta que el operario pulse Guardar.
 `e2e-private/operator-work-v100.spec.mjs` (iPhone y Android simulados).
 Antes de producción comercial siguen siendo necesarias las pruebas con
 cuentas de operario y dispositivo reales.
+
+**Sincronización de pantalla V112:** la acción «Actualizar parte y fotografías»
+indica cuándo ha terminado de consultar el servidor. Durante la lectura
+se bloquean los cambios incompatibles para impedir operaciones solapadas.
