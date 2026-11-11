@@ -16,10 +16,34 @@ export function transientOwnerDirectoryError(error){
   if(['42501','PGRST301','PGRST302'].includes(code)||
      /^28[0-9A-Z]{3}$/i.test(code)||status===401||status===403)
     return false;
-  return /^08[0-9A-Z]{3}$/i.test(code) ||
+  return code==='OWNER_DIRECTORY_TIMEOUT'||
+    /^08[0-9A-Z]{3}$/i.test(code) ||
     /^PGRST00[0-3]$/i.test(code) ||
     status===503||status===504||
     /(?:Failed to fetch|NetworkError|Load failed)/i.test(message);
+}
+
+// Un fallo de nombres no debe dejar la bandeja indefinidamente cargando.
+// Supabase puede reintentar automáticamente un HTTP 503. Este límite solo
+// afecta a la búsqueda auxiliar, sin cambiar los reintentos del resto de la app.
+export async function fetchOwnerProfileNames(supabase,ids,{timeoutMs=2500}={}){
+  const query=supabase.from('profiles').select('id,full_name').in('id',ids);
+  // Soportar también proveedores simulados del test sin AbortSignal.
+  if(typeof query?.abortSignal!=='function')return await query;
+  const controller=new AbortController();
+  let timer=null;
+  const timeout=new Promise(resolve=>{
+    timer=setTimeout(()=>{
+      controller.abort();
+      resolve({data:null,error:{code:'OWNER_DIRECTORY_TIMEOUT',
+        message:'La búsqueda de nombres tardó demasiado.'}});
+    },timeoutMs);
+  });
+  try{
+    return await Promise.race([Promise.resolve(query.abortSignal(controller.signal)),timeout]);
+  }finally{
+    if(timer!==null)clearTimeout(timer);
+  }
 }
 
 const localTime=value=>{
@@ -44,8 +68,7 @@ export async function fetchOwnerMessagesPage(supabase,page=0){
     let names={},namesUnavailable=false;
     if(ids.length){
       try{
-        const info=await supabase.from('profiles')
-          .select('id,full_name').in('id',ids);
+        const info=await fetchOwnerProfileNames(supabase,ids);
         if(info?.error){
           if(!transientOwnerDirectoryError(info.error))return {error:true};
           namesUnavailable=true;
@@ -94,8 +117,7 @@ export async function fetchOwnerConversationsPage(supabase,page=0){
     let names={},namesUnavailable=false;
     if(ids.length){
       try{
-        const result=await supabase.from('profiles')
-          .select('id,full_name').in('id',ids);
+        const result=await fetchOwnerProfileNames(supabase,ids);
         if(result?.error){
           if(!transientOwnerDirectoryError(result.error))
             return {error:true,unavailable:false};
