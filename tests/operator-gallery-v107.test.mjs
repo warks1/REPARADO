@@ -41,7 +41,7 @@ test('V107: el propietario ve los dos partes aunque fallen las fotos de uno',()=
   assert.match(html,/Traspasos de operario/);
   assert.match(html,/Fotografías no disponibles: error de lectura o permisos/);
   assert.match(html,/No se pudieron consultar estas fotografías/);
-  assert.match(html,/1 fotografías accesibles del historial/);
+  assert.match(html,/1 fotografía accesible del historial/);
   assert.match(html,/Algunas intervenciones tienen fotos pendientes de consultar/);
   assert.doesNotMatch(html,/0 fotografía\(s\) de esta intervención/);
 });
