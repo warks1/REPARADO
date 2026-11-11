@@ -1,7 +1,14 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-import {viewMarkup} from '../operator-work-view.js';
+import vm from 'node:vm';
+
+const source=readFileSync(new URL('../operator-work-view.js',import.meta.url),'utf8');
+const pure=source.slice(source.indexOf('const UUID='),source.indexOf('export async function mountOperatorWork'));
+const viewMarkup=vm.runInNewContext(pure+';viewMarkup;',{
+  mayStartWork:()=>false,mayFinishWork:()=>false,
+  MAX_WORK_PHOTOS:8,WORK_DESCRIPTION_MAX:4000
+});
 
 const admin='a0000000-0000-4000-8000-000000000001';
 const oldOperator='b0000000-0000-4000-8000-000000000002';
@@ -49,7 +56,6 @@ test('V107: una intervención realmente sin fotos no se anuncia como fallo',()=>
 });
 
 test('V107: un fallo de fotos no se ignora para el operario ni se inventa cierre',()=>{
-  const source=readFileSync(new URL('../operator-work-view.js',import.meta.url),'utf8');
   assert.match(source,/if\(role!=='admin'\)throw error/);
   assert.match(source,/entry\.photoError=true/);
   assert.match(source,/if\(error\|\|!data\?\.signedUrl\)/);
