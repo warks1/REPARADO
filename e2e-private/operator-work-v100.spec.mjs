@@ -223,3 +223,50 @@ test('V102: el operario puede fotografiar desde el móvil y el parte registra la
  await expect(work.locator('[data-work-description]')).toContainText('Se ha ajustado');
  expect(state.get().finished).toBe(1);
 });
+
+test('V109: el operario no pierde la descripción sin guardar al pulsar Volver',async({page})=>{
+ const state=await setup(page);
+ await page.goto('/');
+ await page.locator('.customer-nav [data-view="profile"]').click();
+ await page.locator('[data-view="admin"]').click();
+ await page.locator('[data-work-detail]').first().click();
+ const work=page.locator('#reparado-operator-work');
+ await work.locator('[data-work-start]').click();
+ const description='Se ha revisado la instalación y comprobado el correcto funcionamiento.';
+ await work.locator('[name="work_description"]').fill(description);
+ await expect(work.locator('[data-work-draft-state]')).toContainText('Cambios sin guardar');
+ let warned=false;
+ page.once('dialog',async dialog=>{
+   warned=true;
+   expect(dialog.message()).toContain('se perderán');
+   await dialog.dismiss();
+ });
+ await work.locator('[data-work-back]').click();
+ expect(warned).toBe(true);
+ await expect(work).toBeVisible();
+ await expect(work.locator('[name="work_description"]')).toHaveValue(description);
+ expect(state.get().description).toBe('');
+ await work.locator('[data-work-save-notes]').click();
+ await expect(work.locator('[data-work-feedback]')).toContainText('Descripción guardada');
+ await expect(work.locator('[data-work-draft-state]')).toContainText('sin cambios pendientes');
+ expect(state.get().description).toBe(description);
+ await work.locator('[data-work-back]').click();
+ await expect(work).toHaveCount(0);
+});
+
+test('V109: el operario puede salir expresamente descartando notas temporales',async({page})=>{
+ const state=await setup(page);
+ await page.goto('/');
+ await page.locator('.customer-nav [data-view="profile"]').click();
+ await page.locator('[data-view="admin"]').click();
+ await page.locator('[data-work-detail]').first().click();
+ const work=page.locator('#reparado-operator-work');
+ await work.locator('[data-work-start]').click();
+ await work.locator('[name="work_description"]').fill('Descripción provisional que todavía no se ha guardado.');
+ let accepted=false;
+ page.once('dialog',async dialog=>{accepted=true;await dialog.accept()});
+ await work.locator('[data-work-back]').click();
+ expect(accepted).toBe(true);
+ await expect(work).toHaveCount(0);
+ expect(state.get().description).toBe('');
+});
