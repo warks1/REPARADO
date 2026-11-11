@@ -7,6 +7,7 @@ import {
   mayStartWork,mayFinishWork,MAX_WORK_PHOTOS,WORK_DESCRIPTION_MAX
 } from './operator-work-service.js';
 import {bindWorkPhotoRetry} from './work-photo-recovery.js';
+import {workNotesDirty,confirmWorkNotesExit} from './work-notes-draft.js';
 
 const UUID=/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i;
 const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({
@@ -49,6 +50,7 @@ function viewMarkup(job,report,photos,{userId,role,preserve='',history=[],transf
     (finish?'<label class="operator-work-notes">Descripción del trabajo realizado'+
       '<textarea name="work_description" rows="5" maxlength="'+WORK_DESCRIPTION_MAX+
       '" placeholder="Explica qué se ha reparado, comprobaciones, materiales y resultado..." required>'+esc(description)+'</textarea></label>'+
+      '<p class="notice" role="status" aria-live="polite" data-work-draft-state></p>'+
       '<button type="button" data-work-save-notes>Guardar descripción</button>'
       :role==='admin'?'':'<div class="operator-work-readonly"><h2>Trabajo realizado</h2><p data-work-description>'+
        esc(report?.description|| (ended?'Pendiente de parte histórico.':'Aún no se ha iniciado.'))+'</p></div>')+
@@ -210,6 +212,19 @@ export async function mountOperatorWork({main,supabase,requestId,userId,role,isA
     });
     screen=main.querySelector('#reparado-operator-work');
     const notes=screen.querySelector('[name="work_description"]');
+    // La descripción confirmada se vuelve a consultar después de guardar.
+    // Mientras se suben fotos, el texto local se conserva sin fingir que
+    // se haya enviado también al servidor.
+    const confirmedNotes=report?.description||'';
+    const draftIndicator=screen.querySelector('[data-work-draft-state]');
+    const updateDraftIndicator=()=>{
+      if(!draftIndicator||!notes)return;
+      draftIndicator.textContent=workNotesDirty(notes.value,confirmedNotes)
+        ?'Cambios sin guardar. Guarda la descripción antes de salir.'
+        :'Descripción sin cambios pendientes.';
+    };
+    notes?.addEventListener('input',updateDraftIndicator);
+    updateDraftIndicator();
     const show=text=>{
       if(active()){
         const feedback=main.querySelector('[data-work-feedback]');
@@ -236,7 +251,12 @@ export async function mountOperatorWork({main,supabase,requestId,userId,role,isA
       }
     };
     screen.querySelector('[data-work-back]')?.addEventListener('click',()=>{
-      if(!busy&&isActive())onBack();
+      if(busy||!active())return;
+      if(!confirmWorkNotesExit({
+        draft:notes?.value,confirmed:confirmedNotes,
+        confirmExit:message=>window.confirm(message)
+      }))return;
+      onBack();
     });
     screen.querySelector('[data-work-refresh]')?.addEventListener('click',()=>{
       if(busy||!active())return;
