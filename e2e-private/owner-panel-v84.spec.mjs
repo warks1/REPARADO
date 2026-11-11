@@ -15,7 +15,7 @@ function jwt(id){
  })+'.fake-signature';
 }
 
-async function setup(page,role='admin',inboxRpc=false,history=false){
+async function setup(page,role='admin',inboxRpc=false,history=false,directoryFailure=null){
  const id=role==='admin'?adminId:role==='operator'?operatorId:clientId;
  const user={id,email:role+'@example.invalid',role:'authenticated',aud:'authenticated',
    app_metadata:{provider:'email',providers:['email']},
@@ -73,8 +73,16 @@ async function setup(page,role='admin',inboxRpc=false,history=false){
      if(url.searchParams.has('role'))return output([{
        id:operatorId,full_name:'Operario de pruebas',role:'operator'
      }],false,1);
-     if(url.searchParams.has('id')&&url.searchParams.get('id').startsWith('in.'))
+     if(url.searchParams.has('id')&&url.searchParams.get('id').startsWith('in.')){
+       if(directoryFailure)return route.fulfill({
+         status:directoryFailure==='permission'?403:503,
+         contentType:'application/json',
+         body:JSON.stringify(directoryFailure==='permission'?
+           {code:'42501',message:'Acceso denegado'}:
+           {code:'08006',message:'Conexión temporalmente no disponible'})
+       });
        return output([{id:clientId,full_name:'Cliente de pruebas'}],false,1);
+     }
      return output({id,full_name:'Perfil de pruebas',phone:'',role},false,1,true);
    }
    if(path==='/rest/v1/customer_reviews')return output([],false,0);
@@ -575,4 +583,27 @@ test('V98: el módulo privado no presenta contadores de conversaciones a operari
  await page.goto('/');
  await expect(page.locator('.owner-inbox-pending')).toHaveCount(0);
  await expect(page.locator('#reparado-owner-dashboard')).toHaveCount(0);
+});
+
+test('V110: fallo temporal al buscar nombres no oculta mensajes del propietario',async({page})=>{
+  const calls=await setup(page,'admin',true,false,'network');
+  await page.goto('/');
+  await page.locator('[data-owner-target="owner-messages"]').click();
+  const inbox=page.locator('#reparado-owner-messages');
+  await expect(inbox.locator('.owner-message-row')).toHaveCount(1);
+  await expect(inbox).toContainText('¿Cuándo podéis venir?');
+  await expect(inbox).toContainText('Cliente (nombre no disponible)');
+  await expect(inbox.locator('[data-owner-messages-status]'))
+    .toContainText('No se han podido consultar los nombres');
+  expect(calls.conversationReads.length).toBeGreaterThan(0);
+});
+
+test('V110: error de permisos del directorio no fuerza mostrar mensajes',async({page})=>{
+  await setup(page,'admin',true,false,'permission');
+  await page.goto('/');
+  await page.locator('[data-owner-target="owner-messages"]').click();
+  const inbox=page.locator('#reparado-owner-messages');
+  await expect(inbox.locator('[data-owner-messages-status]'))
+    .toContainText('No se pudieron comprobar los mensajes');
+  await expect(inbox.locator('.owner-message-row')).toHaveCount(0);
 });
