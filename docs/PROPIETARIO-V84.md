@@ -284,7 +284,8 @@ mensajes se obtienen de la sesión autenticada y siguen protegidos por RLS.
 La búsqueda auxiliar del nombre del cliente se realiza por separado.
 
 - Si los mensajes están autorizados y el directorio de nombres sufre un
-  **fallo temporal de conexión**, el titular sigue viendo el texto y la fecha
+  **fallo temporal de conexión** o una espera excesiva (máximo 2,5 segundos
+  para la búsqueda auxiliar), el titular sigue viendo el texto y la fecha
   de los mensajes, con la etiqueta **«Cliente (nombre no disponible)»** y
   un aviso para reintentar con **Actualizar**.
 - Los nombres no se suponen ni se sustituyen por datos de otros usuarios.
