@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {
-  validateWorkDescription,validateWorkPhotos,mayStartWork,mayFinishWork,
+  validateWorkDescription,validateWorkDraft,validateWorkPhotos,mayStartWork,mayFinishWork,
   startOperatorWork,completeOperatorWork,saveOperatorWorkDescription,
   uploadOperatorWorkPhotos,fetchWorkReport,listWorkPhotos,
   WorkSessionChanged,MAX_WORK_PHOTOS
@@ -184,4 +184,38 @@ test('V100: fotos y partes son consultas privadas; el UI no expone el bucket',as
   assert.ok(connected.includes('data-work-detail'));
   assert.ok(view.includes('data-work-finish'));
   assert.ok(view.includes('createSignedUrl(path,120)'));
+});
+
+test('V112: un parte incompleto puede guardarse sin finalizar el servicio',async()=>{
+  assert.equal(validateWorkDraft(''),null);
+  assert.equal(validateWorkDraft('  '),null);
+  assert.equal(validateWorkDraft('Revisando'),null);
+  assert.equal(validateWorkDraft('Reparación provisional'),null);
+  assert.match(validateWorkDraft('x'.repeat(4001)),/4.000/);
+  assert.match(validateWorkDescription('Revisando'),/20 caracteres/);
+  const writes=[];
+  const query={
+    eq(){return this},
+    select:async()=>({data:[{request_id:job}],error:null})
+  };
+  const db={from:table=>{
+    assert.equal(table,'work_reports');
+    return {update:value=>{writes.push(value);return query}};
+  }};
+  for(const draft of ['Revisando','']){
+    assert.equal(await saveOperatorWorkDescription({
+      supabase:db,requestId:job,operatorId:op,
+      description:draft,isActive:current
+    }),true);
+  }
+  assert.deepEqual(writes,[{description:'Revisando'},{description:''}]);
+  await assert.rejects(()=>saveOperatorWorkDescription({
+    supabase:db,requestId:job,operatorId:op,
+    description:'x'.repeat(4001),isActive:current
+  }),/4.000/);
+  assert.equal(writes.length,2);
+  await assert.rejects(()=>completeOperatorWork({
+    supabase:{rpc:async()=>({data:true})},
+    requestId:job,operatorId:op,description:'Revisando',isActive:current
+  }),/20 caracteres/);
 });
