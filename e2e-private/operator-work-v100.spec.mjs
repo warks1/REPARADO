@@ -270,3 +270,77 @@ test('V109: el operario puede salir expresamente descartando notas temporales',a
  await expect(work).toHaveCount(0);
  expect(state.get().description).toBe('');
 });
+
+test('V111: el menú principal protege notas sin guardar y salir tras guardar es directo',async({page})=>{
+ const state=await setup(page);
+ await page.goto('/');
+ await page.locator('.customer-nav [data-view="profile"]').click();
+ await page.locator('[data-view="admin"]').click();
+ await page.locator('[data-work-detail]').first().click();
+ const work=page.locator('#reparado-operator-work');
+ await work.locator('[data-work-start]').click();
+ const draft='Se ha sustituido la junta y comprobado la ausencia de fugas.';
+ await work.locator('[name="work_description"]').fill(draft);
+ let warnings=0;
+ page.once('dialog',async dialog=>{
+   warnings++;expect(dialog.message()).toContain('se perderán');
+   await dialog.dismiss();
+ });
+ await page.locator('.customer-nav [data-view="home"]').click();
+ expect(warnings).toBe(1);
+ await expect(work).toBeVisible();
+ await expect(work.locator('[name="work_description"]')).toHaveValue(draft);
+ expect(state.get().description).toBe('');
+ await work.locator('[data-work-save-notes]').click();
+ await expect(work.locator('[data-work-draft-state]').first()).toContainText('sin cambios pendientes');
+ await page.locator('.customer-nav [data-view="home"]').click();
+ await expect(work).toHaveCount(0);
+ expect(state.get().description).toBe(draft);
+});
+
+test('V111: navegación global permite descartar borrador solo con confirmación',async({page})=>{
+ const state=await setup(page);
+ await page.goto('/');
+ await page.locator('.customer-nav [data-view="profile"]').click();
+ await page.locator('[data-view="admin"]').click();
+ await page.locator('[data-work-detail]').first().click();
+ const work=page.locator('#reparado-operator-work');
+ await work.locator('[data-work-start]').click();
+ await work.locator('[name="work_description"]')
+   .fill('Sustitución temporal de la pieza, pendiente de confirmar el resultado.');
+ let accepted=false;
+ page.once('dialog',async dialog=>{
+   accepted=true;await dialog.accept();
+ });
+ await page.locator('.customer-nav [data-view="home"]').click();
+ expect(accepted).toBe(true);
+ await expect(work).toHaveCount(0);
+ expect(state.get().description).toBe('');
+});
+
+test('V111: beforeunload detecta solo el parte pendiente y no revela el texto',async({page})=>{
+ await setup(page);
+ await page.goto('/');
+ await page.locator('.customer-nav [data-view="profile"]').click();
+ await page.locator('[data-view="admin"]').click();
+ await page.locator('[data-work-detail]').first().click();
+ const work=page.locator('#reparado-operator-work');
+ await work.locator('[data-work-start]').click();
+ await work.locator('[name="work_description"]')
+   .fill('La intervención se ha iniciado, pero estas notas no están guardadas.');
+ const pending=await page.evaluate(()=>{
+   const event=new Event('beforeunload',{cancelable:true});
+   window.dispatchEvent(event);
+   return {cancelled:event.defaultPrevented,value:event.returnValue};
+ });
+ expect(pending.cancelled).toBe(true);
+ expect(pending.value).toBe('');
+ await work.locator('[data-work-save-notes]').click();
+ await expect(work.locator('[data-work-draft-state]')).toContainText('sin cambios pendientes');
+ const saved=await page.evaluate(()=>{
+   const event=new Event('beforeunload',{cancelable:true});
+   window.dispatchEvent(event);
+   return event.defaultPrevented;
+ });
+ expect(saved).toBe(false);
+});
