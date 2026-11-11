@@ -154,6 +154,8 @@ test('V110: solo un error claramente de conectividad permite nombres ausentes',a
   assert.equal(transientOwnerDirectoryError({code:'PGRST000'}),true);
   assert.equal(transientOwnerDirectoryError(new TypeError('Failed to fetch')),true);
   assert.equal(transientOwnerDirectoryError({code:'42501'}),false);
+  assert.equal(transientOwnerDirectoryError({code:'42501',status:503}),false);
+  assert.equal(transientOwnerDirectoryError({code:'28P01',status:504}),false);
   assert.equal(transientOwnerDirectoryError({code:'PGRST301'}),false);
   assert.equal(transientOwnerDirectoryError({message:'Permiso denegado'}),false);
 });
