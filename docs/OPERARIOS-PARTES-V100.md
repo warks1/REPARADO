@@ -157,3 +157,26 @@ viendo las descripciones y las intervenciones consultadas correctamente.
 No se amplían permisos RLS, no se vuelve público el bucket y no se modifica
 el cierre de trabajos. La regresión está en
 `tests/operator-gallery-v107.test.mjs`.
+
+## V108 · Recuperación de miniaturas privadas caducadas
+
+Las fotografías de las intervenciones usan URL firmadas por **120 segundos**.
+En pantallas móviles, la carga diferida (`loading="lazy"`) puede empezar
+cuando la URL inicial ya ha caducado. A partir de V108, cuando el navegador
+indica que una imagen privada no se ha podido cargar, REPARADO solicita
+**una única URL firmada nueva** para esa fotografía, manteniendo la
+privacidad del bucket.
+
+- Si se renueva correctamente, se actualizan tanto la miniatura como su
+  enlace de apertura.
+- Si también falla la imagen renovada o la firma, se retira el enlace
+  inválido y aparece un aviso para actualizar el parte; no se producen
+  reintentos infinitos.
+- Al cerrar sesión o abandonar la pantalla, una respuesta que llegue
+  tarde no modifica la interfaz ni deja una URL visible en otra sesión.
+- El límite de 8 fotos, los permisos RLS, el registro de intervenciones y
+  los controles de cierre no cambian.
+
+Comprobación: `tests/work-photo-recovery-v108.test.mjs` y pruebas de
+intervención existentes en CI; completar además la validación en móviles
+reales antes de la publicación comercial.
