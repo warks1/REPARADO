@@ -104,3 +104,56 @@ test('V90: contratos SQL de mínima autorización y sin crear datos de ejemplo',
  assert.ok(js.includes('if(!grouped.unavailable)return {error:true}'));
  assert.ok(js.includes("La lectura de Outlook y el estado no leído aún no están integrados."));
 });
+
+test('V110: un fallo temporal de directorio no oculta mensajes ya autorizados',async()=>{
+  const {db}=mock({rows:[entry()],total:1,profileError:{code:'08006',message:'Conexión perdida'}});
+  const page=await fetchOwnerInboxPage(db,0);
+  assert.equal(page.error,false);
+  assert.equal(page.count,1);
+  assert.equal(page.data[0].body,'Necesito presupuesto');
+  assert.equal(page.mode,'conversations');
+  assert.equal(page.namesUnavailable,true);
+  assert.deepEqual(page.names,{});
+});
+
+test('V110: no se permite fallback de seguridad con perfil denegado o mal formado',async()=>{
+  for(const profileError of [
+    {code:'42501',message:'Sin permiso'},
+    {code:'PGRST301',message:'Token inválido'},
+    {code:'42P01',message:'Tabla inexistente'},
+    {code:'PGRST202',message:'Esquema no disponible'}
+  ]){
+    const result=await fetchOwnerInboxPage(mock({profileError}).db,0);
+    assert.equal(result.error,true);
+    assert.equal(result.mode,undefined);
+  }
+});
+
+test('V110: la vista antigua de mensajes también conserva la bandeja ante fallo temporal',async()=>{
+  const rows=[{id,customer_id:a,sender_id:a,body:'Necesito fontanero',created_at:'2026-11-11T12:00:00Z'}];
+  const db={from(table){
+    if(table==='messages')return {select:()=>({
+      order(){return this},range:async()=>({data:rows,count:1,error:null})
+    })};
+    if(table==='profiles')return {select:()=>({
+      in:async()=>({error:{code:'08006',message:'Desconectado'},data:null})
+    })};
+    throw Error('Tabla inesperada');
+  }};
+  const {fetchOwnerMessagesPage}=await import('../owner-messages.js');
+  const result=await fetchOwnerMessagesPage(db,0);
+  assert.equal(result.error,false);
+  assert.equal(result.namesUnavailable,true);
+  assert.equal(result.data[0].body,'Necesito fontanero');
+  assert.equal(result.count,1);
+});
+
+test('V110: solo un error claramente de conectividad permite nombres ausentes',async()=>{
+  const {transientOwnerDirectoryError}=await import('../owner-messages.js');
+  assert.equal(transientOwnerDirectoryError({code:'08006'}),true);
+  assert.equal(transientOwnerDirectoryError({code:'PGRST000'}),true);
+  assert.equal(transientOwnerDirectoryError(new TypeError('Failed to fetch')),true);
+  assert.equal(transientOwnerDirectoryError({code:'42501'}),false);
+  assert.equal(transientOwnerDirectoryError({code:'PGRST301'}),false);
+  assert.equal(transientOwnerDirectoryError({message:'Permiso denegado'}),false);
+});
