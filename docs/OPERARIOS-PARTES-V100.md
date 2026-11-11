@@ -180,3 +180,27 @@ privacidad del bucket.
 Comprobación: `tests/work-photo-recovery-v108.test.mjs` y pruebas de
 intervención existentes en CI; completar además la validación en móviles
 reales antes de la publicación comercial.
+
+## V109 · Protección de descripciones sin guardar
+
+En **Mi perfil → Gestión interna → Parte de trabajo**, el operario dispone de
+un indicador que diferencia la descripción **confirmada por el servidor**
+de los cambios introducidos únicamente en el teléfono, tablet o PC.
+
+- Al editar el texto, aparece **Cambios sin guardar**.
+- El botón **Volver a los servicios** solicita confirmación si el texto no
+  coincide con el último guardado. **Cancelar** conserva el texto y mantiene
+  abierta la intervención; **Salir sin guardar** descarta solo las notas
+  temporales del formulario.
+- Después de **Guardar descripción** con respuesta correcta del servidor,
+  desaparece el aviso y se puede volver sin una confirmación innecesaria.
+- Si se actualizan las fotografías, el texto que todavía no está guardado se
+  mantiene en el formulario y sigue identificado como pendiente.
+- El sistema no crea borradores de trabajo en almacenamiento local, no
+  modifica la tabla de partes, no falsifica estados de cierre y no concede
+  permisos adicionales. Cerrar la pestaña o navegar fuera de este módulo
+  no queda cubierto por la confirmación del botón Volver.
+
+Pruebas unitarias: `tests/work-notes-draft-v109.test.mjs`.
+Prueba completa de navegación en iPhone y Android simulados:
+`e2e-private/operator-work-v100.spec.mjs`.
