@@ -12,6 +12,10 @@ export function transientOwnerDirectoryError(error){
   const code=String(error?.code??'');
   const status=Number(error?.status);
   const message=String(error?.message??'');
+  // An explicit denial overrides even a contradictory HTTP 503/504 status.
+  if(['42501','PGRST301','PGRST302'].includes(code)||
+     /^28[0-9A-Z]{3}$/i.test(code)||status===401||status===403)
+    return false;
   return /^08[0-9A-Z]{3}$/i.test(code) ||
     /^PGRST00[0-3]$/i.test(code) ||
     status===503||status===504||
