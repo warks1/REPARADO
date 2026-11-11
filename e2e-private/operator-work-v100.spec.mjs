@@ -390,6 +390,7 @@ test('V112: borrar la descripción se respeta tras actualizar y subir fotografí
  await work.locator('[name="work_description"]').fill('');
  await expect(work.locator('[data-work-draft-state]')).toContainText('Cambios sin guardar');
  await work.locator('[data-work-refresh]').click();
+ await expect(work.locator('[data-work-feedback]')).toContainText('Parte actualizado');
  await expect(work.locator('[name="work_description"]')).toHaveValue('');
  await expect(work.locator('[data-work-draft-state]')).toContainText('Cambios sin guardar');
  expect(state.get().description).toBe(saved);
