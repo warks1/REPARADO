@@ -42,6 +42,6 @@ test('V109: indicador, confirmación y preservación de borrador integrados',()=
   assert.match(src,/workNotesDirty\(notes.value,confirmedNotes\)/);
   assert.match(src,/confirmWorkNotesExit\(\{/);
   assert.match(src,/confirmExit:message=>window\.confirm\(message\)/);
-  assert.match(src,/const currentText=retain\?notes\?\.value\|\|'':''/);
+  assert.ok(src.includes("const currentText=retain?(notes?.value??null):null;"));
   assert.match(src,/if\(busy\|\|!active\(\)\)return/);
 });
