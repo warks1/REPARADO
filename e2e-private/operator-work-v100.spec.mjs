@@ -343,3 +343,69 @@ test('V111: beforeunload detecta solo el parte pendiente y no revela el texto',a
  });
  expect(saved).toBe(false);
 });
+
+test('V112: operario guarda un borrador corto y no puede cerrar hasta completarlo',async({page})=>{
+ const state=await setup(page);
+ await page.goto('/');
+ await page.locator('.customer-nav [data-view="profile"]').click();
+ await page.locator('[data-view="admin"]').click();
+ await page.locator('[data-work-detail]').first().click();
+ const work=page.locator('#reparado-operator-work');
+ await work.locator('[data-work-start]').click();
+ await expect(work).toContainText('Puedes guardar un borrador incompleto');
+ await work.locator('[name="work_description"]').fill('Revisando');
+ await work.locator('[data-work-save-notes]').click();
+ await expect(work.locator('[data-work-feedback]')).toContainText('Descripción guardada');
+ await expect(work.locator('[data-work-draft-state]')).toContainText('sin cambios pendientes');
+ expect(state.get().description).toBe('Revisando');
+ await work.locator('[data-work-finish]').click();
+ await expect(work.locator('[data-work-feedback]')).toContainText('al menos 20');
+ expect(state.get().finished).toBe(0);
+ await work.locator('[name="work_description"]').fill('Se ha sustituido la pieza y comprobado la estanqueidad.');
+ await work.locator('[data-work-files]').setInputFiles({
+   name:'resultado.png',mimeType:'image/png',
+   buffer:Buffer.from([137,80,78,71,13,10,26,10,4,0,0,0])
+ });
+ await work.locator('[data-work-upload]').click();
+ await expect(work.locator('[data-work-photo-count]')).toContainText('1 de 8');
+ await work.locator('[data-work-finish]').click();
+ await expect(work.locator('[data-work-feedback]')).toContainText('Servicio finalizado');
+ expect(state.get().finished).toBe(1);
+});
+
+test('V112: borrar la descripción se respeta tras actualizar y subir fotografías',async({page})=>{
+ const state=await setup(page);
+ await page.goto('/');
+ await page.locator('.customer-nav [data-view="profile"]').click();
+ await page.locator('[data-view="admin"]').click();
+ await page.locator('[data-work-detail]').first().click();
+ const work=page.locator('#reparado-operator-work');
+ await work.locator('[data-work-start]').click();
+ const saved='Se ha desmontado la instalación y comprobado el estado de la pieza.';
+ await work.locator('[name="work_description"]').fill(saved);
+ await work.locator('[data-work-save-notes]').click();
+ await expect(work.locator('[data-work-draft-state]')).toContainText('sin cambios pendientes');
+ expect(state.get().description).toBe(saved);
+ // El borrador explícitamente vacío no debe recuperarse desde Supabase.
+ await work.locator('[name="work_description"]').fill('');
+ await expect(work.locator('[data-work-draft-state]')).toContainText('Cambios sin guardar');
+ await work.locator('[data-work-refresh]').click();
+ await expect(work.locator('[name="work_description"]')).toHaveValue('');
+ await expect(work.locator('[data-work-draft-state]')).toContainText('Cambios sin guardar');
+ expect(state.get().description).toBe(saved);
+ await work.locator('[data-work-files]').setInputFiles({
+   name:'evidencia.png',mimeType:'image/png',
+   buffer:Buffer.from([137,80,78,71,13,10,26,10,5,0,0,0])
+ });
+ await work.locator('[data-work-upload]').click();
+ await expect(work.locator('[data-work-photo-count]')).toContainText('1 de 8');
+ await expect(work.locator('[name="work_description"]')).toHaveValue('');
+ await expect(work.locator('[data-work-draft-state]')).toContainText('Cambios sin guardar');
+ await work.locator('[data-work-save-notes]').click();
+ await expect(work.locator('[data-work-feedback]')).toContainText('Descripción guardada');
+ await expect(work.locator('[data-work-draft-state]')).toContainText('sin cambios pendientes');
+ expect(state.get().description).toBe('');
+ await work.locator('[data-work-finish]').click();
+ await expect(work.locator('[data-work-feedback]')).toContainText('al menos 20');
+ expect(state.get().finished).toBe(0);
+});
