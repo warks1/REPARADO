@@ -20,13 +20,14 @@ const displayTime=value=>{
       timeZone:'Europe/Madrid',dateStyle:'medium',timeStyle:'short'
     }).format(d):'Sin registrar';
 };
-function viewMarkup(job,report,photos,{userId,role,preserve='',history=[],transfers=[]}) {
+function viewMarkup(job,report,photos,{userId,role,preserve=null,history=[],transfers=[]}) {
   const canEdit=role==='operator'&&job.operator_id===userId;
   const start=canEdit&&mayStartWork(job,userId);
   const finish=canEdit&&mayFinishWork(job,userId)&&Boolean(report);
   const needsOpen=start&&(job.status==='scheduled'||!report);
   const ended=job.status==='completed';
-  const description=preserve||report?.description||'';
+  // Null indica ausencia de borrador; cadena vacía indica borrado voluntario.
+  const description=preserve===null?(report?.description||''):preserve;
   return '<section class="card operator-work-view" id="reparado-operator-work">'+
     '<button type="button" class="screen-back" data-work-back>← Volver a los servicios</button>'+
     '<p class="owner-eyebrow">PARTE DE TRABAJO · REPARADO</p>'+
@@ -50,6 +51,7 @@ function viewMarkup(job,report,photos,{userId,role,preserve='',history=[],transf
     (finish?'<label class="operator-work-notes">Descripción del trabajo realizado'+
       '<textarea name="work_description" rows="5" maxlength="'+WORK_DESCRIPTION_MAX+
       '" placeholder="Explica qué se ha reparado, comprobaciones, materiales y resultado..." required>'+esc(description)+'</textarea></label>'+
+      '<p class="notice">Puedes guardar un borrador incompleto. Para cerrar se necesitan al menos 20 caracteres y una fotografía.</p>'+
       '<p class="notice" role="status" aria-live="polite" data-work-draft-state></p>'+
       '<button type="button" data-work-save-notes>Guardar descripción</button>'
       :role==='admin'?'':'<div class="operator-work-readonly"><h2>Trabajo realizado</h2><p data-work-description>'+
@@ -109,7 +111,7 @@ export async function mountOperatorWork({main,supabase,requestId,userId,role,isA
     '<p>Cargando servicio asignado…</p></section>';
   const active=()=>isActive()&&main.querySelector('#reparado-operator-work')!==null;
   let busy=false,screen=null,renderGeneration=0;
-  async function render(preserve=''){
+  async function render(preserve=null){
     if(!isActive())return;
     const generation=++renderGeneration,anchor=main.firstElementChild;
     const stillHere=()=>isActive()&&generation===renderGeneration&&
@@ -256,7 +258,7 @@ export async function mountOperatorWork({main,supabase,requestId,userId,role,isA
       try{
         const result=await action();
         if(!active())return;
-        const currentText=retain?notes?.value||'':'';
+        const currentText=retain?(notes?.value??null):null;
         await render(currentText);
         if(active())show(typeof result==='string'?result:success);
       }catch(e){if(active())show(e.message||'No se pudo completar la operación.')}
@@ -270,9 +272,16 @@ export async function mountOperatorWork({main,supabase,requestId,userId,role,isA
       if(!requestLeave())return;
       onBack();
     });
-    screen.querySelector('[data-work-refresh]')?.addEventListener('click',()=>{
+    screen.querySelector('[data-work-refresh]')?.addEventListener('click',async()=>{
       if(busy||!active())return;
-      void render(notes?.value||'');
+      busy=true;
+      show('Actualizando el parte y fotografías…');
+      try{
+        await render(notes?.value??null);
+        if(active())show('Parte actualizado. Comprueba los cambios antes de finalizar.');
+      }catch{
+        if(active())show('No se pudo actualizar el parte. Comprueba la conexión e inténtalo otra vez.');
+      }finally{busy=false}
     });
     screen.querySelector('[data-work-start]')?.addEventListener('click',()=>transact(
       ()=>startOperatorWork({supabase,requestId,operatorId:userId,isActive}),

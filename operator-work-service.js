@@ -26,6 +26,14 @@ export function validateWorkDescription(value){
     return 'La descripción no puede superar 4.000 caracteres.';
   return null;
 }
+// Guardar un borrador durante la intervención NO es terminar el servicio.
+// La RPC de cierre conserva el mínimo de 20 caracteres y una foto privada.
+export function validateWorkDraft(value){
+  const text=String(value??'').trim();
+  if(text.length>WORK_DESCRIPTION_MAX)
+    return 'La descripción no puede superar 4.000 caracteres.';
+  return null;
+}
 export function validateWorkPhotos(files,existing=0){
   const items=Array.from(files||[]);
   if(!items.length)return 'Selecciona una o varias fotografías.';
@@ -119,7 +127,7 @@ export async function saveOperatorWorkDescription({supabase,requestId,operatorId
   ensureActive(isActive);
   if(!validIds(operatorId,requestId)||!supabase?.from)
     throw new Error('Servicio no válido.');
-  const issue=validateWorkDescription(description);
+  const issue=validateWorkDraft(description);
   if(issue)throw new Error(issue);
   const {data,error}=await supabase.from('work_reports')
     .update({description:description.trim()})
