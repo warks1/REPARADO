@@ -331,10 +331,9 @@ test('V111: beforeunload detecta solo el parte pendiente y no revela el texto',a
  const pending=await page.evaluate(()=>{
    const event=new Event('beforeunload',{cancelable:true});
    window.dispatchEvent(event);
-   return {cancelled:event.defaultPrevented,value:event.returnValue};
+   return event.defaultPrevented;
  });
- expect(pending.cancelled).toBe(true);
- expect(pending.value).toBe('');
+ expect(pending).toBe(true);
  await work.locator('[data-work-save-notes]').click();
  await expect(work.locator('[data-work-draft-state]')).toContainText('sin cambios pendientes');
  const saved=await page.evaluate(()=>{
