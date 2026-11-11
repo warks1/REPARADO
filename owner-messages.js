@@ -5,6 +5,47 @@ const UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({
   '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
 })[c]);
+// Fail closed on authorization, schema or unknown errors. Only a clearly
+// temporary connectivity problem may hide profile NAMES while keeping
+// already-authorized messages accessible to the owner.
+export function transientOwnerDirectoryError(error){
+  const code=String(error?.code??'');
+  const status=Number(error?.status);
+  const message=String(error?.message??'');
+  // An explicit denial overrides even a contradictory HTTP 503/504 status.
+  if(['42501','PGRST301','PGRST302'].includes(code)||
+     /^28[0-9A-Z]{3}$/i.test(code)||status===401||status===403)
+    return false;
+  return code==='OWNER_DIRECTORY_TIMEOUT'||
+    /^08[0-9A-Z]{3}$/i.test(code) ||
+    /^PGRST00[0-3]$/i.test(code) ||
+    status===503||status===504||
+    /(?:Failed to fetch|NetworkError|Load failed)/i.test(message);
+}
+
+// Un fallo de nombres no debe dejar la bandeja indefinidamente cargando.
+// Supabase puede reintentar automáticamente un HTTP 503. Este límite solo
+// afecta a la búsqueda auxiliar, sin cambiar los reintentos del resto de la app.
+export async function fetchOwnerProfileNames(supabase,ids,{timeoutMs=2500}={}){
+  const query=supabase.from('profiles').select('id,full_name').in('id',ids);
+  // Soportar también proveedores simulados del test sin AbortSignal.
+  if(typeof query?.abortSignal!=='function')return await query;
+  const controller=new AbortController();
+  let timer=null;
+  const timeout=new Promise(resolve=>{
+    timer=setTimeout(()=>{
+      controller.abort();
+      resolve({data:null,error:{code:'OWNER_DIRECTORY_TIMEOUT',
+        message:'La búsqueda de nombres tardó demasiado.'}});
+    },timeoutMs);
+  });
+  try{
+    return await Promise.race([Promise.resolve(query.abortSignal(controller.signal)),timeout]);
+  }finally{
+    if(timer!==null)clearTimeout(timer);
+  }
+}
+
 const localTime=value=>{
   const d=new Date(value);
   return Number.isFinite(d.getTime())?
@@ -24,14 +65,23 @@ export async function fetchOwnerMessagesPage(supabase,page=0){
     if(error||!Array.isArray(data)||!Number.isSafeInteger(count)||count<0)
       return {error:true};
     const ids=[...new Set(data.map(r=>r.customer_id).filter(id=>UUID.test(String(id))))];
-    let names={};
+    let names={},namesUnavailable=false;
     if(ids.length){
-      const info=await supabase.from('profiles')
-        .select('id,full_name').in('id',ids);
-      if(info?.error||!Array.isArray(info?.data))return {error:true};
-      names=Object.fromEntries(info.data.map(p=>[p.id,p.full_name||'Cliente']));
+      try{
+        const info=await fetchOwnerProfileNames(supabase,ids);
+        if(info?.error){
+          if(!transientOwnerDirectoryError(info.error))return {error:true};
+          namesUnavailable=true;
+        }else if(!Array.isArray(info?.data))return {error:true};
+        else names=Object.fromEntries(info.data
+          .filter(p=>ids.includes(p?.id))
+          .map(p=>[p.id,p.full_name||'Cliente']));
+      }catch(error){
+        if(!transientOwnerDirectoryError(error))return {error:true};
+        namesUnavailable=true;
+      }
     }
-    return {data,count,names,error:false};
+    return {data,count,names,namesUnavailable,error:false};
   }catch{return {error:true}}
 }
 
@@ -64,15 +114,27 @@ export async function fetchOwnerConversationsPage(supabase,page=0){
       unread:typeof r.has_unread==='boolean'?r.has_unread:null
     }));
     const ids=[...new Set(rows.map(r=>r.customer_id))];
-    let names={};
+    let names={},namesUnavailable=false;
     if(ids.length){
-      const result=await supabase.from('profiles')
-        .select('id,full_name').in('id',ids);
-      if(result?.error||!Array.isArray(result?.data))
-        return {error:true,unavailable:false};
-      names=Object.fromEntries(result.data.map(p=>[p.id,p.full_name||'Cliente']));
+      try{
+        const result=await fetchOwnerProfileNames(supabase,ids);
+        if(result?.error){
+          if(!transientOwnerDirectoryError(result.error))
+            return {error:true,unavailable:false};
+          namesUnavailable=true;
+        }else if(!Array.isArray(result?.data))
+          return {error:true,unavailable:false};
+        else names=Object.fromEntries(result.data
+          .filter(p=>ids.includes(p?.id))
+          .map(p=>[p.id,p.full_name||'Cliente']));
+      }catch(error){
+        if(!transientOwnerDirectoryError(error))
+          return {error:true,unavailable:false};
+        namesUnavailable=true;
+      }
     }
-    return {data:rows,count:data.total,names,error:false,mode:'conversations'};
+    return {data:rows,count:data.total,names,namesUnavailable,
+      error:false,mode:'conversations'};
   }catch{return {error:true,unavailable:false}}
 }
 
@@ -139,6 +201,8 @@ export async function mountOwnerMessages({main,supabase,isActive,onBack,onConver
       data.data.some(row=>typeof row.unread==='boolean')?
       ' Los indicadores de lectura se actualizan al consultar correctamente el chat.':
       ' La lectura de Outlook y el estado no leído aún no están integrados.';
+    if(data.namesUnavailable)
+      status.textContent+=' No se han podido consultar los nombres por un fallo de conexión. Los mensajes siguen disponibles; actualiza para reintentar.';
     label.textContent='Página '+(page+1)+' de '+ownerMessagePageCount(data.count);
     prev.disabled=page===0;
     next.disabled=page+1>=ownerMessagePageCount(data.count);
@@ -146,7 +210,8 @@ export async function mountOwnerMessages({main,supabase,isActive,onBack,onConver
       '<button class="owner-message-row" type="button" data-owner-open-chat="'+esc(i)+'">'+
       (row.unread===true?'<span class="owner-unread-label">● Pendiente de leer</span>':
        row.unread===false?'<span class="owner-read-label">Leído</span>':'')+
-      '<strong>'+esc(data.names[row.customer_id]||'Cliente')+
+      '<strong>'+esc(data.names[row.customer_id]||
+        (data.namesUnavailable?'Cliente (nombre no disponible)':'Cliente'))+
       ' · '+esc(row.sender_id===row.customer_id?'Cliente':'Equipo')+'</strong>'+
       '<small>'+esc(localTime(row.created_at))+'</small>'+
       '<span>'+esc(String(row.body||'').slice(0,180))+'</span>'+

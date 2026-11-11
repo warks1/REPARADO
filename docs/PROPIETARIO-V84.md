@@ -276,3 +276,25 @@ horarias, filtros del servidor, fechas inválidas y CSV descargable; además,
 `e2e-private/owner-panel-v84.spec.mjs` prueba fechas, cambio de filtros y
 descarga en navegadores móviles simulados. No genera facturas fiscales ni
 sincroniza correos de Outlook.
+
+## V110 · Bandeja resiliente ante fallos temporales del directorio
+
+En **Panel del propietario → Mensajes de clientes**, las conversaciones y los
+mensajes se obtienen de la sesión autenticada y siguen protegidos por RLS.
+La búsqueda auxiliar del nombre del cliente se realiza por separado.
+
+- Si los mensajes están autorizados y el directorio de nombres sufre un
+  **fallo temporal de conexión** o una espera excesiva (máximo 2,5 segundos
+  para la búsqueda auxiliar), el titular sigue viendo el texto y la fecha
+  de los mensajes, con la etiqueta **«Cliente (nombre no disponible)»** y
+  un aviso para reintentar con **Actualizar**.
+- Los nombres no se suponen ni se sustituyen por datos de otros usuarios.
+- Una **denegación de permisos**, un token inválido o un error desconocido
+  mantiene la protección anterior: la bandeja falla de forma segura y
+  no se muestra ninguna conversación con permisos inciertos.
+- La mejora funciona tanto con la RPC de conversaciones V90 como con el
+  historial antiguo si esa RPC aún no se ha desplegado. No abre Outlook,
+  no envía correos y no modifica las políticas RLS ni los datos almacenados.
+
+Pruebas: `tests/owner-conversations-v90.test.mjs` y
+`e2e-private/owner-panel-v84.spec.mjs`, simulando iPhone y Android.
