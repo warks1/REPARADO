@@ -204,3 +204,32 @@ de los cambios introducidos únicamente en el teléfono, tablet o PC.
 Pruebas unitarias: `tests/work-notes-draft-v109.test.mjs`.
 Prueba completa de navegación en iPhone y Android simulados:
 `e2e-private/operator-work-v100.spec.mjs`.
+
+## V111 · Aviso de notas pendientes en toda la navegación del parte
+
+La protección de borradores de la versión V109 se extiende a los
+controles de navegación principales de **REPARADO**. Mientras un operario
+edita el parte de un trabajo sin haber guardado su descripción:
+
+- Abrir **Inicio**, **Mi perfil**, **Mis solicitudes** u otra sección desde
+  los menús muestra una confirmación antes de abandonar el parte.
+- Cancelar mantiene la descripción sin guardar en la pantalla; confirmar
+  permite descartarla expresamente.
+- También se protege la salida voluntaria desde **Cerrar sesión** y,
+  cuando el navegador lo admita, la recarga o cierre de la pestaña con el
+  aviso genérico del navegador.
+- Si hay una operación de guardado o subida en curso, la navegación por
+  los menús se bloquea hasta que termine.
+- Después de guardar y comprobar el servidor, la navegación es normal.
+- Los cambios forzados de sesión desde Supabase, incluida una revocación
+  de acceso, **nunca** pueden ser bloqueados por un borrador local.
+- No se persisten descripciones privadas en localStorage, cookies ni
+  sesiones temporales. No se altera la seguridad RLS ni el servicio.
+
+**Límite:** el aviso de cierre/recarga depende del soporte del navegador
+y no garantiza preservar información si el dispositivo se apaga o la app
+es terminada por el sistema operativo. Se aconseja guardar la descripción
+antes de iniciar otra tarea. En móvil, usar primero **Guardar descripción**.
+
+Pruebas: `tests/work-notes-navigation-v111.test.mjs` y
+`e2e-private/operator-work-v100.spec.mjs` en iPhone/Android simulados.
