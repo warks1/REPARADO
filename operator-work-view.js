@@ -18,7 +18,7 @@ const displayTime=value=>{
       timeZone:'Europe/Madrid',dateStyle:'medium',timeStyle:'short'
     }).format(d):'Sin registrar';
 };
-export function viewMarkup(job,report,photos,{userId,role,preserve='',history=[],transfers=[]}) {
+function viewMarkup(job,report,photos,{userId,role,preserve='',history=[],transfers=[]}) {
   const canEdit=role==='operator'&&job.operator_id===userId;
   const start=canEdit&&mayStartWork(job,userId);
   const finish=canEdit&&mayFinishWork(job,userId)&&Boolean(report);
@@ -73,7 +73,7 @@ export function viewMarkup(job,report,photos,{userId,role,preserve='',history=[]
       ).join(''):'<p>No se han registrado traspasos.</p>')+
       '</section>':'')+
     '<h2>Fotografías del trabajo</h2><p data-work-photo-count>'+
-      (role==='admin'?photos.length+' fotografías accesibles del historial'+(history.some(entry=>entry.photoError)?' · Algunas intervenciones tienen fotos pendientes de consultar.':''):
+      (role==='admin'?(history.some(entry=>entry.photoError) ? photos.length+' fotografías accesibles del historial · Algunas intervenciones tienen fotos pendientes de consultar.' : photos.length+' fotografías del historial'):
         photos.length+' de '+MAX_WORK_PHOTOS+' fotografías adjuntas')+'</p>'+
     (role==='admin'
       ?'<p class="notice">Cada fotografía se muestra en el parte del operario que la adjuntó.</p>'
