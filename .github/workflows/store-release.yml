@@ -140,6 +140,7 @@ jobs:
           npx cap sync ios
           npx @capacitor/assets generate --ios --iconBackgroundColor '#fff9f5' --splashBackgroundColor '#ffffff'
           python3 scripts/install-ios-privacy.py
+          python3 scripts/configure-ios-info.py
           ruby scripts/link-ios-privacy.rb
           plutil -lint ios/App/App/PrivacyInfo.xcprivacy
       - name: Preparar certificado y perfil Apple sin exponerlos

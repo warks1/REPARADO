@@ -43,6 +43,7 @@ jobs:
         run: |
           python3 -m unittest discover -s tests -p 'test_ios_privacy_v47.py'
           python3 scripts/install-ios-privacy.py
+          python3 scripts/configure-ios-info.py
           ruby scripts/link-ios-privacy.rb
           plutil -lint ios/App/App/PrivacyInfo.xcprivacy
       - name: Crear iconos y splash de Reparado para iPhone

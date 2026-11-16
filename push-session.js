@@ -1,6 +1,6 @@
 // Control de notificaciones ligado a la cuenta activa del dispositivo.
 // No envía push remoto. Requiere migración V24 y backend de envío auditado.
-export function createPushSessionManager({supabase, Capacitor, PushNotifications, onError=()=>{}}){
+export function createPushSessionManager({supabase, Capacitor, PushNotifications, onError=()=>{}, enabled=true}){
   let owner=null, token=null, listeners=[], active=false, starting=false;
   // Una rotación del token deja el anterior pendiente de baja hasta confirmarla.
   const retiredTokens=new Set();
@@ -11,7 +11,9 @@ export function createPushSessionManager({supabase, Capacitor, PushNotifications
   // Conservar la deuda de revocación y no permitir otra cuenta hasta resolverla.
   let suspended=false, listenerCleanup=Promise.resolve();
 
-  const native=()=>Boolean(Capacitor.isNativePlatform());
+  // Con enabled=false (sin FCM/APNs configurados) nunca se llama a register():
+  // en Android sin google-services.json esa llamada puede cerrar la app.
+  const native=()=>enabled===true && Boolean(Capacitor.isNativePlatform());
   async function removeListeners(){
     const previous=listeners.splice(0);
     await Promise.allSettled(previous.map(handle=>handle.remove()));
