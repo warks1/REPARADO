@@ -44,6 +44,7 @@ jobs:
       REPARADO_ANDROID_KEY_ALIAS: ${{ secrets.REPARADO_ANDROID_KEY_ALIAS }}
       REPARADO_ANDROID_KEY_PASSWORD: ${{ secrets.REPARADO_ANDROID_KEY_PASSWORD }}
       ANDROID_KEYSTORE_BASE64: ${{ secrets.REPARADO_ANDROID_KEYSTORE_BASE64 }}
+      REPARADO_GOOGLE_SERVICES_JSON_BASE64: ${{ secrets.REPARADO_GOOGLE_SERVICES_JSON_BASE64 }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -72,6 +73,7 @@ jobs:
           npx cap add android
           npx cap sync android
           npx @capacitor/assets generate --android --iconBackgroundColor '#fff9f5' --splashBackgroundColor '#ffffff'
+          node scripts/configure-android-push.mjs --require
       - name: Firmar AAB para Play Console
         shell: bash
         run: |
@@ -142,6 +144,8 @@ jobs:
           python3 scripts/install-ios-privacy.py
           python3 scripts/configure-ios-info.py
           ruby scripts/link-ios-privacy.rb
+          python3 scripts/configure-ios-push.py
+          ruby scripts/link-ios-push.rb
           plutil -lint ios/App/App/PrivacyInfo.xcprivacy
       - name: Preparar certificado y perfil Apple sin exponerlos
         shell: bash

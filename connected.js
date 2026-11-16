@@ -63,8 +63,6 @@ export function mountConnected({app, services, supabase, authLinkIntent=null}) {
   const isCurrentUser=(userId)=>Boolean(userId && session?.user?.id===userId);
   const pushManager=createPushSessionManager({
     supabase,Capacitor,PushNotifications,
-    // Desactivado salvo VITE_REPARADO_PUSH_ENABLED=true (requiere FCM/APNs y envío).
-    enabled:import.meta.env?.VITE_REPARADO_PUSH_ENABLED==='true',
     onError:()=>console.warn('REPARADO: registro seguro de notificaciones no disponible')
   });
   app.innerHTML = `<div class="shell">${appHeader()}<main id="main"></main><footer>© Reparado · Servicios para tu hogar ${contactLinksMarkup()} <button type="button" id="logout" class="hidden" hidden>Cerrar sesión</button></footer></div>${bottomNavigation()}`;

@@ -33,6 +33,7 @@ Ruta: repositorio → Settings → Secrets and variables → Actions.
 - `REPARADO_ANDROID_KEYSTORE_PASSWORD`
 - `REPARADO_ANDROID_KEY_ALIAS`
 - `REPARADO_ANDROID_KEY_PASSWORD`
+- `REPARADO_GOOGLE_SERVICES_JSON_BASE64`: `google-services.json` de Firebase en base64 (obligatorio: sin él la compilación falla). Ver [PUSH-NOTIFICACIONES-V113.md](PUSH-NOTIFICACIONES-V113.md).
 
 **Apple**, configuración manual de firma para el App ID `com.ams.reparado`:
 - `REPARADO_APPLE_TEAM_ID`
