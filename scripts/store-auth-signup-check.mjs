@@ -1,6 +1,8 @@
 // Verificación read-only de Supabase Auth ANTES de firmar para las tiendas.
-// REPARADO se distribuye inicialmente solo mediante invitaciones: no aceptar
-// registro abierto aunque la UI oculte el botón. No crea cuentas ni envía emails.
+// V113: los clientes se registran solos desde la tienda, pero Supabase Auth
+// debe exigir confirmación de correo y no admitir cuentas anónimas. Los roles
+// operator/admin siguen asignándose solo desde el servidor (handle_new_user
+// crea siempre 'customer'). No crea cuentas ni envía emails.
 import {pathToFileURL} from 'node:url';
 import {resolve} from 'node:path';
 import {checkPublicConfig} from './check-public-config.mjs';
@@ -31,16 +33,19 @@ export async function checkStoreAuthSignup({url,key,fetchImpl=fetch}={}){
     if(!response?.ok)
       return {ok:false,reason:'No se ha podido consultar la configuración del servidor Auth.'};
     const settings=await response.json();
-    // El booleano TRUE debe constar expresamente en el servidor; nunca
-    // asumir que esconder el formulario bloquea las altas.
-    if(settings?.disable_signup!==true)
-      return {ok:false,reason:'El servidor Auth permite nuevas altas o no confirma que estén cerradas.'};
+    // Los clientes deben poder registrarse: el booleano FALSE debe constar
+    // expresamente en el servidor (si no, la app de tienda no serviría).
+    if(settings?.disable_signup!==false)
+      return {ok:false,reason:'El servidor Auth no permite el registro de clientes o no lo confirma.'};
+    // Sin confirmación de correo cualquiera crearía cuentas con correos ajenos.
+    if(settings?.mailer_autoconfirm!==false)
+      return {ok:false,reason:'El servidor Auth no exige confirmar el correo electrónico.'};
     // Cuando el servidor expone el indicador, debe ser un booleano false.
     // La ausencia del indicador no equivale a certificar la configuración:
     // exigir además revisión manual del panel Auth antes de aprobar producción.
     if(settings?.external?.anonymous_users!==undefined && settings.external.anonymous_users!==false)
       return {ok:false,reason:'El servidor Auth permite cuentas anónimas o no confirma su bloqueo.'};
-    return {ok:true,reason:'Supabase Auth confirma que no admite altas públicas.'};
+    return {ok:true,reason:'Supabase Auth admite registro de clientes con confirmación de correo.'};
   }catch{
     return {ok:false,reason:'No se ha podido verificar Auth por red o formato de respuesta.'};
   }

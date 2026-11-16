@@ -13,11 +13,13 @@ const fake=(obj,{status=200}={})=>async(endpoint,options)=>{
   return {ok:status>=200&&status<300,status,json:async()=>obj};
 };
 
-test('V43: solo se aprueba disable_signup true confirmado por Supabase Auth',async()=>{
-  const closed=await checkStoreAuthSignup({url,key,fetchImpl:fake({disable_signup:true,external:{anonymous_users:false}})});
-  assert.equal(closed.ok,true);
-  for(const settings of [{disable_signup:false},{},{disable_signup:null},{disable_signup:'true'},
-                           {disable_signup:true,external:{anonymous_users:true}}]){
+test('V113: solo se aprueba registro abierto con confirmación de correo y sin anónimos',async()=>{
+  const open=await checkStoreAuthSignup({url,key,fetchImpl:fake({disable_signup:false,mailer_autoconfirm:false,external:{anonymous_users:false}})});
+  assert.equal(open.ok,true);
+  for(const settings of [{disable_signup:true,mailer_autoconfirm:false},{mailer_autoconfirm:false},{disable_signup:false},
+                           {disable_signup:false,mailer_autoconfirm:true},{disable_signup:'false',mailer_autoconfirm:false},
+                           {disable_signup:null,mailer_autoconfirm:false},
+                           {disable_signup:false,mailer_autoconfirm:false,external:{anonymous_users:true}}]){
     const v=await checkStoreAuthSignup({url,key,fetchImpl:fake(settings)});
     assert.equal(v.ok,false,JSON.stringify(settings));
   }
@@ -87,12 +89,12 @@ test('V57: rechazar claves privadas, rol desconocido y proyecto JWT distinto ant
 test('V57: valores anónimos ambiguos bloquean firma y ausencia requiere validación manual',async()=>{
   for(const anonymousUsers of [true,null,'false',0]){
     const result=await checkStoreAuthSignup({
-      url,key,fetchImpl:fake({disable_signup:true,external:{anonymous_users:anonymousUsers}})
+      url,key,fetchImpl:fake({disable_signup:false,mailer_autoconfirm:false,external:{anonymous_users:anonymousUsers}})
     });
     assert.equal(result.ok,false);
   }
   // Algunas versiones de Auth no exponen el indicador: no se inventa
   // su valor y la aprobación final del panel de Auth sigue siendo obligatoria.
-  const old=await checkStoreAuthSignup({url,key,fetchImpl:fake({disable_signup:true,external:{}})});
+  const old=await checkStoreAuthSignup({url,key,fetchImpl:fake({disable_signup:false,mailer_autoconfirm:false,external:{}})});
   assert.equal(old.ok,true);
 });

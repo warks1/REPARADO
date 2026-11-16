@@ -1,6 +1,6 @@
-# REPARADO · V43 · Comprobar altas públicas antes de distribuir la app
+# REPARADO · V43/V113 · Comprobar Auth antes de distribuir la app
 
-Mientras REPARADO solo admita acceso por **invitación**, no debe publicarse una app que oculte el botón de registro pero permita altas directamente por la API de Supabase.
+**V113 cambia el modelo:** los clientes se registran solos en la app de tienda. La comprobación exige ahora `disable_signup: false` y `mailer_autoconfirm: false` (correo confirmado obligatoriamente) y bloquea la firma en caso contrario. Lo descrito abajo sobre invitaciones aplica solo a operarios y administrador. En Supabase Auth: activar **Allow new users to sign up** y **Confirm email**; activar **CAPTCHA** (Attack Protection) y la protección de contraseñas filtradas, que este endpoint no puede comprobar.
 
 ## V57 · Bloqueo de destinos y claves inseguras
 

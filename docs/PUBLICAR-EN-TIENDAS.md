@@ -79,9 +79,11 @@ Además de la ficha legible, hay archivos separados para cada tienda en `fastlan
 
 Esta preparación no equivale a publicar los metadatos en Apple o Google. No se ha añadido ninguna clave ni automatismo para cambiar las tiendas sin aprobación.
 
-### Bloqueo automático de altas públicas en producción (V43)
+### Registro de clientes y comprobación de Auth antes de firmar (V43 → V113)
 
-El proceso de creación de AAB/IPA comerciales consulta el estado real de **Supabase Auth** antes de firmar. En el modelo actual de acceso privado, si `disable_signup` no es `true` o falla la consulta, **la firma queda bloqueada**. Ocultar el formulario no es suficiente. Instrucciones y límites: [`COMPROBAR-AUTH-ANTES-DE-TIENDAS.md`](COMPROBAR-AUTH-ANTES-DE-TIENDAS.md).
+Decisión V113: **los clientes se registran por sí mismos** desde la app de tienda (Apple exige poder crear cuenta sin invitación y Google Play revisa la app con cuentas nuevas). Operarios y administrador siguen asignándose solo desde el servidor: toda cuenta nueva nace como `customer` y no puede cambiar su rol.
+
+El proceso de creación de AAB/IPA consulta **Supabase Auth** antes de firmar: si `disable_signup` no es `false` o `mailer_autoconfirm` no es `false` (confirmación de correo obligatoria), o falla la consulta, **la firma queda bloqueada**. Instrucciones y límites: [`COMPROBAR-AUTH-ANTES-DE-TIENDAS.md`](COMPROBAR-AUTH-ANTES-DE-TIENDAS.md).
 
 Esta comprobación solo confirma el estado público de Auth; no acredita por sí sola que la protección de contraseñas filtradas, MFA o las políticas RLS estén correctamente configuradas.
 
